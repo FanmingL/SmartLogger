@@ -1,0 +1,11 @@
+tensorboardX
+numpy
+paramiko
+matplotlib
+seaborn
+flask
+flask_cors
+simplejson
+Pillow
+pandas
+tensorboard

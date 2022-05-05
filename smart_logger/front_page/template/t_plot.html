@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+
+<head>
+    <link rel="stylesheet" type="text/css" href="{{url_for('static', filename='css/style.css')}}"/>
+    <link rel="shortcut icon" href="{{url_for('static', filename='imgs/icon.ico')}}"/>
+    <script>
+        function load_figure(){
+            var img = document.getElementById('ret_image');
+
+            img.src="{{url_for('exp_figure')}}"+"?random="+Math.random().toString();
+            img.style.display = 'block';
+            var button = document.getElementById('figure_button')
+            button.innerHTML = "加载中";
+        }
+        function finish_figure(){
+             var button = document.getElementById('figure_button')
+            button.innerHTML = "更新图片";
+        }
+    </script>
+    <style>
+        .main_images {
+            position: absolute;
+            left: 1%;
+            text-align: left;
+            width: 35%;
+            line-height: 30px;
+            background-color: rgba(255, 255, 255, 0.8);
+            height: 80%;
+            overflow: scroll;
+
+        }
+        .right_image{
+            position: absolute;
+            left: 37%;
+            width: 75%;
+
+        }
+
+        .main_images p {
+            margin: 10px;
+            font-family: monospace;
+            line-height: 25px;
+
+            /*font-style: italic;*/
+        }
+        .main_images p input{
+                        font-family: monospace;
+
+        }
+        .main_images b {
+            margin: 10px;
+            font-family: "Monaco";
+            /*font-style: italic;*/
+        }
+
+        li a {
+            width: 200px;
+        }
+
+        .main_images li a {
+            color: #252525;
+
+            /*display: inline-block;!*注意如果要更改a链接的尺寸，必须给他block化*!*/
+            width: 800px;
+            /*height: 30px;*/
+            line-height: 30px;
+            /*text-decoration: none;*/
+            text-decoration: none;
+            text-align: left;
+        }
+
+        div li a:hover {
+            background-color: #fff;
+        }
+    </style>
+</head>
+
+<html>
+<title>实验记录.</title>
+<body>
+<h2> 实验记录 </h2>
+<div class="topcorner">
+    <ul>
+        <li><a href="{{url_for('logout')}}" style="width: 80px">下线</a></li>
+    </ul>
+</div>
+<ul>
+    <li><a href="{{url_for('hello')}}">实验列表</a></li>
+    <li><a href="{{url_for('param_adjust')}}">绘图参数</a></li>
+    <li><a href="{{url_for('plot')}}">对比绘图</a></li>
+</ul>
+<h3>图像绘制</h3>
+<div class="main_images">
+    <b>
+        参数{{config_name}}
+    </b>
+    <form name="form_plot" action="{{url_for('plot_config_update')}}" method="POST">
+    <p>
+        {% for config_name, config_value in plot_config.items() %}
+        >>{{loop.index0+1}}. {{config_name}}
+        {% if config_type[config_name] == 'str' %}
+
+
+        <br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;> <input type="text" name="{{config_name}}" id="{{config_name}}_id" value="{{config_value}}" style="width: 400px;"  ><br/>
+        {% elif config_type[config_name] == 'int' %}
+        <br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;> <input type="text" name="{{config_name}}" id="{{config_name}}_id" value={{config_value}} style="width: 400px;"  ><br/>
+        {% elif config_type[config_name] == 'bool' %}
+        <br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;> <input type="text" name="{{config_name}}" id="{{config_name}}_id" value={{config_value}} style="width: 400px;"  ><br/>
+        {% elif config_type[config_name] == 'float' %}
+        <br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;> <input type="text" name="{{config_name}}" id="{{config_name}}_id" value={{config_value}} style="width: 400px;"  ><br/>
+        {% elif config_type[config_name] == 'tuple' %}
+        <br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;> {{config_value}}<br/>
+        {% elif config_type[config_name] == 'list' %}
+        <br/>
+        {% for item in config_value %}
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-{{loop.index0+1}}. <input type="text" name="{{config_name}}:{{loop.index0}}" id="{{config_name}}_id_{{loop.index0}}" value={{item}} style="width: 400px;"  ><br/>
+        {% endfor %}
+        {% elif config_type[config_name] == 'double_list' %}
+        <br/>
+        {% for item in config_value %}
+        &nbsp;&nbsp;&nbsp;&nbsp;>{{config_name}}[{{loop.index0}}]<br/>
+        {% for item2 in item %}
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-{{loop.index0+1}}. {{item2}}{% if loop.index0+1< (item | length) %}<br/>{% endif %}
+        {% endfor %}
+        <br/>
+        {% endfor %}
+        {% elif config_type[config_name] == 'list_dict' %}
+        <br/>
+        {% for item_dict in config_value %}
+        &nbsp;&nbsp;&nbsp;&nbsp;>{{config_name}}[{{loop.index0}}]<br/>
+        {% for k, v in item_dict.items() %}
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-{{loop.index0+1}}. {{k}}: {{v}};{% if loop.index0+1< (item_dict | length) %}<br/>{% endif %}
+        {% endfor %}
+        <br/>
+        {% endfor %}
+        {% elif config_type[config_name] == 'dict' %}
+        <br/>
+        {% for k, v in config_value.items() %}
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;>
+        {{k}}: {{v}};
+        <br/>
+        {% endfor %}
+
+        {% else %}
+        <br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{config_value}}<br/>
+        {% endif %}
+        {% endfor %}</p>
+        <div align="center" style="margin: 5px">
+            <button type="submit" style="width:80px;height:30px">更新参数</button></div>
+    </form>
+</div>
+<div class="right_image">
+    <button type="button" id="figure_button" onclick="load_figure()">显示图片</button><br/>
+		<img id="ret_image" src="#" alt="plotting" style="display:none;" onload="finish_figure()"><br/>
+	</div>
+</body>
+
+</html>

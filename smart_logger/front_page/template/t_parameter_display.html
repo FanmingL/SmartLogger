@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+
+<head>
+    <link rel="stylesheet" type="text/css" href="{{url_for('static', filename='css/style.css')}}"/>
+    <link rel="shortcut icon" href="{{url_for('static', filename='imgs/icon.ico')}}"/>
+
+    <style>
+        .main_images {
+            position: absolute;
+            left: 5%;
+            text-align: left;
+            width: 85%;
+            line-height: 30px;
+            background-color: rgba(255, 255, 255, 0.7);
+
+        }
+
+        .main_images p {
+            margin: 10px;
+            font-family: monospace;
+            line-height: 25px;
+
+            /*font-style: italic;*/
+        }
+
+        .main_images b {
+            margin: 10px;
+            font-family: "Monaco";
+            /*font-style: italic;*/
+        }
+
+        li a {
+            width: 200px;
+        }
+
+        .main_images li a {
+            color: #252525;
+
+            /*display: inline-block;!*注意如果要更改a链接的尺寸，必须给他block化*!*/
+            width: 800px;
+            /*height: 30px;*/
+            line-height: 30px;
+            /*text-decoration: none;*/
+            text-decoration: none;
+            text-align: left;
+        }
+
+        div li a:hover {
+            background-color: #fff;
+        }
+    </style>
+</head>
+
+<html>
+<title>实验记录.</title>
+<body>
+<h2> 实验记录 </h2>
+<div class="topcorner">
+    <ul>
+        <li><a href="{{url_for('logout')}}" style="width: 80px">下线</a></li>
+    </ul>
+</div>
+<ul>
+    <li><a href="{{url_for('hello')}}">实验列表</a></li>
+    <li><a href="{{url_for('param_adjust')}}">绘图参数</a></li>
+    <li><a href="{{url_for('plot')}}">对比绘图</a></li>
+</ul>
+<h3>{{name}}详情</h3>
+<div class="main_images">
+    <b>
+        目录树. log.txt, full_description.txt和progress.csv分别为日志, 参数设定和训练数据表.
+    </b>
+    <p style="line-height: 18px; font-family: monospace">
+
+        {% for desc_ind in range(full_path | length) %}
+        {% if full_path[desc_ind] == 'None'%}
+        {{dtree_desc[desc_ind]}}
+        {% else %}
+        {{dtree_desc[desc_ind]}} <a href="{{url_for('experiment_data_download', folder_name=full_path[desc_ind])}}">[下载/预览]</a>
+        ({{filesize[desc_ind]}})
+        {% endif %}
+        <br/>
+        {% endfor %}</p>
+    <b>
+        重要参数.
+    </b>
+    <p>
+        {% for desc in important_configs %}
+        >{{loop.index0+1}}. {{desc}} <br/>
+        {% endfor %}</p>
+    <b>
+        参数.
+    </b>
+    <p>
+        {% for desc in experiment_description %}
+        >{{loop.index0+1}}. {{desc}} <br/>
+        {% endfor %}</p>
+
+    <b>
+        记录下的数据.
+    </b>
+    <p>
+        {% for desc in recorded_data %}
+        >{{loop.index0+1}}. {{desc}} <br/>
+        {% endfor %}</p>
+</div>
+</body>
+
+</html>

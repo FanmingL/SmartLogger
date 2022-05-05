@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+
+<head>
+    <link rel="stylesheet" type="text/css" href="{{url_for('static', filename='css/style.css')}}"/>
+    <link rel="shortcut icon" href="{{url_for('static', filename='imgs/icon.ico')}}"/>
+    <script>
+        var added_dict = {};
+        function set_option(){
+            let key_selection = document.getElementById("select_key");
+            let value_selection = document.getElementById("select_value");
+            let selected_key = key_selection.options[key_selection.selectedIndex].value;
+             let possible_config_js = "{{possible_config_js}}";
+             possible_config_js = atob(possible_config_js);
+             possible_config_js = JSON.parse(possible_config_js);
+            var found_data = false;
+             var item_list;
+            for (var i = 0; i < possible_config_js.length; i++){
+                // console.log(possible_config_js[i][0]);
+                // console.log(possible_config_js[i][1]);
+                if (possible_config_js[i][0] == selected_key){
+                    found_data = true;
+                    item_list = possible_config_js[i][1]
+                   while(value_selection.options.length){
+                        value_selection.remove(0);
+                    }
+                    for (var j = 0; j < possible_config_js[i][1].length; j++)
+                    {
+                        var item = new Option((possible_config_js[i][1][j]).toString(), j);
+                        value_selection.add(item);
+                    }
+                }
+                if (found_data)
+                    break;
+            }
+        }
+        function change_config_cb(){
+            let form_rename = document.getElementById('frm_rename_config_choose_select');
+            let config_selection = document.getElementById("choose_config_cb");
+            let selected_config = config_selection.options[config_selection.selectedIndex].value;
+            console.log(selected_config)
+            form_rename.submit();
+        }
+        function change_input_text(){
+            let key_selection = document.getElementById("select_key");
+            let value_selection = document.getElementById("select_value");
+            let input_box = document.getElementById("added_rule_select_cb");
+            let input_text = input_box.value;
+            let selected_key = key_selection.options[key_selection.selectedIndex].value;
+            let selected_value = value_selection.options[value_selection.selectedIndex].value;
+            let selected_text = value_selection.options[value_selection.selectedIndex].text;
+            let possible_config_js = "{{possible_config_js}}";
+             possible_config_js = atob(possible_config_js);
+             possible_config_js = JSON.parse(possible_config_js);
+            console.log(selected_key)
+            console.log(selected_value)
+            console.log(selected_text)
+            console.log(input_text)
+            var found_data = false;
+            for (var i = 0; i < possible_config_js.length; i++) {
+                // console.log(possible_config_js[i][0]);
+                // console.log(possible_config_js[i][1]);
+                if (possible_config_js[i][0] == selected_key) {
+                    found_data = true;
+                    let svalue = possible_config_js[i][1][selected_value];
+                    added_dict[selected_key] = svalue;
+                    console.log(svalue)
+                    input_box.value += selected_key.toString() + "=" + svalue.toString() + ";";
+                    console.log(JSON.stringify(added_dict));
+                }
+                if (found_data)
+                    break;
+            }
+        }
+        function clear_input_box(){
+            let input_box = document.getElementById("added_rule_select_cb");
+            input_box.value = '';
+            added_dict = {};
+        }
+        function add_ignore(){
+          let httpRequest = new XMLHttpRequest();
+          httpRequest.onreadystatechange = function () {
+              if (httpRequest.readyState === 4 && httpRequest.status === 200) {
+                  console.log('success!')
+                  location.href="{{url_for('param_adjust')}}";
+              }
+              };
+            httpRequest.open('POST', "{{url_for('add_ignore')}}", false);
+            httpRequest.send(JSON.stringify(added_dict));
+        }
+        function create_config(){
+            let httpRequest = new XMLHttpRequest();
+          httpRequest.onreadystatechange = function () {
+              if (httpRequest.readyState === 4 && httpRequest.status === 200) {
+                  console.log('success!')
+                  location.href="{{url_for('param_adjust')}}";
+              }
+              };
+            httpRequest.open('GET', "{{url_for('create_config')}}", false);
+            httpRequest.send();
+        }
+        function delete_config(){
+            let httpRequest = new XMLHttpRequest();
+            let config_selection = document.getElementById("choose_config_cb");
+            let selected_config = config_selection.options[config_selection.selectedIndex].value;
+          httpRequest.onreadystatechange = function () {
+              if (httpRequest.readyState === 4 && httpRequest.status === 200) {
+                  console.log('success!')
+                  location.href="{{url_for('param_adjust')}}";
+              }
+              };
+            httpRequest.open('POST', "{{url_for('delete_config')}}", false);
+            var data_to_send = {'delete_config': selected_config}
+            httpRequest.send(JSON.stringify(data_to_send));
+        }
+        function submit_selection(){
+            let form_rename = document.getElementById('frm_merge_selection');
+            form_rename.submit();
+        }
+        function submit_separator(){
+            let form_rename = document.getElementById('frm_rename_separator_rule');
+            form_rename.submit();
+        }
+    </script>
+    <style>
+        .main_images {
+            position: absolute;
+            left: 5%;
+            text-align: left;
+            width: 50%;
+            background-color:rgba(255,255,255,0.8);
+            height: 85%;
+            top: 17%;
+            overflow: scroll;
+        }
+
+        .main_images li a{
+                /*font-family:"Arial";*/
+            font-family:monospace;
+                color: #252525;
+
+                /*display: inline-block;!*注意如果要更改a链接的尺寸，必须给他block化*!*/
+                width: 800px;
+                /*height: 30px;*/
+            line-height:20px;
+                /*text-decoration: none;*/
+            text-decoration: none;
+            text-align:left;
+            margin-left: 35px;
+            /*text-indent: -55px;*/
+             /*style=";margin-left: 90px;"*/
+            padding-left:58px;
+            text-indent:-58px;
+            /*pointer-events: none;*/
+        }
+
+        .filter_box {
+            position: absolute;
+            left: 58%;
+            text-align: left;
+            width: 40%;
+            top: 17%;
+            background-color:rgba(255,255,255,0.8);
+            height: 40%;
+            overflow: scroll;
+        }
+
+        .filter_box li a{
+                /*font-family:"Arial";*/
+            font-family:monospace;
+                color: #252525;
+
+                /*display: inline-block;!*注意如果要更改a链接的尺寸，必须给他block化*!*/
+                width: 800px;
+                /*height: 30px;*/
+            line-height:20px;
+                /*text-decoration: none;*/
+            text-decoration: none;
+            text-align:left;
+            margin-left: 35px;
+            /*text-indent: -55px;*/
+             /*style=";margin-left: 90px;"*/
+            padding-left:58px;
+            text-indent:-58px;
+            pointer-events: none;
+        }
+        .filter_box p{
+            font-family:monospace;
+        }
+        .merge_box {
+            position: absolute;
+            left: 58%;
+            text-align: left;
+            width: 40%;
+            background-color:rgba(255,255,255,0.8);
+            height: 40%;
+            overflow: scroll;
+            top: 60%;
+            font-family:monospace;
+        }
+        .merge_box p{
+            margin: 10px;
+        }
+        .merge_box p label{
+            font-family:monospace;
+            /*line-height:10px;*/
+        }
+        .merge_box p input{
+            /*display: inline-block;*/
+            line-height:15px;
+        }
+
+        .merge_box li a{
+                /*font-family:"Arial";*/
+            font-family:monospace;
+                color: #252525;
+
+                /*display: inline-block;!*注意如果要更改a链接的尺寸，必须给他block化*!*/
+                width: 800px;
+                /*height: 30px;*/
+            line-height:20px;
+                /*text-decoration: none;*/
+            text-decoration: none;
+            text-align:left;
+            margin-left: 35px;
+            /*text-indent: -55px;*/
+             /*style=";margin-left: 90px;"*/
+            padding-left:58px;
+            text-indent:-58px;
+            pointer-events: none;
+        }
+
+
+        .draw_box {
+                        font-family:monospace;
+
+            position: absolute;
+            left: 58%;
+            text-align: left;
+            width: 40%;
+            background-color:rgba(255,255,255,0.8);
+            height: 50%;
+            overflow: scroll;
+            top: 105%;
+        }
+        .choose_config {
+                        font-family:monospace;
+            position: absolute;
+            left: 10%;
+            top: 10%;
+        }
+        .merge_config {
+                        font-family:monospace;
+            position: absolute;
+            left: 40%;
+            top: 10%;
+        }
+        .rename_config {
+                        font-family:monospace;
+            position: absolute;
+            left: 70%;
+            top: 10%;
+        }
+
+        .draw_box li a{
+                /*font-family:"Arial";*/
+            font-family:monospace;
+                color: #252525;
+
+                /*display: inline-block;!*注意如果要更改a链接的尺寸，必须给他block化*!*/
+                width: 800px;
+                /*height: 30px;*/
+            line-height:20px;
+                /*text-decoration: none;*/
+            text-decoration: none;
+            text-align:left;
+            margin-left: 35px;
+            /*text-indent: -55px;*/
+             /*style=";margin-left: 90px;"*/
+            padding-left:58px;
+            text-indent:-58px;
+            pointer-events: none;
+        }
+
+        .rename_box {
+            font-family:monospace;
+            position: absolute;
+            left: 5%;
+            text-align: left;
+            width: 50%;
+            background-color:rgba(255,255,255,0.8);
+            height: 50%;
+            overflow: scroll;
+            top: 105%;
+        }
+
+        .rename_box li a{
+                /*font-family:"Arial";*/
+            font-family:monospace;
+                color: #252525;
+
+                /*display: inline-block;!*注意如果要更改a链接的尺寸，必须给他block化*!*/
+                width: 800px;
+                /*height: 30px;*/
+            line-height:20px;
+                /*text-decoration: none;*/
+            text-decoration: none;
+            text-align:left;
+            margin-left: 35px;
+            /*text-indent: -55px;*/
+             /*style=";margin-left: 90px;"*/
+            padding-left:58px;
+            text-indent:-58px;
+            /*pointer-events: none;*/
+        }
+
+        .rename_box_data_key {
+            font-family:monospace;
+            position: absolute;
+            left: 5%;
+            text-align: left;
+            width: 50%;
+            background-color:rgba(255,255,255,0.8);
+            height: 30%;
+            overflow: scroll;
+            top: 160%;
+        }
+        .separator_box {
+            font-family:monospace;
+            position: absolute;
+            left: 58%;
+            text-align: left;
+            width: 40%;
+            background-color:rgba(255,255,255,0.8);
+            height: 30%;
+            overflow: scroll;
+            top: 160%;
+        }
+
+        .rename_box_data_key li a{
+                /*font-family:"Arial";*/
+            font-family:monospace;
+                color: #252525;
+
+                /*display: inline-block;!*注意如果要更改a链接的尺寸，必须给他block化*!*/
+                width: 800px;
+                /*height: 30px;*/
+            line-height:20px;
+                /*text-decoration: none;*/
+            text-decoration: none;
+            text-align:left;
+            margin-left: 35px;
+            /*text-indent: -55px;*/
+             /*style=";margin-left: 90px;"*/
+            padding-left:58px;
+            text-indent:-58px;
+            /*pointer-events: none;*/
+        }
+        .bottom_box {
+            font-family:monospace;
+            position: absolute;
+            left: 0%;
+            text-align: left;
+            width: 100%;
+            background-color:rgba(0,0,0,0.3);
+            height: 1px;
+            overflow: scroll;
+            top: 200%;
+        }
+    .line_button {
+    position: absolute;
+    top: 12%;
+    right: 3%;
+    /*width: 80px;*/
+}
+        li a {
+            width: 200px;
+        }
+        div li a:hover {
+            background-color: #fff;
+        }
+    </style>
+</head>
+
+<html>
+<title>实验记录.</title>
+<body onload="set_option()">
+<h2> 实验记录 </h2>
+<div class="topcorner">
+    <ul>
+        <li><a href="{{url_for('logout')}}" style="width: 80px">下线</a></li>
+    </ul>
+</div>
+<ul>
+    <li><a href="{{url_for('hello')}}">实验列表</a></li>
+    <li><a href="{{url_for('param_adjust')}}">绘图参数</a></li>
+    <li><a href="{{url_for('plot')}}">对比绘图</a></li>
+</ul>
+
+<h3>绘图参数修改</h3>
+<div class="line_button">
+    <ul>
+        <li><a href="{{url_for('reset_config')}}" style="width: 100px">恢复默认</a></li>
+    </ul>
+</div>
+<div class="main_images">
+        <h3>数据选择</h3>
+<h3>共有{{exp_data | length}}项有效记录, 这些数据会被用于分析与绘图</h3>
+    <p style="margin-top=20px;">
+{% for exp_name_ind in range(exp_data|length) %}
+
+ <li><a href="{{url_for('obtain_experiment_parameter', folder_name=exp_data_encoded[exp_name_ind])}}">+ {{alg_idx[exp_name_ind]+1}}: {{loop.index0+1}}. {{exp_data[exp_name_ind]}} ({{nick_name_list[exp_name_ind]}})</a> </li>
+    {% if exp_name_ind + 1 < exp_data|length and alg_idx[exp_name_ind+1] > alg_idx[exp_name_ind] %}
+    <li><a href="#">{{'-' * exp_data[exp_name_ind+1]|length}}</a></li>
+    {% endif %}
+{% endfor %}
+</p>
+
+    <h3>共有{{exp_data_ignores | length}}项被过滤的记录, 这些数据<u>不会</u>被用于分析与绘图</h3>
+    <p style="margin-top=20px;">
+{% for exp_name_idx in range(exp_data_ignores|length) %}
+ <li><a href="{{url_for('obtain_experiment_parameter', folder_name=exp_data_ignores_encoded[exp_name_idx])}}">- {{loop.index0 + 1 + exp_data | length}}. {{exp_data_ignores[exp_name_idx]}}</a></li>
+{% endfor %}
+</p>
+</div>
+
+<div class="filter_box">
+    <h3>过滤条件, 符合以下任意条件的数据将会被过滤, 不会用于分析与绘图</h3>
+    <p style="margin: 10px">
+    {% for item_dict in data_ignore %}
+        &nbsp;&nbsp;>DATA_IGNORE[{{loop.index0}}]
+        <a href="{{url_for('del_ignore', rule_idx=loop.index0)}}" style="font-family: monospace">删除</a>
+        <br/>
+        {% for k, v in item_dict.items() %}
+        {% if k == "__SHORT_NAME__" %}
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- {{k}} = {% if v in rename_rule_dict %} ({{(rename_rule_dict[v])}}): {% endif %}{{v}};{% if loop.index0+1< (item_dict | length) %}<br/>{% endif %}
+        {% else %}
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- {{k}} = {{v}};{% if loop.index0+1< (item_dict | length) %}<br/>{% endif %}
+        {% endif %}
+        {% endfor %}
+        <br/>
+        {% endfor %}
+
+    </p>
+
+<!--    <form name="frm_split" action="#"  method="POST">-->
+<!--        <div align="left" style="margin: 20px">-->
+<!--        <p>-->
+<!--        <label for="added_rule_cb" style="font-family: monospace">新增的过滤规则 (格式: aaa=xxx;bbb=yyy;):</label> <br/>-->
+<!--        <input type="text" name="added_rule" id="added_rule_cb" value="" style="width: 400px;">-->
+<!--        </p>-->
+<!--        </div>-->
+<!--        <div align="center" style="margin: 5px"><button type="submit" style="width:60px;height:30px">上传</button></div>-->
+<!--    </form>-->
+    <form name="frm_split_select">
+        <div align="left" style="margin: 20px">
+        <p>
+            <label for="added_rule_select_cb" style="font-family: monospace">新增的过滤规则 (格式: aaa=xxx;bbb=yyy;):</label> <br/>
+        <input type="text" name="added_rule" id="added_rule_select_cb" value="" style="width: 400px; background-color:#EFEFEF;" readonly="" >
+        </p>
+        </div>
+        <div align="center" style="margin: 5px">
+            <div style="font-family: monospace; margin: 5px" >
+             key:<select id="select_key"  onchange="set_option()">
+                {% for name, items in possible_config %}
+                  <option value ="{{name}}">{{name}}</option>
+                {% endfor %}
+            </select>
+            value:<select id="select_value">
+                {% if possible_config|length > 0 %}
+                {% for item in possible_config[0][1] %}
+               <option value ="{{item}}">{{item}}</option>
+                {% endfor %}
+                {% endif %}
+            </select><br/>
+            </div>
+            <button type="button" style="width:80px;height:30px" onclick="change_input_text()">添加规则</button>&nbsp&nbsp&nbsp
+            <button type="button" style="width:60px;height:30px" onclick="clear_input_box()">清空</button>&nbsp&nbsp&nbsp
+            <button type="button" style="width:60px;height:30px" onclick="add_ignore()">提交</button></div>
+    </form>
+</div>
+<div class="choose_config">
+    <form name="frm_rename_config_choose_select" id="frm_rename_config_choose_select" action="{{url_for('choose_config')}}" method="POST">
+        <div align="left" style="margin: 20px">
+        <p>
+            <label for="choose_config_cb" style="font-family: monospace">选择设定:</label>
+            <select id="choose_config_cb" name="chosen_config" onchange="change_config_cb()">
+                {% for item in config_file_list %}
+                  <option value ="{{item}}" {% if item == config_name %} selected {% endif %}>{{item}}</option>
+                {% endfor %}
+            </select>
+            <button type="button" style="width:80px;height:30px" onclick="create_config()">新建配置</button>
+            <button type="button" style="width:80px;height:30px" onclick="delete_config()">删除配置</button>
+        </p>
+
+        </div>
+    </form>
+</div>
+<div class="merge_config">
+
+    <form name="frm_merge_config_choose_select" id="frm_merge_config_choose_select" action="{{url_for('merge_config')}}" method="POST">
+        <div align="left" style="margin: 20px">
+        <p>
+            <label for="choose_target_config_cb" style="font-family: monospace">目标配置:</label>
+            <select id="choose_target_config_cb" name="target_config">
+                {% for item in config_file_list %}
+                {% if item == config_name %}
+                <option value ="{{item}}" selected >{{item}}</option>
+                {% else %}
+                  <option value ="{{item}}" >{{item}}</option>
+                {% endif %}
+                {% endfor %}
+            </select>
+            <button type="submit" style="width:80px;height:30px">合并配置</button>
+        </p>
+
+        </div>
+
+    </form>
+</div>
+<div class="rename_config">
+    <form name="frm_rename_config_choose" action="{{url_for('rename_config')}}" method="POST">
+<p>
+            <label for="rename_cb" style="font-family: monospace">重命名设定:</label>
+            <input id="rename_cb" name="rename" value=""/>
+            <button type="submit" style="width:60px;height:30px">修改</button>
+        </p>
+    </form>
+</div>
+<div class="merge_box">
+    <h3>合并条件, 合并条件对应值一致的被认为是同一算法</h3>
+    <form name="frm_merge" id="frm_merge_selection" action="{{url_for('merge_process')}}"  method="POST">
+       <table style="margin: 5px">
+    {% for k, v, v1 in merge_config_file %}
+        {% if loop.index0 is even  %}
+       <tr>
+       {% endif %}
+      <td><input type="checkbox" name="{{k}}" id="{{k}}_cb" value="{{k}}_value" {% if v %}checked="checked" {%endif%} onchange="submit_selection()">
+      <label for="{{k}}_cb" style="font-family: monospace">{{k}}</label> </td>
+       {%if loop.index0 is odd%}
+       </tr>
+       {% endif %}
+    {% endfor %}
+       </table>
+<!--        <div align="center" style="margin: 5px"><button type="submit" style="width:60px;height:30px">更新</button></div><br/>-->
+    </form>
+</div>
+
+<div class="draw_box">
+    <h3>绘制类型, 从日志文件中选出以下数据对进行分别绘制</h3>
+    {% for k, v in plotting_xy %}
+        &nbsp;&nbsp;>XY[{{loop.index0}}]
+        <a href="{{url_for('del_xy', rule_idx=loop.index0)}}" style="font-family: monospace">删除</a>
+        <br/>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{k}} --> {{v}};
+        <br/>
+        {% endfor %}
+    <form name="frm_rename_select_xy" action="{{url_for('add_xy')}}" method="POST">
+        <div align="left" style="margin: 20px">
+        <p>
+            <label for="x_name_cb" style="font-family: monospace">X:</label> <br/>
+        <input type="text" name="x_name" id="x_name_cb" value="timestep" style="width: 400px; font-family: monospace"  ><br/>
+            <label for="y_name_cb" style="font-family: monospace">Y:</label> <br/>
+        <input type="text" name="y_name" id="y_name_cb" value="" style="width: 400px; font-family: monospace"  ><br/>
+        </p>
+        </div>
+        <div align="center" style="margin: 5px">
+            <button type="submit" style="width:60px;height:30px">添加</button></div>
+    </form>
+</div>
+
+<div class="rename_box">
+    <h3>重命名规则, 将自动命名的算法名称 (图例的标签) 重命名的规则</h3>
+    {% for k, v in rename_rule %}
+        &nbsp;&nbsp;>RENAME_RULE[{{loop.index0}}]
+        <a href="{{url_for('del_rename', rule_idx=loop.index0)}}" style="font-family: monospace">删除</a>
+        <a href="{{url_for('ignore_with_renamed', rule_idx=loop.index0)}}" style="font-family: monospace">不绘制</a>
+        <br/>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- {{v}} --> {{k}};
+        <br/>
+        {% endfor %}
+    <form name="frm_rename_select" action="{{url_for('add_rename')}}" method="POST">
+        <div align="left" style="margin: 20px">
+        <p>
+            <label for="rename_rule_cb" style="font-family: monospace">长名:</label>
+            <select id="rename_rule_cb" name="added_rule_rename_long" >
+                {% for short_name in possible_short_name %}
+                  <option value ="{{short_name}}">{{short_name}}</option>
+                {% endfor %}<br/>
+            </select><br/>
+            <label for="rename_rule_short_cb" style="font-family: monospace">对应短名:</label> <br/>
+        <input type="text" name="added_rule_rename_short" id="rename_rule_short_cb" value="" style="width: 400px;"  ><br/>
+        </p>
+        </div>
+        <div align="center" style="margin: 5px">
+            <button type="submit" style="width:60px;height:30px">添加</button></div>
+    </form>
+    {% if possible_short_name | length > 0 %}
+    <h3>未命名数据</h3>
+    {% for short_name in possible_short_name %}
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- {{loop.index0}}. {{short_name}} <a href="{{url_for('ignore_with_unnamed', rule_idx=loop.index0)}}" style="font-family: monospace">不绘制</a>
+ <br/>
+    {% endfor %}
+    <br/>
+    <br/>
+    {% endif %}
+</div>
+
+<div class="rename_box_data_key">
+    <h3>重命名规则, 将某些数据的键重命名为别的名字</h3>
+    {% for k, v in rename_rule_data %}
+        &nbsp;&nbsp;>RENAME_DATA_KEY_RULE[{{loop.index0}}]
+        <a href="{{url_for('del_data_rename', rule_idx=loop.index0)}}" style="font-family: monospace">删除</a>
+        <br/>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- {{k}}: {{v}};
+        <br/>
+        {% endfor %}
+    <form name="frm_rename_select" action="{{url_for('add_data_rename')}}" method="POST">
+        <div align="left" style="margin: 20px">
+        <p>
+            <label for="rename_data_rule_cb" style="font-family: monospace">原始名:</label><br/>
+            <input type="text" id="rename_data_rule_cb" name="rename_data_rule" value="" style="width: 400px;"  />
+            <br/>
+            <label for="rename_rule_short_cb" style="font-family: monospace">新名:</label><br/>
+        <input type="text" name="rename_data_new_rule" id="rename_data_rule_new_cb" value="" style="width: 400px;"  ><br/>
+        </p>
+        </div>
+        <div align="center" style="margin: 5px">
+            <button type="submit" style="width:60px;height:30px">添加</button></div>
+    </form>
+</div>
+<div class="separator_box">
+    <h3>子图分隔规则, 合并条件对应值一致的被放入同一子图</h3>
+
+    {% for separator_item in separators %}
+        &nbsp;&nbsp;>{{loop.index0}}. {{separator_item}}
+        <a href="{{url_for('del_separator', rule_idx=loop.index0)}}" style="font-family: monospace">删除</a>
+        <br/>
+        {% endfor %}
+    <form name="frm_separator_select" id="frm_rename_separator_rule" action="{{url_for('add_separator')}}" method="POST">
+        <div align="left" style="margin: 20px">
+        <p>
+            <label for="rename_separator_rule_id" style="font-family: monospace">子图分隔依据:</label>
+            <select id="rename_separator_rule_id" name="separator_item" onchange="submit_separator()">
+                {% for name, items in possible_config %}
+                {% if name not in separators %}
+                  <option value ="{{name}}">{{name}}</option>
+                {% endif %}
+                {% endfor %}
+            </select>
+            <br/>
+        </p>
+        </div>
+        <div align="center" style="margin: 5px">
+            <button type="submit" style="width:60px;height:30px">添加</button></div>
+    </form>
+</div>
+<div class="bottom_box">
+</div>
+</body>
+
+</html>

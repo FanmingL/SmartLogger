@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+
+<head>
+    <link rel="stylesheet" type="text/css" href="{{url_for('static', filename='css/style.css')}}"/>
+    <link rel="shortcut icon" href="{{url_for('static', filename='imgs/icon.ico')}}"/>
+
+    <style>
+        .main_images {
+            position: absolute;
+            left: 10%;
+            text-align: left;
+            width: 80%;
+            background-color:rgba(255,255,255,0.5);
+        }
+        li a {
+            width: 200px;
+
+        }
+        .main_images li a{
+                /*font-family:"Arial";*/
+            font-family:"Monaco";
+                color: #252525;
+
+                /*display: inline-block;!*注意如果要更改a链接的尺寸，必须给他block化*!*/
+                width: 800px;
+                /*height: 30px;*/
+            line-height:30px;
+                /*text-decoration: none;*/
+            text-decoration: none;
+            text-align:left;
+            margin-left: 35px;
+            /*text-indent: -55px;*/
+             /*style=";margin-left: 90px;"*/
+            padding-left:58px;
+            text-indent:-58px;
+        }
+        div li a:hover {
+            background-color: #fff;
+        }
+    </style>
+</head>
+
+<html>
+<title>实验记录.</title>
+<body>
+<h2> 实验记录 </h2>
+<div class="topcorner">
+    <ul>
+        <li><a href="{{url_for('logout')}}" style="width: 80px">下线</a></li>
+    </ul>
+</div>
+<ul>
+    <li><a href="{{url_for('hello')}}">实验列表</a></li>
+    <li><a href="{{url_for('param_adjust')}}">绘图参数</a></li>
+    <li><a href="{{url_for('plot')}}">对比绘图</a></li>
+</ul>
+    <h3>共有{{exp_folder_list | length}}项记录</h3>
+
+        <div class="main_images">
+            <p style="margin-top=20px;">
+        {% for exp_name in exp_folder_list %}
+         <li><a href="{{url_for('obtain_experiment_parameter', folder_name=exp_folders_code[loop.index0])}}">> {{loop.index0+1}}. {{exp_name}}</a></li>
+        {% endfor %}
+        </p>
+        </div>
+
+</body>
+
+</html>

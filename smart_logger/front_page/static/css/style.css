@@ -1,0 +1,88 @@
+img {
+    max-width: 75%;
+}
+
+body {
+    background-attachment: fixed;
+    /*background-size: cover;*/
+    background-size: cover;
+/ / 填充 background-repeat: no-repeat;
+    /*-webkit-background-size: cover;*/
+    background-image: url("../imgs/sunset_linear.jpg");
+    /*-webkit-background-attachment: fixed;*/
+    overflow-x: hidden;
+    overflow-y: auto;
+    margin: 0;
+    background-position: center center;
+    /*background: -webkit-linear-gradient(#F6C6CE, #D08989); !* Safari 5.1 - 6.0 *!*/
+    /*background: -o-linear-gradient(#F6C6CE, #D08989); !* Opera 11.1 - 12.0 *!*/
+    /*background: -moz-linear-gradient(#F6C6CE, #D08989); !* Firefox 3.6 - 15 *!*/
+    /*background: linear-gradient(#F6C6CE, #D08989) repeat-y; !* 标准的语法（必须放在最后） **/
+}
+
+.topcorner {
+    position: absolute;
+    top: 2%;
+    right: 3%;
+    /*width: 80px;*/
+}
+
+/*修改默认样式*/
+ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    background-color: #222;
+    opacity: 0.5;
+}
+
+/*修改链接样式*/
+li a {
+    color: white;
+    display: inline-block; /*注意如果要更改a链接的尺寸，必须给他block化*/
+    width: 100px;
+    text-decoration: none;
+}
+
+/*将列表水平化*/
+li {
+    display: inline-block;
+    text-align: center;
+}
+
+/*更改悬浮状态*/
+li a:hover {
+    background-color: #111;
+}
+
+/*给出一个active类 进行导航激活状态显示*/
+li a.active {
+    background-color: #4CAF50;
+}
+
+* {
+    font-family: "Arial";
+}
+
+h2 {
+    font-family: "Arial";
+    color: rgba(30, 30, 30, 1.0);
+    margin: 15px;
+}
+
+h3 {
+    font-family: "Arial";
+    color: rgba(30, 30, 30, 1.0);
+    margin: 15px;
+
+}
+
+p {
+    font-family: "Arial";
+    color: rgba(30, 30, 30, 1.0);
+}
+
+
+a {
+    font-family: "Arial";
+}

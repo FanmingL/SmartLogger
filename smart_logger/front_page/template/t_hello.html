@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+</script>
+
+<html>
+<title>登录</title>
+<head>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        .ui-login {
+            position: absolute;
+            left: 43%;
+            top: 30%;
+            width: 10%;
+            height: 10%;
+            /*margin: -170px 0 0 -105px;*/
+        }
+
+        .ui-login-large {
+            position: absolute;
+            left: 41.5%;
+            top: 29%;
+            width: 11%;
+            height: 22%;
+            /*margin: -170px 0 0 -105px;*/
+            border: 0.2px dashed #100;
+            border-color: rgba(0, 0, 0, 0.2)
+        }
+
+        button {
+            width: 60px;
+            height: 30px;
+
+            /*                background-color: gray;*/
+        }
+
+        html {
+            height: 100%;
+        }
+
+        .ui-login-large {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+    </style>
+    <link rel="stylesheet" type="text/css" href="{{url_for('static', filename='css/style.css')}}"/>
+    <link rel="shortcut icon" href="{{url_for('static', filename='imgs/icon.ico')}}"/>
+</head>
+<body>
+<div class="ui-login-large"></div>
+<div class="ui-login">
+    <!--      <form name="frm" onsubmit="return form_process()">-->
+    <form name="frm" action="{{url_for('login_post_direct')}}" method="POST">
+        <p>请输入用户名与密码:</p><br>
+        <input type="text" name="from" size="0px" value="{{source}}" style="display:none"/>
+        <p>用户名:</p>
+        <p><input type="text" name="nm" required="required"/></p>
+        <p>密码:</p>
+        <p><input type="password" name="passwd" required="required"/></p><br>
+        <p>
+            <button type="submit">登录</button>
+            &nbsp&nbsp&nbsp <a id='forget_passwd' href='#' onclick="alert('请联系管理员。')"><font size=2>忘记密码>></font></a></p>
+    </form>
+</div>
+</body>
+</html>
