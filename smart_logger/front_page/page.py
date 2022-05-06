@@ -714,6 +714,7 @@ def start_page_server():
     save_config(_default_config, 'default_config.json')
     flush_th = threading.Thread(target=flush_loop)
     flush_th.start()
+    Logger.logger(f'copy http://{page_config.WEB_NAME}:{page_config.PORT} to the explorer')
     app.run(host='0', port=page_config.PORT, debug=True)
 
 

@@ -12,14 +12,14 @@
   - [x] 所绘制的图像会自动同步至前端
   - [x] 前端展示实验结果
   - [x] 前端显示所有实验的参数、并提供所有文件的下载链接
-  - [x] 前端可以操控如何绘制图像
+  - [x] 前端可以控制如何绘制图像
 
 
 ## 要求
 以下为软件库依赖要求
 ```
 - tensorboardX # [ 基础 ] 我们用tensorboardX来写tensorboard
-- tensorboard # [ 基础 ] tensorboardX依赖与于tensorboard库
+- tensorboard # [ 基础 ] tensorboardX依赖于tensorboard库
 - numpy # [ 基础 ] 我们使用了numpy的基本数学运算
 - paramiko # [ 基础 ] 如果需要进行代码/日志的远程同步，需要有paramiko
 - matplotlib # [ 绘图 ] 我们用matplotlib进行图像绘制
@@ -35,6 +35,9 @@
 pip install -r requirement.txt
 ```
 
+## 前端展示效果
+前端页面如图所示，登录之后我们就可以看到所有的实验记录，任意点击一个实验记录即可看到内部的所有数据，我们可以预览或下载任意一个文件。通过对绘图设置进行配置之后，我们可以将算法对比图绘制出来。
+![image](img_asset/full_merge_image.jpg)
 ## 怎么用
 
 
