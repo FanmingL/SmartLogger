@@ -9,7 +9,7 @@ import json
 
 import smart_logger.common.page_config as page_config
 from smart_logger.util_logger.logger import Logger
-from smart_logger.report.plotting import merger_to_short_name, list_embedding, standardize_string
+from smart_logger.report.plotting import merger_to_short_name, list_embedding, standardize_string, make_merger_feature
 from pathlib import Path
 
 
@@ -293,7 +293,7 @@ def config_to_short_name(config, data_merger, short_name_from_config):
     elements = []
     for k in data_merger:
         if k in config:
-            elements.append(str(config[k]))
+            elements.append(make_merger_feature(k,  config[k]))
     short_name_origin = list_embedding(elements)
     short_name = merger_to_short_name(elements, short_name_from_config)
     return short_name_origin, short_name

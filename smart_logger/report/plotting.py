@@ -49,6 +49,11 @@ line_style = [
     ['green', '-', 'P'],
 ]
 
+def make_merger_feature(k, v):
+    if isinstance(v, str):
+        return v
+    else:
+        return f'{k}_{v}'
 
 def list_embedding(str_list):
     return '+'.join(sorted([str(item) for item in str_list]))
@@ -125,7 +130,7 @@ def _load_data(folder_name):
         for merger in plot_config.DATA_MERGER:
             # assert merger in param, f"{merger} not in configs, it should be found!!"
             if merger in param:
-                data_merger_feature.append(param[merger])
+                data_merger_feature.append(make_merger_feature(merger, param[merger]))
         match_ignore = False
         for data_ignore in plot_config.DATA_IGNORE:
             match_ignore = True

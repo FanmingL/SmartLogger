@@ -161,7 +161,7 @@ class Logger(LoggerBase):
                         full_path_in_remote = full_path_in_local.replace(local_path, remote_path)
                         self.log(f'sync local: {full_path_in_local} to '
                                  f'{_user}@{_ip}:{full_path_in_remote}')
-                        sftp.put(full_path_in_local, full_path_in_remote)
+                        sftp.put(full_path_in_local, full_path_in_remote, confirm=False)
                 t.close()
                 self.log(f'transfer the log to {_user}@{_ip}:{_log_path} success!!!')
                 break
