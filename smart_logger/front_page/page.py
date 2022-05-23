@@ -253,6 +253,8 @@ def experiment_data_download(folder_name):
 def plot():
     config_name = request.cookies['used_config']
     config = load_config(config_name)
+    _overwrite_config(config)
+
     config = {k: v for k, v in config.items() if k not in ['SHORT_NAME_FROM_CONFIG', 'DATA_IGNORE', 'DATA_MERGER',
                                                            'PLOTTING_XY', 'FIGURE_TO_SYNC', 'FIGURE_SEPARATION',
                                                            'DATA_KEY_RENAME_CONFIG', 'DESCRIPTION',
@@ -266,11 +268,25 @@ def plot():
         if k not in config_description:
             config_description[k] = 'None'
     config_type = make_config_type(config)
+    config_file_list = list_current_configs()
+    target_file = os.path.join(page_config.WEB_RAM_PATH, page_config.TOTAL_FIGURE_FOLDER,
+                               f'{plot_config.FINAL_OUTPUT_NAME}.png')
+    initial_figure_url = '#'
+    if os.path.exists(target_file):
+        Logger.logger(f'{target_file} exists, return it first')
+        file_name = os.path.basename(target_file)
+        initial_figure_url = url_for('lst_output_figure')
+        initial_figure_url = initial_figure_url + f'?rand={random.random()}&file_name={file_name}'
+    else:
+        Logger.logger(f'{target_file} does not exist, leave it empty.')
+
     return render_template('t_plot.html',
                              plot_config=config,   # plot_config list list
                            config_type=config_type,
                              config_name=config_name,
-                           description=config_description)
+                           description=config_description,
+                           config_file_list=config_file_list,
+                           initial_figure_url=initial_figure_url)
 
 
 
@@ -279,9 +295,11 @@ def plot():
 def table():
     config_name = request.cookies['used_config']
     config = load_config(config_name)
+    config_file_list = list_current_configs()
     return render_template('t_table.html',
                              plot_config=config,   # plot_config list list
-                             config_name=config_name)
+                             config_name=config_name,
+                             config_file_list=config_file_list)
 
 
 @app.route("/query_table", methods=['GET'])
@@ -386,6 +404,19 @@ def exp_figure():
     os.makedirs(os.path.dirname(target_folder), exist_ok=True)
     os.system(f'cp {saving_png} {target_folder}')
     return send_from_directory(output_path, f'{plot_config.FINAL_OUTPUT_NAME}.png', as_attachment=False)
+
+
+@app.route("/lst_output_figure", methods=['GET'])
+@require_login(source_name='lst_output_figure', allow_guest=True)
+def lst_output_figure():
+    config_name = request.cookies['used_config']
+    config = load_config(config_name)
+    _overwrite_config(config)
+    target_file = os.path.join(page_config.WEB_RAM_PATH, page_config.TOTAL_FIGURE_FOLDER, f'{plot_config.FINAL_OUTPUT_NAME}.png')
+    target_dir = os.path.dirname(target_file)
+    file_name = os.path.basename(target_file)
+    Logger.logger(f'dir: {target_dir}, name: {file_name}, exists: {os.path.exists(target_file)}')
+    return send_from_directory(target_dir, file_name, as_attachment=False)
 
 
 @app.route("/param_adjust", methods=['GET'])
@@ -496,10 +527,18 @@ def _choose_config(config_name):
     if k_set_mismatch:
         save_config(config_new, config_name)
 
-@app.route("/choose_config", methods=['POST'])
+@app.route("/choose_config/<source>", methods=['POST'])
 @require_login(source_name='choose_config', allow_guest=True)
-def choose_config():
-    response = make_response(redirect('param_adjust'))
+def choose_config(source):
+    if source == 'adapt':
+        response = make_response(redirect('/param_adjust'))
+    elif source == 'plot':
+        response = make_response(redirect('/plot'))
+    elif source == 'table':
+        response = make_response(redirect('/table'))
+    else:
+        raise NotImplementedError(f'{source} has not been implemented')
+
     outdate_config_path = datetime.now() + timedelta(hours=10)
     config_name = request.form.get('chosen_config', None)
     if config_name is not None:

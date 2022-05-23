@@ -41,6 +41,12 @@
             })
             scroll_to_history_element(document.getElementById('config_div_id'), 'scroll_top_config_div');
         }
+        function change_config_cb(){
+            let form_rename = document.getElementById('frm_rename_config_choose_select');
+            let config_selection = document.getElementById("choose_config_cb");
+            let selected_config = config_selection.options[config_selection.selectedIndex].value;
+            form_rename.submit();
+        }
     </script>
     <style>
         .main_images {
@@ -67,6 +73,12 @@
             line-height: 25px;
 
             /*font-style: italic;*/
+        }
+        .choose_config {
+                        font-family:monospace;
+            position: absolute;
+            left: 10%;
+            top: 10%;
         }
         .main_images p input{
                         font-family: monospace;
@@ -175,9 +187,23 @@
             <button type="submit" style="width:80px;height:30px">更新参数</button></div>
     </form>
 </div>
+<div class="choose_config">
+    <form name="frm_rename_config_choose_select" id="frm_rename_config_choose_select" action="{{url_for('choose_config', source='plot')}}" method="POST">
+        <div align="left" style="margin: 20px">
+        <p>
+            <label for="choose_config_cb" style="font-family: monospace">选择设定:</label>
+            <select id="choose_config_cb" name="chosen_config" onchange="change_config_cb()">
+                {% for item in config_file_list %}
+                  <option value ="{{item}}" {% if item == config_name %} selected {% endif %}>{{item}}</option>
+                {% endfor %}
+            </select>
+            <button type="button" style="width:80px;height:30px" id="figure_button" onclick="load_figure()" >显示图片</button>
+        </p>
+        </div>
+    </form>
+</div>
 <div class="right_image">
-    <button type="button" id="figure_button" onclick="load_figure()">显示图片</button><br/>
-		<img id="ret_image" src="#" alt="plotting" style="display:none;" onload="finish_figure()"><br/>
+		<img id="ret_image" src="{{initial_figure_url}}" alt="plotting" {% if initial_figure_url == "#" %} style="display:none;" {% endif %} onload="finish_figure()"><br/>
 	</div>
 </body>
 
