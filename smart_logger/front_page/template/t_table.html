@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+
+<head>
+    <link rel="stylesheet" type="text/css" href="{{url_for('static', filename='css/style.css')}}"/>
+    <link rel="shortcut icon" href="{{url_for('static', filename='imgs/icon.ico')}}"/>
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
+    </script>
+    <script type="text/javascript"
+      src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+    </script>
+    <script>
+        function query_table(){
+            let httpRequest = new XMLHttpRequest();
+          httpRequest.onreadystatechange = function () {
+              if (httpRequest.readyState === 4 && httpRequest.status === 200) {
+                  console.log('success!');
+                  var table = document.getElementById('table_html_id');
+                  table.innerHTML = httpRequest.responseText;
+                  finish_query(table.innerHTML);
+                  MathJax.Hub.Queue(["Typeset", MathJax.Hub]);
+              }
+              };
+            httpRequest.open('GET', "{{url_for('query_table')}}", false);
+            httpRequest.send();
+        }
+        function load_table(){
+            var table = document.getElementById('table_html_id');
+            var button = document.getElementById('table_loading_button_id')
+            console.log('start loading')
+            table.innerHTML = "加载中";
+            button.innerHTML = "加载中";
+            query_table();
+        }
+        function finish_query(data){
+            var button = document.getElementById('table_loading_button_id')
+            button.innerHTML = "更新表格";
+            localStorage.setItem("table_win_data", data);
+            localStorage.setItem("table_win_data_config", "{{config_name}}");
+
+        }
+
+        function query_source_latex(){
+            let httpRequest = new XMLHttpRequest();
+          httpRequest.onreadystatechange = function () {
+              if (httpRequest.readyState === 4 && httpRequest.status === 200) {
+                  console.log('success!');
+                  var table = document.getElementById('source_div_id');
+                  table.innerHTML = "<h3>快捷代码</h3><br/>"+httpRequest.responseText;
+                  finish_source(table.innerHTML);
+              }
+              };
+            httpRequest.open('GET', "{{url_for('query_table_source', use_latex=True)}}", false);
+            httpRequest.send();
+        }
+        function query_source_md(){
+            let httpRequest = new XMLHttpRequest();
+          httpRequest.onreadystatechange = function () {
+              if (httpRequest.readyState === 4 && httpRequest.status === 200) {
+                  console.log('success!');
+                  var table = document.getElementById('source_div_id');
+                  table.innerHTML = "<h3>快捷代码</h3><br/>"+httpRequest.responseText;
+                  finish_source(table.innerHTML);
+              }
+              };
+            httpRequest.open('GET', "{{url_for('query_table_source', use_latex=False)}}", false);
+            httpRequest.send();
+        }
+        function load_source_latex(){
+            var table = document.getElementById('source_div_id');
+            var button = document.getElementById('source_loading_button_latex')
+            console.log('start loading')
+            table.innerHTML = "加载中";
+            button.innerHTML = "加载中"
+            query_source_latex();
+        }
+         function load_source_md(){
+            var table = document.getElementById('source_div_id');
+            var button = document.getElementById('source_loading_button_md')
+            console.log('start loading')
+            table.innerHTML = "加载中";
+            button.innerHTML = "加载中"
+            query_source_md();
+        }
+        function finish_source(data){
+            var button = document.getElementById('source_loading_button_latex');
+            button.innerHTML = "LaTex生成";
+            button = document.getElementById('source_loading_button_md')
+            button.innerHTML = "MD生成";
+            localStorage.setItem("source_win_data", data);
+            localStorage.setItem("source_win_data_config", "{{config_name}}");
+
+        }
+
+        function scroll_to_history_element(element, name){
+            var totop = 0;
+            if (localStorage.hasOwnProperty(name)){
+               totop = localStorage.getItem(name);
+            }
+            else{
+               totop = 0;
+            }
+            element.scrollTo(0,totop);
+        }
+        function getScrollTopElement(element){
+            var scrollTop=0;
+            if(element && element.scrollTop){
+                scrollTop=element.scrollTop;
+            }
+            return scrollTop;
+        }
+        function windows_onload(){
+            if (localStorage.hasOwnProperty('source_win_data')){
+               let data = localStorage.getItem("source_win_data");
+               let table = document.getElementById('source_div_id');
+               if (localStorage.getItem("source_win_data_config") === "{{config_name}}") {
+                   table.innerHTML = data;
+               }
+            }
+            if (localStorage.hasOwnProperty('table_win_data')){
+               let data = localStorage.getItem("table_win_data");
+               let table = document.getElementById('table_html_id');
+               if (localStorage.getItem("table_win_data_config") === "{{config_name}}") {
+                   table.innerHTML = data;
+               }
+            }
+        }
+    </script>
+    <style>
+        table {
+          border-collapse: collapse;
+          /*width: 95%;*/
+            font-family: monospace;
+        }
+
+        th, td {
+          text-align: center;
+          padding: 10px;
+        }
+
+        tr:nth-child(even) {background-color: #f2f2f2;}
+        .main_images {
+            position: absolute;
+            left: 1%;
+            text-align: left;
+            width: 95%;
+            line-height: 30px;
+            background-color: rgba(255, 255, 255, 0.8);
+            height: 80%;
+            overflow: scroll;
+        }
+        .for_button {
+            position: absolute;
+            left: 75%;
+            width: 10%;
+            height: 10%;
+            top: 12.4%;
+        }
+        .config_name {
+            position: absolute;
+            left: 50%;
+            width: 20%;
+            height: 4%;
+            top: 12.4%;
+
+        }
+        .config_name p {
+            margin: 10px;
+            font-family: monospace;
+            line-height: 25px;
+            font-size: 15px;
+            /*font-style: italic;*/
+        }
+        .for_button2 {
+            position: absolute;
+            left: 2%;
+            width: 10%;
+            height: 10%;
+            top: 99%;
+        }
+        .for_button3{
+            position: absolute;
+            left: 10%;
+            width: 10%;
+            height: 10%;
+            top: 99%;
+        }
+        .bottom_image{
+            position: absolute;
+            left: 1%;
+            width: 95%;
+            top: 103%;
+            height: 50%;
+            background-color: rgba(255, 255, 255, 0.8);
+            overflow: scroll;
+
+        }
+        .bottom_image p{
+            margin: 10px;
+        }
+        .bottom_image pre{
+            margin: 10px;
+        }
+        .bottom{
+            position: absolute;
+            left: 1%;
+            width: 95%;
+            top: 170%;
+            height: 10%;
+        }
+        table{
+            margin-left: 3%;
+            margin-right: 3%;
+            margin-top: 1%;
+            margin-bottom: 3%;
+        }
+
+
+        li a {
+            width: 200px;
+        }
+
+        .main_images li a {
+            color: #252525;
+
+            /*display: inline-block;!*注意如果要更改a链接的尺寸，必须给他block化*!*/
+            width: 800px;
+            /*height: 30px;*/
+            line-height: 30px;
+            /*text-decoration: none;*/
+            text-decoration: none;
+            text-align: left;
+        }
+
+        div li a:hover {
+            background-color: #fff;
+        }
+    </style>
+</head>
+
+<html>
+<title>实验记录.</title>
+<body onload="windows_onload()">
+<h2> 实验记录 </h2>
+<div class="topcorner">
+    <ul>
+        <li><a href="{{url_for('logout')}}" style="width: 80px">下线</a></li>
+    </ul>
+</div>
+<ul>
+    <li><a href="{{url_for('hello')}}">实验列表</a></li>
+    <li><a href="{{url_for('param_adjust')}}">绘图参数</a></li>
+    <li><a href="{{url_for('plot')}}">对比绘图</a></li>
+    <li><a href="{{url_for('table')}}">表格统计</a></li>
+</ul>
+<h3>表格绘制: {{config_name}}</h3>
+<div class="for_button">
+            <button type="button" style="width:80px;height:30px" id="table_loading_button_id" onclick="load_table()">构建表格</button></div>
+<div id="table_html_id" class="main_images" style="overflow-x:auto;">
+    请点击 构建表格 按钮...
+</div>
+<div class="for_button2">
+            <button type="button" style="width:80px;height:30px" id="source_loading_button_latex" onclick="load_source_latex()">LaTex生成</button>
+</div>
+<div class="for_button3">
+<button type="button" style="width:80px;height:30px" id="source_loading_button_md" onclick="load_source_md()">MD生成</button>
+</div>
+<div class="bottom_image" id="source_div_id">
+    <h3>快捷代码</h3>
+</div>
+<div class="bottom">
+</div>
+
+</body>
+
+</html>

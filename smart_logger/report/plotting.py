@@ -538,14 +538,16 @@ def _to_table(data, atx, iter, privileged_col_idx=None, placeholder=None, md=Tru
         summary_dict, x_name, y_name = future.result()
         summary_dict_buffer[y_name] = summary_dict
     if md:
-        summary_buffer_to_output_md(summary_dict_buffer, privileged_col_idx, placeholder)
+        result_editor = summary_buffer_to_output_md(summary_dict_buffer, privileged_col_idx, placeholder)
     else:
-        summary_buffer_to_output(summary_dict_buffer, privileged_col_idx, placeholder)
-
+        result_editor = summary_buffer_to_output(summary_dict_buffer, privileged_col_idx, placeholder)
+    result = summary_buffer_to_output_html(summary_dict_buffer, privileged_col_idx, placeholder)
+    return result, result_editor
 
 def summary_buffer_to_output(summary_dict_buffer, privileged_col_idx=None, placeholder=None):
+    final_str = ''
     for table_name in summary_dict_buffer:
-        print('\n\n', '='*15, f'Table: {table_name}', '='*15)
+        final_str = final_str + '\n\n' + '='*15 + f'Table: {table_name}' + '='*15 + '\n'
         summary_dict = summary_dict_buffer[table_name]
         row_id_list = [k for k in summary_dict.keys()]
         row_id_list = sorted(row_id_list)
@@ -564,28 +566,27 @@ def summary_buffer_to_output(summary_dict_buffer, privileged_col_idx=None, place
             if item not in prid_cols_keys:
                 prid_cols_keys.append(item)
         task_list = prid_cols_keys
-        print('{l|', end='')
+        task_list, _, _ = sort_algs(task_list)
+        final_str = final_str + '{l|'
         for i in range(len(task_list)):
-            print('r@{~$\\pm$~}l', end='')
-        print('}\\toprule')
-        print('& ', end='')
+            final_str = final_str + 'r@{~$\\pm$~}l'
+        final_str = final_str + '}\\toprule' + '\n' + '& '
 
         for ind, task in enumerate(task_list):
-            print('\\multicolumn{2}{c}{', end='')
+            final_str = final_str + '\\multicolumn{2}{c}{'
             if '_' in task:
                 task_safe = task.replace('_', '-')
             else:
                 task_safe = task
-            print(task_safe, end='')
-            print('}', end='')
+            final_str = final_str + str(task_safe) + '}'
             if ind < len(task_list) - 1:
-                print(' & ', end='')
-        print('\\\\\\midrule')
+                final_str += ' & '
+        final_str = final_str + '\\\\\\midrule' + '\n'
         valid_bit = 2
         for row_name in row_id_list:
             row_content = summary_dict[row_name]
             max_performance_ind, max_performance = 0, -10000000
-            print(str(title_tuple_to_str(row_name)).replace('_', '-'), ' & ', end='')
+            final_str = final_str + str(title_tuple_to_str(row_name)).replace('_', '-') + ' & '
             for ind_task, task in enumerate(task_list):
                 if task in row_content:
                     data_mean, data_error = row_content[task]
@@ -600,28 +601,25 @@ def summary_buffer_to_output(summary_dict_buffer, privileged_col_idx=None, place
                     data_mean, data_error = 0, 0
 
                 if max_performance_ind == ind_task:
-                    print('$ \\mathbf{', end='')
-                    print(f"{round(data_mean, valid_bit)}", end='')
-                    print('} $ & ', end='')
-                    print('$ \\mathbf{', end='')
-                    print(f"{round(data_error, valid_bit)}", end='')
-                    print('} $', end='')
+                    final_str = final_str + '$ \\mathbf{' + f"{round(data_mean, valid_bit)}" + '} $ & ' + '$ \\mathbf{' + f"{round(data_error, valid_bit)}" + '} $'
                 else:
-                    print(f"${round(data_mean, valid_bit)}$", end='')
-                    print('& ', end='')
-
-                    print(f"${round(data_error, valid_bit)}$", end='')
+                    final_str = final_str + f"${round(data_mean, valid_bit)}$" + '& ' + f"${round(data_error, valid_bit)}$"
 
                 if ind_task < len(task_list) - 1:
-                    print(' & ', end='')
+                    final_str = final_str + ' & '
 
-            print('\\\\')
-        print('\\bottomrule')
-        print('='*15, f'End Table: {table_name}', '='*15)
+            final_str = final_str + '\\\\' + '\n'
+        final_str = final_str + '\\bottomrule' + '\n'
+        final_str = final_str + '='*15 + f'End Table: {table_name}' + '='*15 + '\n'
+    print(final_str)
+    return final_str
+
+
 
 def summary_buffer_to_output_md(summary_dict_buffer, privileged_col_idx=None, placeholder=None):
+    final_str = ''
     for table_name in summary_dict_buffer:
-        print('##', f'Table: {table_name}')
+        final_str = final_str + '## ' + f'Table: {table_name}' + '\n'
         summary_dict = summary_dict_buffer[table_name]
         row_id_list = [k for k in summary_dict.keys()]
         row_id_list = sorted(row_id_list)
@@ -645,24 +643,25 @@ def summary_buffer_to_output_md(summary_dict_buffer, privileged_col_idx=None, pl
             placeholder_keys = [item[0] for item in placeholder_keys if item[0] not in cols_keys]
             prid_cols_keys = prid_cols_keys + placeholder_keys
         task_list = prid_cols_keys
-        print('||', end='')
+        task_list, _, _ = sort_algs(task_list)
+        final_str = final_str + '||'
         for ind, task in enumerate(task_list):
             if '_' in task:
                 task_safe = task.replace('_', '-')
             else:
                 task_safe = task
-            print(task_safe, end='')
-            print('|', end='')
-        print('')
-        print('|:-----|', end='')
+            final_str = final_str + task_safe + '|'
+        final_str += '\n'
+        length_placeholder = '-' * 6
+        final_str = final_str + f'|:{length_placeholder}|'
         for ind, task in enumerate(task_list):
-            print(':-----:|', end='')
-        print('')
+            final_str = final_str + f':{length_placeholder}:|'
+        final_str += '\n'
         valid_bit = 2
         for row_name in row_id_list:
             row_content = summary_dict[row_name]
             max_performance_ind, max_performance = 0, -10000000
-            print('|', str(title_tuple_to_str(row_name)).replace('_', '-'), ' | ', end='')
+            final_str = final_str + '|' + str(title_tuple_to_str(row_name)).replace('_', '-') + ' | '
             for ind_task, task in enumerate(task_list):
                 if task in row_content:
                     data_mean, data_error = row_content[task]
@@ -677,23 +676,98 @@ def summary_buffer_to_output_md(summary_dict_buffer, privileged_col_idx=None, pl
                     data_mean, data_error = 0, 0
 
                 if max_performance_ind == ind_task:
-                    print('$ \\mathbf{', end='')
-                    print(f"{round(data_mean, valid_bit)}", end='')
-                    print('} \\pm', end='')
-                    print('\\mathbf{', end='')
-                    print(f"{round(data_error, valid_bit)}", end='')
-                    print('} ^\star$', end='')
+                    final_str = final_str + '$ \\mathbf{'
+                    final_str = final_str + f"{round(data_mean, valid_bit)}"
+                    final_str = final_str + '} \\pm'
+                    final_str = final_str + '\\mathbf{'
+                    final_str = final_str + f"{round(data_error, valid_bit)}"
+                    final_str = final_str + '} ^\star$'
                 else:
-                    print(f"${round(data_mean, valid_bit)}", end='')
-                    print('\\pm ', end='')
+                    final_str = final_str + f"${round(data_mean, valid_bit)}"
+                    final_str = final_str + '\\pm '
+                    final_str = final_str + f"{round(data_error, valid_bit)}$"
+                final_str = final_str + ' | '
+            final_str = final_str + '\n'
+        final_str = final_str + '\n'
 
-                    print(f"{round(data_error, valid_bit)}$", end='')
+    print(final_str)
+    return final_str
 
-                print(' | ', end='')
 
-            print('')
-        # print('='*15, f'End Table: {table_name}', '='*15)
+def summary_buffer_to_output_html(summary_dict_buffer, privileged_col_idx=None, placeholder=None):
+    final_str = ''
+    for table_name in summary_dict_buffer:
+        final_str = final_str + '<h3> ' + f'Table: {table_name}' + '</h3>' + '\n'
+        final_str = final_str + '<table border="1" align="center" frame="hsides" rules="rows">'
+        summary_dict = summary_dict_buffer[table_name]
+        row_id_list = [k for k in summary_dict.keys()]
+        row_id_list = sorted(row_id_list)
+        cols_keys = set()
+        for row_name in row_id_list:
+            row_content = summary_dict[row_name]
+            for k in row_content:
+                cols_keys.add(k)
+        cols_keys = list(cols_keys)
+        cols_keys = sorted(cols_keys)
+        prid_cols_keys = []
+        if privileged_col_idx is not None:
+            prid_cols_keys = sorted([(k, v) for k, v in privileged_col_idx.items()], key=lambda x:x[1])
+            prid_cols_keys = [item[0] for item in prid_cols_keys if item[0] in cols_keys]
 
+        for item in cols_keys:
+            if item not in prid_cols_keys:
+                prid_cols_keys.append(item)
+        if placeholder is not None:
+            placeholder_keys = sorted([(k, v) for k, v in placeholder.items()], key=lambda x: x[1])
+            placeholder_keys = [item[0] for item in placeholder_keys if item[0] not in cols_keys]
+            prid_cols_keys = prid_cols_keys + placeholder_keys
+        task_list = prid_cols_keys
+        task_list, _, _ = sort_algs(task_list)
+        final_str = final_str + '<tr>\n'
+        final_str = final_str + '<td>&nbsp;</td>\n'
+        for ind, task in enumerate(task_list):
+            if '_' in task:
+                task_safe = task.replace('_', '-')
+            else:
+                task_safe = task
+            final_str = final_str + '<th>' + task_safe + '</th>\n'
+        final_str += '</tr>\n'
+        valid_bit = 2
+        for row_name in row_id_list:
+            row_content = summary_dict[row_name]
+            max_performance_ind, max_performance = 0, -10000000
+            final_str = final_str + '<tr>'
+            final_str = final_str + '<td style="text-align: left;">' + str(title_tuple_to_str(row_name)).replace('_', '-') + '</td>\n'
+            for ind_task, task in enumerate(task_list):
+                if task in row_content:
+                    data_mean, data_error = row_content[task]
+                    if data_mean > max_performance:
+                        max_performance = data_mean
+                        max_performance_ind = ind_task
+            for ind_task, task in enumerate(task_list):
+                final_str = final_str + '<td>'
+                if task in row_content:
+                    data_mean, data_error = row_content[task]
+                else:
+                    data_mean, data_error = 0, 0
+
+                if max_performance_ind == ind_task:
+
+                    final_str = final_str + '$ \\mathbf{'
+                    final_str = final_str + f"{round(data_mean, valid_bit)}"
+                    final_str = final_str + '} \\pm'
+                    final_str = final_str + '\\mathbf{'
+                    final_str = final_str + f"{round(data_error, valid_bit)}"
+                    final_str = final_str + '} ^\star$'
+                else:
+                    final_str = final_str + f"${round(data_mean, valid_bit)}"
+                    final_str = final_str + '\\pm '
+                    final_str = final_str + f"{round(data_error, valid_bit)}$"
+                final_str = final_str + ' </td> \n'
+            final_str = final_str + ' </tr> \n'
+        final_str = final_str + '</table>'
+    print(final_str)
+    return final_str
 
 def _overwrite_config(config):
     for k in plot_config.global_plot_configs():
@@ -719,18 +793,23 @@ def plot(config_json_path=None):
     data = collect_data()
     _plotting(data)
 
-def make_table(config_json_path=None):
-    overwrite_config(config_json_path)
+def _make_table(latex=None):
     data = collect_data()
     privileged_col_idx = dict(
-
     )
     placeholder = dict(
-
     )
     xmax = float(plot_config.XMAX) if not str(plot_config.XMAX) == 'None' else None
-    _to_table(data, xmax, None, privileged_col_idx, placeholder=placeholder, md=True)
+    result, result_source = _to_table(data, xmax, None, privileged_col_idx, placeholder=placeholder, md=False if latex else True)
+    if latex is None:
+        return result
+    else:
+        return result_source
+
+def make_table(config_json_path=None):
+    overwrite_config(config_json_path)
+    return _make_table()
 
 if __name__ == '__main__':
     # make_table('/Users/fanmingluo/Desktop/small_logger_cache/WEB_ROM/configs/formal_ablation_eta')
-    make_table('/Users/fanmingluo/Desktop/small_logger_cache/WEB_ROM/configs/formal_ablation_eta')
+    make_table('/Users/fanmingluo/Desktop/small_logger_cache/WEB_ROM/configs/formal_consistency_table')

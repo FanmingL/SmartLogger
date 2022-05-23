@@ -13,6 +13,7 @@ from smart_logger.front_page.experiment_data_loader import default_config, load_
     get_config_path
 from smart_logger.report.plotting import plot as local_plot
 from smart_logger.report.plotting import _overwrite_config
+from smart_logger.report.plotting import _make_table
 import base64
 import json
 from flask_cors import CORS
@@ -270,6 +271,40 @@ def plot():
                            config_type=config_type,
                              config_name=config_name,
                            description=config_description)
+
+
+
+@app.route("/table", methods=['GET'])
+@require_login(source_name='table', allow_guest=True)
+def table():
+    config_name = request.cookies['used_config']
+    config = load_config(config_name)
+    return render_template('t_table.html',
+                             plot_config=config,   # plot_config list list
+                             config_name=config_name)
+
+
+@app.route("/query_table", methods=['GET'])
+@require_login(source_name='query_table', allow_guest=True)
+def query_table():
+    config_name = request.cookies['used_config']
+    config = load_config(config_name)
+    _overwrite_config(config)
+    result = _make_table()
+    return result
+
+
+@app.route("/query_table_source/<use_latex>", methods=['GET'])
+@require_login(source_name='query_table_source', allow_guest=True)
+def query_table_source(use_latex):
+    config_name = request.cookies['used_config']
+    config = load_config(config_name)
+    _overwrite_config(config)
+    result = _make_table(True if str(use_latex) == 'True' else False)
+    # result = result.replace('\n', '<br/>')
+    result = f'<br/><pre><code>\n{result}</code></pre>\n<br/>'
+    Logger.logger(f'source code {use_latex}: {result}')
+    return result
 
 
 def data_convert(data, origin_data):

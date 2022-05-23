@@ -17,6 +17,7 @@
              var button = document.getElementById('figure_button')
             button.innerHTML = "更新图片";
         }
+
         function scroll_to_history_element(element, name){
             var totop = 0;
             if (localStorage.hasOwnProperty(name)){
@@ -34,7 +35,7 @@
             }
             return scrollTop;
         }
-        function www_onload(){
+        function www_onload() {
             document.getElementById('config_div_id').addEventListener('scroll', (event) => {
                 localStorage.setItem("scroll_top_config_div", getScrollTopElement(document.getElementById('config_div_id')));
             })
@@ -112,6 +113,7 @@
     <li><a href="{{url_for('hello')}}">实验列表</a></li>
     <li><a href="{{url_for('param_adjust')}}">绘图参数</a></li>
     <li><a href="{{url_for('plot')}}">对比绘图</a></li>
+    <li><a href="{{url_for('table')}}">表格统计</a></li>
 </ul>
 <h3>图像绘制</h3>
 <div class="main_images" id="config_div_id">
