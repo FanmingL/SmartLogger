@@ -750,7 +750,7 @@
     <h3>已标序</h3>
     {% for item in exists_ordered_curves %}
         &nbsp;&nbsp;> [ {{loop.index0}} ] {{item}}&nbsp;&nbsp; <a href="{{url_for('change_plot_order', alg_name=exists_ordered_curves_encode[loop.index0], idx=loop.index0, method='top')}}" style="font-family: monospace">置顶</a>
-        <a href="{{url_for('change_plot_order', alg_name=exists_ordered_curves_encode[loop.index0], idx=loop.index0, method='down')}}" style="font-family: monospace">置尾</a>
+        <a href="{{url_for('change_plot_order', alg_name=exists_ordered_curves_encode[loop.index0], idx=loop.index0, method='down')}}" style="font-family: monospace">置底</a>
         <a href="{{url_for('change_plot_order', alg_name=exists_ordered_curves_encode[loop.index0], idx=loop.index0, method='up_once')}}" style="font-family: monospace">上移一级</a>
         <a href="{{url_for('change_plot_order', alg_name=exists_ordered_curves_encode[loop.index0], idx=loop.index0, method='down_once')}}" style="font-family: monospace">下移一级</a>
         <a href="{{url_for('change_plot_order', alg_name=exists_ordered_curves_encode[loop.index0], idx=loop.index0, method='remove')}}" style="font-family: monospace">删除</a>
@@ -761,12 +761,12 @@
     <h3>未标序</h3>
     {% for item in remain_unordered_curves %}
             &nbsp;&nbsp;> {{item}}&nbsp;&nbsp;<a href="{{url_for('change_plot_order', alg_name=remain_unordered_curves_encode[loop.index0], idx=loop.index0, method='top')}}" style="font-family: monospace">置顶</a>
-        <a href="{{url_for('change_plot_order', alg_name=remain_unordered_curves_encode[loop.index0], idx=loop.index0, method='down')}}" style="font-family: monospace">置尾</a>
+        <a href="{{url_for('change_plot_order', alg_name=remain_unordered_curves_encode[loop.index0], idx=loop.index0, method='down')}}" style="font-family: monospace">置底</a>
         <br/>
         <br/>
     {% endfor %}
                 &nbsp;&nbsp;> placeholder&nbsp;&nbsp;<a href="{{url_for('change_plot_order', alg_name='placeholder', idx='None', method='top')}}" style="font-family: monospace">置顶</a>
-        <a href="{{url_for('change_plot_order', alg_name='placeholder', idx='None', method='down')}}" style="font-family: monospace" >置尾</a>
+        <a href="{{url_for('change_plot_order', alg_name='placeholder', idx='None', method='down')}}" style="font-family: monospace" >置底</a>
 </div>
 <div class="future_work">
     <h3>正在施工...</h3>

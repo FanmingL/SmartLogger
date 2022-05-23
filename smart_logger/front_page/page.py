@@ -187,6 +187,9 @@ def experiment():
     # return "Hello World"
     # config = load_config('1.json')
     # return str(config)
+    config_name = request.cookies['used_config']
+    config = load_config(config_name)
+    _overwrite_config(config)
     exp_folders = list_current_experiment()
     exp_folders_code = [base64.urlsafe_b64encode(item.encode()).decode() for item in exp_folders]
     return render_template('t_experiment.html', exp_folder_list=exp_folders, exp_folders_code=exp_folders_code)
