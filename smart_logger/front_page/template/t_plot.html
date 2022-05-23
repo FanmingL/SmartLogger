@@ -17,6 +17,29 @@
              var button = document.getElementById('figure_button')
             button.innerHTML = "更新图片";
         }
+        function scroll_to_history_element(element, name){
+            var totop = 0;
+            if (localStorage.hasOwnProperty(name)){
+               totop = localStorage.getItem(name);
+            }
+            else{
+               totop = 0;
+            }
+            element.scrollTo(0,totop);
+        }
+        function getScrollTopElement(element){
+            var scrollTop=0;
+            if(element && element.scrollTop){
+                scrollTop=element.scrollTop;
+            }
+            return scrollTop;
+        }
+        function www_onload(){
+            document.getElementById('config_div_id').addEventListener('scroll', (event) => {
+                localStorage.setItem("scroll_top_config_div", getScrollTopElement(document.getElementById('config_div_id')));
+            })
+            scroll_to_history_element(document.getElementById('config_div_id'), 'scroll_top_config_div');
+        }
     </script>
     <style>
         .main_images {
@@ -78,7 +101,7 @@
 
 <html>
 <title>实验记录.</title>
-<body>
+<body onload="www_onload()">
 <h2> 实验记录 </h2>
 <div class="topcorner">
     <ul>
@@ -91,14 +114,14 @@
     <li><a href="{{url_for('plot')}}">对比绘图</a></li>
 </ul>
 <h3>图像绘制</h3>
-<div class="main_images">
+<div class="main_images" id="config_div_id">
     <b>
         参数{{config_name}}
     </b>
     <form name="form_plot" action="{{url_for('plot_config_update')}}" method="POST">
     <p>
         {% for config_name, config_value in plot_config.items() %}
-        >>{{loop.index0+1}}. {{config_name}}
+        >>{{loop.index0+1}}. {{description[config_name]}} ({{config_name}})
         {% if config_type[config_name] == 'str' %}
 
 

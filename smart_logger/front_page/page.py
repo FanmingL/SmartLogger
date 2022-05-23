@@ -12,6 +12,7 @@ from smart_logger.front_page.experiment_data_loader import default_config, load_
     make_config_type, analyze_experiment, delete_config_file, has_config, standardize_merger_item, get_record_data_item,\
     get_config_path
 from smart_logger.report.plotting import plot as local_plot
+from smart_logger.report.plotting import _overwrite_config
 import base64
 import json
 from flask_cors import CORS
@@ -55,8 +56,6 @@ def require_login(source_name='', allow_guest=False):
 app = Flask(__name__, template_folder=os.path.join(
     get_project_path(), 'template'), root_path=get_project_path())
 CORS(app)
-
-data_root_path = '/var/data'
 
 
 def make_user_data():
@@ -252,12 +251,22 @@ def plot():
     config = load_config(config_name)
     config = {k: v for k, v in config.items() if k not in ['SHORT_NAME_FROM_CONFIG', 'DATA_IGNORE', 'DATA_MERGER',
                                                            'PLOTTING_XY', 'FIGURE_TO_SYNC', 'FIGURE_SEPARATION',
-                                                           'DATA_KEY_RENAME_CONFIG']}
+                                                           'DATA_KEY_RENAME_CONFIG', 'DESCRIPTION',
+                                                           'LOG_DIR_BACKING_NAME', 'DATA_PATH',
+                                                           'PLOT_FIGURE_SAVING_PATH', 'FIGURE_SERVER_MACHINE_IP',
+                                                           'FIGURE_SERVER_MACHINE_PORT', 'FIGURE_SERVER_MACHINE_USER',
+                                                           'FIGURE_SERVER_MACHINE_PASSWD',
+                                                           'FIGURE_SERVER_MACHINE_TARGET_PATH', 'PLOTTING_ORDER']}
+    config_description = plot_config.DESCRIPTION
+    for k in config:
+        if k not in config_description:
+            config_description[k] = 'None'
     config_type = make_config_type(config)
     return render_template('t_plot.html',
                              plot_config=config,   # plot_config list list
                            config_type=config_type,
-                             config_name=config_name)
+                             config_name=config_name,
+                           description=config_description)
 
 
 def data_convert(data, origin_data):
@@ -331,25 +340,14 @@ def exp_figure():
     config_path = get_config_path(config_name)
     Logger.logger(f'plot figure according to {config_path}, figure save to {output_path}')
     local_plot(config_path)
-    Logger.logger(f'return figure {os.path.join(output_path, page_config.DISPLAY_FIGURE_NAME)}, drawing cost {time.time() - start_time}')
+    saving_png = f'{os.path.join(output_path, plot_config.FINAL_OUTPUT_NAME)}.png'
+    Logger.logger(f'return figure {saving_png}, drawing cost {time.time() - start_time}')
+    target_folder = os.path.join(page_config.WEB_RAM_PATH, page_config.TOTAL_FIGURE_FOLDER, f'{plot_config.FINAL_OUTPUT_NAME}.png')
 
-    return send_from_directory(output_path, page_config.DISPLAY_FIGURE_NAME, as_attachment=False)
-
-
-# 下载实验数据
-@app.route("/download_exp", methods=['GET'])
-@require_login(allow_guest=True)
-def download_exp_data():
-    user_data = make_user_data()
-    if 'filename' not in user_data:
-        return redirect('/start')
-    filename = user_data['filename']
-    path_full_path = os.path.join(data_root_path, filename)
-    if os.path.isfile(path_full_path):
-        print(f'{path_full_path} exists, return it!!')
-        as_attachment = True if not (filename.lower().endswith('png') or filename.lower().endswith('jpg')) else False
-        return send_from_directory(data_root_path, filename, as_attachment=as_attachment)
-    return render_template('404.html', user=user_data)
+    Logger.logger(f'cp {saving_png} {target_folder}')
+    os.makedirs(os.path.dirname(target_folder), exist_ok=True)
+    os.system(f'cp {saving_png} {target_folder}')
+    return send_from_directory(output_path, f'{plot_config.FINAL_OUTPUT_NAME}.png', as_attachment=False)
 
 
 @app.route("/param_adjust", methods=['GET'])
@@ -357,6 +355,7 @@ def download_exp_data():
 def param_adjust():
     config_name = request.cookies['used_config']
     config = load_config(config_name)
+    _overwrite_config(config)
     data_ignore = {} if 'DATA_IGNORE' not in config else config['DATA_IGNORE']
     data_merge = [] if 'DATA_MERGER' not in config else config['DATA_MERGER']
     data_short_name_dict = {} if 'SHORT_NAME_FROM_CONFIG' not in config else config['SHORT_NAME_FROM_CONFIG']
@@ -390,6 +389,12 @@ def param_adjust():
     rename_rule_data = sorted([(k, v) for k, v in rename_rule_data.items()])
     separators = [] if 'FIGURE_SEPARATION' not in config else config['FIGURE_SEPARATION']
     separators = separators
+    nick_name_set = set(nick_name_list)
+    Logger.logger(f'nick name set: {nick_name_set}')
+    exists_ordered_curves = plot_config.PLOTTING_ORDER
+    remain_unordered_curves = [item for item in nick_name_set if item not in exists_ordered_curves]
+    exists_ordered_curves_encode = [base64.urlsafe_b64encode(item.encode()).decode() for item in exists_ordered_curves]
+    remain_unordered_curves_encode = [base64.urlsafe_b64encode(item.encode()).decode() for item in remain_unordered_curves]
     return render_template('t_param_adapt.html',
                            exp_data=exp_data,
                            exp_data_encoded=exp_data_encoded,
@@ -410,6 +415,10 @@ def param_adjust():
                            config_name=config_name,
                            rename_rule_data=rename_rule_data,
                            separators=separators,
+                           exists_ordered_curves=exists_ordered_curves,
+                           remain_unordered_curves=remain_unordered_curves,
+                           exists_ordered_curves_encode=exists_ordered_curves_encode,
+                           remain_unordered_curves_encode=remain_unordered_curves_encode
                            )
 
 
@@ -424,6 +433,31 @@ def merge_process():
     save_config(config, config_name)
     return redirect('param_adjust')
 
+def _choose_config(config_name):
+    config_new = load_config(config_name)
+    for k, v in config_new.items():
+        if hasattr(plot_config, k):
+            setattr(plot_config, k, v)
+    _default_config = load_config('default_config.json')
+    k_set_mismatch = False
+    for k in _default_config:
+        if k not in config_new:
+            config_new[k] = _default_config[k]
+            k_set_mismatch = True
+    deleted_keys = set()
+    for k in config_new:
+        if k not in _default_config:
+            deleted_keys.add(k)
+    if len(deleted_keys) > 0:
+        k_set_mismatch = True
+        config_new = {k: v for k, v in config_new.items() if k not in deleted_keys}
+    for k, v in _default_config['DESCRIPTION'].items():
+        if k not in config_new['DESCRIPTION'] or not config_new['DESCRIPTION'][k] == v:
+            config_new['DESCRIPTION'][k] = v
+            k_set_mismatch = True
+    if k_set_mismatch:
+        save_config(config_new, config_name)
+
 @app.route("/choose_config", methods=['POST'])
 @require_login(source_name='choose_config', allow_guest=True)
 def choose_config():
@@ -432,6 +466,7 @@ def choose_config():
     config_name = request.form.get('chosen_config', None)
     if config_name is not None:
         response.set_cookie('used_config', config_name, expires=outdate_config_path)
+    _choose_config(config_name)
     return response
 
 @app.route("/rename_config", methods=['POST'])
@@ -578,6 +613,71 @@ def ignore_with_renamed(rule_idx):
     return redirect('/param_adjust')
 
 
+
+@app.route("/change_plot_order/<alg_name>/<idx>/<method>", methods=['GET'])
+@require_login(source_name='change_plot_order', allow_guest=True)
+def change_plot_order(alg_name, idx, method):
+    config_name = request.cookies['used_config']
+    config = load_config(config_name)
+    if 'PLOTTING_ORDER' not in config:
+        config['PLOTTING_ORDER'] = []
+    orders = config['PLOTTING_ORDER']
+    if not str(idx) == 'None':
+        alg_name = base64.urlsafe_b64decode(alg_name.encode()).decode()
+        idx = int(idx)
+    Logger.logger(f'operate {alg_name} with operator {method}, idx: {idx}')
+    if method == 'remove_all':
+        orders = []
+    elif alg_name == 'placeholder':
+        if method == 'top':
+            orders = [alg_name] + orders
+        elif method == 'down':
+            orders = orders + [alg_name]
+        elif method == 'up_once':
+            if idx > 0:
+                tmp = orders[idx-1]
+                orders[idx-1] = orders[idx]
+                orders[idx] = tmp
+        elif method == 'down_once':
+            if idx < len(orders) - 1:
+                tmp = orders[idx + 1]
+                orders[idx + 1] = orders[idx]
+                orders[idx] = tmp
+        elif method == 'remove':
+            orders.pop(int(idx))
+    else:
+        alg_in_current = alg_name in orders
+        if method == 'top':
+            if not alg_in_current:
+                orders = [alg_name] + orders
+            else:
+                orders = [item for item in orders if not item == alg_name]
+                orders = [alg_name] + orders
+        elif method == 'down':
+            if not alg_in_current:
+                orders = orders + [alg_name]
+            else:
+                orders = [item for item in orders if not item == alg_name]
+                orders = orders + [alg_name]
+        elif method == 'remove':
+            orders = [item for item in orders if not item == alg_name]
+        elif method == 'up_once':
+            if idx > 0:
+                tmp = orders[idx-1]
+                orders[idx-1] = orders[idx]
+                orders[idx] = tmp
+        elif method == 'down_once':
+            if idx < len(orders) - 1:
+                tmp = orders[idx + 1]
+                orders[idx + 1] = orders[idx]
+                orders[idx] = tmp
+        else:
+            raise NotImplementedError(f'{method} has not been implemented!')
+    config['PLOTTING_ORDER'] = orders
+    save_config(config, config_name)
+    return redirect('/param_adjust')
+
+
 @app.route("/ignore_with_unnamed/<rule_idx>", methods=['GET'])
 @require_login(source_name='ignore_with_unnamed', allow_guest=True)
 def ignore_with_unnamed(rule_idx):
@@ -693,11 +793,6 @@ def add_separator():
     return redirect('/param_adjust')
 
 
-@app.route("/favicon.ico", methods=['GET'])
-def get_icon():
-    return send_from_directory(data_root_path, 'icon.ico', as_attachment=False)
-
-
 # 持续flush
 def flush_loop():
     while True:
@@ -705,7 +800,7 @@ def flush_loop():
         time.sleep(1)
 
 
-def start_page_server():
+def start_page_server(port_num=None):
     Logger.init_global_logger(base_path=page_config.WEB_RAM_PATH, log_name="web_logs")
     _default_config = default_config()
     for k in _default_config:
@@ -714,8 +809,9 @@ def start_page_server():
     save_config(_default_config, 'default_config.json')
     flush_th = threading.Thread(target=flush_loop)
     flush_th.start()
-    Logger.logger(f'copy http://{page_config.WEB_NAME}:{page_config.PORT} to the explorer')
-    app.run(host='0', port=page_config.PORT, debug=True)
+    port_num = port_num if port_num is not None else page_config.PORT
+    Logger.logger(f'copy http://{page_config.WEB_NAME}:{port_num} to the explorer')
+    app.run(host='0', port=port_num, debug=False)
 
 
 if __name__ == '__main__':

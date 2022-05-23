@@ -49,6 +49,19 @@ line_style = [
     ['green', '-', 'P'],
 ]
 
+def title_tuple_to_str(title):
+    try:
+        title_idx = int(plot_config.TITLE_NAME_IDX)
+    except ValueError as e:
+        title_idx = None
+    except TypeError as e:
+        title_idx = None
+    if len(title) == 0:
+        return title[0]
+    if title_idx is None:
+        return ', '.join([*title])
+    return title[title_idx]
+
 def make_merger_feature(k, v):
     if isinstance(v, str):
         return v
@@ -80,6 +93,30 @@ def smooth(y, radius, mode='two_sided', valid_only=False):
     else:
         raise NotImplementedError(f'{mode} has not been implemented!')
     return out
+
+
+def sort_algs(exist_algs, color_ind=None, alg_to_color_idx=None):
+    if alg_to_color_idx is None:
+        alg_to_color_idx = dict()
+    if color_ind is None:
+        color_ind = 0
+    algs = [alg for alg in exist_algs]
+    if len(plot_config.PLOTTING_ORDER) > 0:
+        algs = [_alg for _alg in plot_config.PLOTTING_ORDER if _alg in exist_algs]
+        for _alg in exist_algs:
+            if _alg not in algs:
+                algs.append(_alg)
+        for ind, item in enumerate(plot_config.PLOTTING_ORDER):
+            color_ind = ind
+            if item in exist_algs and item not in alg_to_color_idx:
+                alg_to_color_idx[item] = color_ind
+            color_ind += 1
+    else:
+        algs = sorted(algs)
+    if plot_config.PRIMARY_ALG in algs:
+        algs = [plot_config.PRIMARY_ALG] + [a for a in algs if not a == plot_config.PRIMARY_ALG]
+        alg_to_color_idx[plot_config.PRIMARY_ALG] = 0
+    return algs, color_ind, alg_to_color_idx
 
 
 def stat_data(data):
@@ -218,6 +255,7 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
     sub_figure_content = sorted(sub_figure_content)
     fig_ind = 0
     alg_to_line_handler = dict()
+    alg_to_seed_num = dict()
     f, axarr = plt.subplots(fig_row, fig_column, sharex=False, squeeze=False, figsize=figsize)
     plt.subplots_adjust(wspace=plot_config.SUBPLOT_WSPACE, hspace=plot_config.SUBPLOT_HSPACE)
     for sub_figure in sub_figure_content:
@@ -225,8 +263,9 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
         _row = fig_ind // fig_column
         ax = axarr[_row][_col]
         alg_count = 0
-        algs = [_alg for _alg in data[sub_figure]]
-        algs = sorted(algs)
+        algs, _, _ = sort_algs(data[sub_figure])
+        if plot_config.PRIMARY_ALG in algs:
+            algs = [plot_config.PRIMARY_ALG] + [a for a in algs if not a == plot_config.PRIMARY_ALG]
         for alg_name in algs:
             data_alg_list = data[sub_figure][alg_name]
             if alg_name not in alg_to_color_idx:
@@ -244,6 +283,7 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
             y_data = [data_alg['data'][y_name] for data_alg in data_alg_list]
             data_len = [len(item) for item in x_data]
             min_data_len = min(data_len)
+            seed_num = len(data_len)
             x_data = [list(data)[:min_data_len] for data in x_data]
             y_data = [list(data)[:min_data_len] for data in y_data]
             x_data = x_data[0]
@@ -260,44 +300,121 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
             marker = line_style[marker_idx][2]
             curve, = ax.plot(x_data, y_data, color=line_color,
                              linestyle=line_type, marker=marker, label=alg_name,
-                             linewidth=1.5, markersize=8.0, markevery=max(min_data_len // 8, 1))
+                             linewidth=plot_config.LINE_WIDTH, markersize=plot_config.MARKER_SIZE,
+                             markevery=max(min_data_len // 8, 1))
             if alg_name not in alg_to_line_handler:
                 alg_to_line_handler[alg_name] = curve
-            ax.fill_between(x_data, y_data - y_data_error, y_data + y_data_error, color=line_color, alpha=.2)
+                alg_to_seed_num[alg_name] = seed_num
+            if len(data_len) > 1:
+                ax.fill_between(x_data, y_data - y_data_error, y_data + y_data_error, color=line_color, alpha=.2)
             if _col == 0:
-                ax.set_ylabel(y_name, fontsize=plot_config.FONTSIZE_LABEL)
-
+                if str(plot_config.FIXED_Y_LABEL) == 'None':
+                    ax.set_ylabel(y_name, fontsize=plot_config.FONTSIZE_LABEL)
+                else:
+                    ax.set_ylabel(plot_config.FIXED_Y_LABEL, fontsize=plot_config.FONTSIZE_LABEL)
             ax.set_xlabel(x_name, fontsize=plot_config.FONTSIZE_LABEL)
             ax.tick_params(axis='x', labelsize=plot_config.FONTSIZE_XTICK)
             ax.tick_params(axis='y', labelsize=plot_config.FONTSIZE_YTICK)
+            ax.yaxis.set_major_locator(matplotlib.ticker.MaxNLocator(5))
 
             if plot_config.X_AXIS_SCI_FORM:
                 ax.ticklabel_format(style='sci', scilimits=(-1, 2), axis='x')
                 ax.xaxis.offsetText.set_fontsize(plot_config.FONTSIZE_YTICK)
 
-            ax.set_title(sub_figure, fontsize=plot_config.FONTSIZE_TITLE)
+            ax.set_title(title_tuple_to_str(sub_figure), fontsize=plot_config.FONTSIZE_TITLE)
             ax.grid(True)
             alg_count += 1
+            if plot_config.XMAX is not None and not str(plot_config.XMAX) == 'None':
+                ax.set_xlim(right=int(plot_config.XMAX))
         if alg_count == 0:
             ax.set_title(sub_figure, fontsize=plot_config.FONTSIZE_TITLE)
 
         fig_ind += 1
     names = [k for k in alg_to_line_handler]
-    curves = [v for k, v in alg_to_line_handler.items()]
-    axarr[0][0].legend(handles=curves, labels=names, loc='center left', bbox_to_anchor=(plot_config.LEGEND_POSITION_X, plot_config.LEGEND_POSITION_Y),
+    curves = [alg_to_line_handler[k] for k in names]
+    final_names = []
+    for ind, name in enumerate(names):
+        if str(plot_config.SHOW_SEED_NUM) == 'True':
+            final_names.append(name + f' ({alg_to_seed_num[name]})')
+        else:
+            final_names.append(name)
+    axarr[0][0].legend(handles=curves, labels=final_names, loc='center left', bbox_to_anchor=(plot_config.LEGEND_POSITION_X, plot_config.LEGEND_POSITION_Y),
                        ncol=plot_config.LEGEND_COLUMN, fontsize=plot_config.FONTSIZE_LEGEND)
     sup_title_name = y_name
     if plot_config.RECORD_DATE_TIME:
         sup_title_name += ': {}'.format(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-    plt.suptitle(sup_title_name, fontsize=plot_config.FONTSIZE_SUPTITLE, y=plot_config.SUPTITLE_Y)
+    if plot_config.NEED_SUP_TITLE:
+        plt.suptitle(sup_title_name, fontsize=plot_config.FONTSIZE_SUPTITLE, y=plot_config.SUPTITLE_Y)
 
     os.makedirs(plot_config.PLOT_FIGURE_SAVING_PATH, exist_ok=True)
     png_saving_path = os.path.join(plot_config.PLOT_FIGURE_SAVING_PATH, f'{y_name}.png')
     pdf_saving_path = os.path.join(plot_config.PLOT_FIGURE_SAVING_PATH, f'{y_name}.pdf')
     os.makedirs(os.path.dirname(png_saving_path), exist_ok=True)
+    print(f'saving PDF to file://{pdf_saving_path}')
+    print(f'saving PNG to file://{png_saving_path}')
     f.savefig(png_saving_path, bbox_inches='tight', dpi=plot_config.PNG_DPI)
     f.savefig(pdf_saving_path, bbox_inches='tight')
     return png_saving_path, x_name, y_name
+
+
+
+def _make_subtable(data, x_name, y_name, at_x, plot_config_dict, iter):
+    for k in plot_config_dict:
+        setattr(plot_config, k, plot_config_dict[k])
+    sub_figure_content = [k for k in data]
+    sub_figure_content = sorted(sub_figure_content)
+    fig_ind = 0
+    summary_dict = dict()
+    for sub_figure in sub_figure_content:
+        algs, _, _ = sort_algs(data[sub_figure])
+        for alg_name in algs:
+            data_alg_list = data[sub_figure][alg_name]
+            have_y_name = True
+            for item in data_alg_list:
+                if y_name not in item['data']:
+                    have_y_name = False
+            if not have_y_name:
+                if y_name in data_alg_list[0]['data']:
+                    print(
+                        f'path need to be check, alg_name: {alg_name}, {[item["folder_name"] for item in data_alg_list]}')
+                continue
+            x_data = [data_alg['data'][x_name] for data_alg in data_alg_list]
+            y_data = [data_alg['data'][y_name] for data_alg in data_alg_list]
+            data_len = [len(item) for item in x_data]
+            min_data_len = min(data_len)
+            x_data = [list(data)[:min_data_len] for data in x_data]
+            y_data = [list(data)[:min_data_len] for data in y_data]
+            x_data = x_data[0]
+            if not str(plot_config.XMAX) == 'None':
+                final_ind = np.argmin(np.square(np.array(x_data) - float(plot_config.XMAX))) + 1
+                x_data = x_data[:final_ind]
+                y_data = [list(data)[:final_ind] for data in y_data]
+
+            y_data, y_data_error = stat_data(y_data)
+            y_data = np.array(y_data)
+            y_data_error = np.array(y_data_error)
+            x_data = np.array(x_data)
+            if plot_config.USE_SMOOTH:
+                y_data = smooth(y_data, radius=plot_config.SMOOTH_RADIUS)
+            if at_x is not None:
+                idx = np.argmin(np.square(x_data.astype(np.float) - at_x))
+                selected_mean = y_data[idx]
+                selected_error = y_data_error[idx]
+            elif iter is not None:
+                selected_mean = y_data[iter]
+                selected_error = y_data_error[iter]
+            else:
+                selected_mean = y_data[-1]
+                selected_error = y_data_error[-1]
+            if len(data_len) <= 1:
+                selected_error = 0
+            if sub_figure not in summary_dict:
+                summary_dict[sub_figure] = dict()
+            summary_dict[sub_figure][alg_name] = (selected_mean, selected_error)
+            print(f'figure: {sub_figure}, alg: {alg_name}, x-y: {x_name}-{y_name}, data_len: {data_len}, min len: {min(data_len)}, selected mean: {selected_mean}, selected error: {selected_error}')
+
+        fig_ind += 1
+    return summary_dict, x_name, y_name
 
 
 def _plotting(data):
@@ -314,10 +431,11 @@ def _plotting(data):
     total_f = []
     total_png = []
     alg_to_color_idx = dict()
+    used_color = set()
+    color_ind = 0
     for x_name, y_name in plot_config.PLOTTING_XY:
         for sub_figure in sub_figure_content:
-            algs = [_alg for _alg in data[sub_figure]]
-            algs = sorted(algs)
+            algs, color_ind, alg_to_color_idx = sort_algs(data[sub_figure], color_ind, alg_to_color_idx)
             for alg_name in algs:
                 data_alg_list = data[sub_figure][alg_name]
                 have_y_name = True
@@ -329,15 +447,23 @@ def _plotting(data):
                         print(f'path need to be check, alg_name: {alg_name}, {[item["folder_name"] for item in data_alg_list]}')
                     continue
                 if alg_name not in alg_to_color_idx:
-                    alg_idx = len(alg_to_color_idx)
+                    alg_idx = color_ind
+                    color_ind += 1
                     alg_to_color_idx[alg_name] = alg_idx
+                if not isinstance(alg_to_color_idx[alg_name], tuple):
                     style_num = len(line_style)
-                    if alg_idx < style_num:
+                    if alg_to_color_idx[alg_name] < style_num:
+                        alg_idx = alg_to_color_idx[alg_name]
                         alg_to_color_idx[alg_name] = (alg_idx, alg_idx, alg_idx)
                     else:
-                        alg_to_color_idx[alg_name] = (
-                            random.randint(0, style_num - 1), random.randint(0, style_num - 1),
-                            random.randint(0, style_num - 1))
+                        for _ in range(100):
+                            candidate = (
+                                random.randint(0, style_num - 1), random.randint(0, style_num - 1),
+                                random.randint(0, style_num - 1))
+                            alg_to_color_idx[alg_name] = candidate
+                            if candidate not in used_color:
+                                break
+                    used_color.add(alg_to_color_idx[alg_name])
     plotting_executor = ProcessPoolExecutor(max_workers=plot_config.PROCESS_NUM)
     futures = []
     for x_name, y_name in plot_config.PLOTTING_XY:
@@ -370,9 +496,203 @@ def _plotting(data):
     for ind, png_file in enumerate(png_images):
         start_row = sum(rows[:ind])
         merge_png.paste(png_file, (0, start_row))
-    total_png_output_path = os.path.join(plot_config.PLOT_FIGURE_SAVING_PATH, "total_curve.png")
+    total_png_output_path = os.path.join(plot_config.PLOT_FIGURE_SAVING_PATH, f"{plot_config.FINAL_OUTPUT_NAME}.png")
     merge_png.save(total_png_output_path, "PNG")
     print(f'saving png to {total_png_output_path}')
+
+
+
+def _to_table(data, atx, iter, privileged_col_idx=None, placeholder=None, md=True):
+    sub_figure_content = [k for k in data]
+    sub_figure_content = sorted(sub_figure_content, key=lambda x: x[0])
+    print(f'total sub-figures: {sub_figure_content}')
+    fig_row = int(np.ceil(len(sub_figure_content) / plot_config.MAX_COLUMN))
+    fig_column = min(plot_config.MAX_COLUMN, len(sub_figure_content))
+    fig_row = max(fig_row, 1)
+    fig_column = max(fig_column, 1)
+    figsize = (plot_config.SUBFIGURE_WIDTH * fig_column, plot_config.SUBFIGURE_HEIGHT * fig_row)
+    print(f'making figure {fig_row} row {fig_column} col, size: {figsize}')
+    random.seed(1)
+    for x_name, y_name in plot_config.PLOTTING_XY:
+        for sub_figure in sub_figure_content:
+            algs, _, _ = sort_algs(data[sub_figure])
+            for alg_name in algs:
+                data_alg_list = data[sub_figure][alg_name]
+                have_y_name = True
+                for item in data_alg_list:
+                    if y_name not in item['data']:
+                        have_y_name = False
+                if not have_y_name:
+                    if y_name in data_alg_list[0]['data']:
+                        print(
+                            f'path need to be check, alg_name: {alg_name}, {[item["folder_name"] for item in data_alg_list]}')
+                    continue
+    plotting_executor = ProcessPoolExecutor(max_workers=plot_config.PROCESS_NUM)
+    futures = []
+    for x_name, y_name in plot_config.PLOTTING_XY:
+        plot_config_dict = {k: getattr(plot_config, k) for k in plot_config.global_plot_configs()}
+
+        futures.append(plotting_executor.submit(_make_subtable, data, x_name, y_name, atx, plot_config_dict, iter))
+    summary_dict_buffer = dict()
+    for future in as_completed(futures):
+        summary_dict, x_name, y_name = future.result()
+        summary_dict_buffer[y_name] = summary_dict
+    if md:
+        summary_buffer_to_output_md(summary_dict_buffer, privileged_col_idx, placeholder)
+    else:
+        summary_buffer_to_output(summary_dict_buffer, privileged_col_idx, placeholder)
+
+
+def summary_buffer_to_output(summary_dict_buffer, privileged_col_idx=None, placeholder=None):
+    for table_name in summary_dict_buffer:
+        print('\n\n', '='*15, f'Table: {table_name}', '='*15)
+        summary_dict = summary_dict_buffer[table_name]
+        row_id_list = [k for k in summary_dict.keys()]
+        row_id_list = sorted(row_id_list)
+        cols_keys = set()
+        for row_name in row_id_list:
+            row_content = summary_dict[row_name]
+            for k in row_content:
+                cols_keys.add(k)
+        cols_keys = list(cols_keys)
+        cols_keys = sorted(cols_keys)
+        prid_cols_keys = []
+        if privileged_col_idx is not None:
+            prid_cols_keys = sorted([(k, v) for k, v in privileged_col_idx.items()], key=lambda x:x[1])
+            prid_cols_keys = [item[0] for item in prid_cols_keys if item[0] in cols_keys]
+        for item in cols_keys:
+            if item not in prid_cols_keys:
+                prid_cols_keys.append(item)
+        task_list = prid_cols_keys
+        print('{l|', end='')
+        for i in range(len(task_list)):
+            print('r@{~$\\pm$~}l', end='')
+        print('}\\toprule')
+        print('& ', end='')
+
+        for ind, task in enumerate(task_list):
+            print('\\multicolumn{2}{c}{', end='')
+            if '_' in task:
+                task_safe = task.replace('_', '-')
+            else:
+                task_safe = task
+            print(task_safe, end='')
+            print('}', end='')
+            if ind < len(task_list) - 1:
+                print(' & ', end='')
+        print('\\\\\\midrule')
+        valid_bit = 2
+        for row_name in row_id_list:
+            row_content = summary_dict[row_name]
+            max_performance_ind, max_performance = 0, -10000000
+            print(str(title_tuple_to_str(row_name)).replace('_', '-'), ' & ', end='')
+            for ind_task, task in enumerate(task_list):
+                if task in row_content:
+                    data_mean, data_error = row_content[task]
+                    if data_mean > max_performance:
+                        max_performance = data_mean
+                        max_performance_ind = ind_task
+            for ind_task, task in enumerate(task_list):
+
+                if task in row_content:
+                    data_mean, data_error = row_content[task]
+                else:
+                    data_mean, data_error = 0, 0
+
+                if max_performance_ind == ind_task:
+                    print('$ \\mathbf{', end='')
+                    print(f"{round(data_mean, valid_bit)}", end='')
+                    print('} $ & ', end='')
+                    print('$ \\mathbf{', end='')
+                    print(f"{round(data_error, valid_bit)}", end='')
+                    print('} $', end='')
+                else:
+                    print(f"${round(data_mean, valid_bit)}$", end='')
+                    print('& ', end='')
+
+                    print(f"${round(data_error, valid_bit)}$", end='')
+
+                if ind_task < len(task_list) - 1:
+                    print(' & ', end='')
+
+            print('\\\\')
+        print('\\bottomrule')
+        print('='*15, f'End Table: {table_name}', '='*15)
+
+def summary_buffer_to_output_md(summary_dict_buffer, privileged_col_idx=None, placeholder=None):
+    for table_name in summary_dict_buffer:
+        print('##', f'Table: {table_name}')
+        summary_dict = summary_dict_buffer[table_name]
+        row_id_list = [k for k in summary_dict.keys()]
+        row_id_list = sorted(row_id_list)
+        cols_keys = set()
+        for row_name in row_id_list:
+            row_content = summary_dict[row_name]
+            for k in row_content:
+                cols_keys.add(k)
+        cols_keys = list(cols_keys)
+        cols_keys = sorted(cols_keys)
+        prid_cols_keys = []
+        if privileged_col_idx is not None:
+            prid_cols_keys = sorted([(k, v) for k, v in privileged_col_idx.items()], key=lambda x:x[1])
+            prid_cols_keys = [item[0] for item in prid_cols_keys if item[0] in cols_keys]
+
+        for item in cols_keys:
+            if item not in prid_cols_keys:
+                prid_cols_keys.append(item)
+        if placeholder is not None:
+            placeholder_keys = sorted([(k, v) for k, v in placeholder.items()], key=lambda x: x[1])
+            placeholder_keys = [item[0] for item in placeholder_keys if item[0] not in cols_keys]
+            prid_cols_keys = prid_cols_keys + placeholder_keys
+        task_list = prid_cols_keys
+        print('||', end='')
+        for ind, task in enumerate(task_list):
+            if '_' in task:
+                task_safe = task.replace('_', '-')
+            else:
+                task_safe = task
+            print(task_safe, end='')
+            print('|', end='')
+        print('')
+        print('|:-----|', end='')
+        for ind, task in enumerate(task_list):
+            print(':-----:|', end='')
+        print('')
+        valid_bit = 2
+        for row_name in row_id_list:
+            row_content = summary_dict[row_name]
+            max_performance_ind, max_performance = 0, -10000000
+            print('|', str(title_tuple_to_str(row_name)).replace('_', '-'), ' | ', end='')
+            for ind_task, task in enumerate(task_list):
+                if task in row_content:
+                    data_mean, data_error = row_content[task]
+                    if data_mean > max_performance:
+                        max_performance = data_mean
+                        max_performance_ind = ind_task
+            for ind_task, task in enumerate(task_list):
+
+                if task in row_content:
+                    data_mean, data_error = row_content[task]
+                else:
+                    data_mean, data_error = 0, 0
+
+                if max_performance_ind == ind_task:
+                    print('$ \\mathbf{', end='')
+                    print(f"{round(data_mean, valid_bit)}", end='')
+                    print('} \\pm', end='')
+                    print('\\mathbf{', end='')
+                    print(f"{round(data_error, valid_bit)}", end='')
+                    print('} ^\star$', end='')
+                else:
+                    print(f"${round(data_mean, valid_bit)}", end='')
+                    print('\\pm ', end='')
+
+                    print(f"{round(data_error, valid_bit)}$", end='')
+
+                print(' | ', end='')
+
+            print('')
+        # print('='*15, f'End Table: {table_name}', '='*15)
 
 
 def _overwrite_config(config):
@@ -399,6 +719,18 @@ def plot(config_json_path=None):
     data = collect_data()
     _plotting(data)
 
+def make_table(config_json_path=None):
+    overwrite_config(config_json_path)
+    data = collect_data()
+    privileged_col_idx = dict(
+
+    )
+    placeholder = dict(
+
+    )
+    xmax = float(plot_config.XMAX) if not str(plot_config.XMAX) == 'None' else None
+    _to_table(data, xmax, None, privileged_col_idx, placeholder=placeholder, md=True)
 
 if __name__ == '__main__':
-    plot()
+    # make_table('/Users/fanmingluo/Desktop/small_logger_cache/WEB_ROM/configs/formal_ablation_eta')
+    make_table('/Users/fanmingluo/Desktop/small_logger_cache/WEB_ROM/configs/formal_ablation_eta')

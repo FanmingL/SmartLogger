@@ -133,7 +133,8 @@ def _get_parameter(folder_name):
             param_possible = json.load(f)
         param.update(param_possible)
     else:
-        Logger.logger(f'{parameter_data_possible} not founded')
+        pass
+        # Logger.logger(f'{parameter_data_possible} not founded')
     if os.path.exists(running_config_data):
         with open(running_config_data, 'r') as f:
             param2 = json.load(f)
