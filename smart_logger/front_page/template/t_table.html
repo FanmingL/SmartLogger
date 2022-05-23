@@ -36,8 +36,8 @@
         function finish_query(data){
             var button = document.getElementById('table_loading_button_id')
             button.innerHTML = "更新表格";
-            localStorage.setItem("table_win_data", data);
-            localStorage.setItem("table_win_data_config", "{{config_name}}");
+            localStorage.setItem("{{config_name}}" + "table_win_data", data);
+            localStorage.setItem("{{config_name}}" + "table_win_data_config", "{{config_name}}");
 
         }
 
@@ -88,8 +88,8 @@
             button.innerHTML = "LaTex生成";
             button = document.getElementById('source_loading_button_md')
             button.innerHTML = "MD生成";
-            localStorage.setItem("source_win_data", data);
-            localStorage.setItem("source_win_data_config", "{{config_name}}");
+            localStorage.setItem("{{config_name}}" + "source_win_data", data);
+            localStorage.setItem("{{config_name}}" + "source_win_data_config", "{{config_name}}");
 
         }
 
@@ -111,17 +111,17 @@
             return scrollTop;
         }
         function windows_onload(){
-            if (localStorage.hasOwnProperty('source_win_data')){
-               let data = localStorage.getItem("source_win_data");
+            if (localStorage.hasOwnProperty("{{config_name}}" + 'source_win_data')){
+               let data = localStorage.getItem("{{config_name}}" + "source_win_data");
                let table = document.getElementById('source_div_id');
-               if (localStorage.getItem("source_win_data_config") === "{{config_name}}") {
+               if (localStorage.getItem("{{config_name}}" + "source_win_data_config") === "{{config_name}}") {
                    table.innerHTML = data;
                }
             }
-            if (localStorage.hasOwnProperty('table_win_data')){
-               let data = localStorage.getItem("table_win_data");
+            if (localStorage.hasOwnProperty("{{config_name}}" + 'table_win_data')){
+               let data = localStorage.getItem("{{config_name}}" + "table_win_data");
                let table = document.getElementById('table_html_id');
-               if (localStorage.getItem("table_win_data_config") === "{{config_name}}") {
+               if (localStorage.getItem("{{config_name}}" + "table_win_data_config") === "{{config_name}}") {
                    table.innerHTML = data;
                }
             }
