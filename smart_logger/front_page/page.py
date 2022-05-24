@@ -269,8 +269,8 @@ def plot():
             config_description[k] = 'None'
     config_type = make_config_type(config)
     config_file_list = list_current_configs()
-    target_file = os.path.join(page_config.WEB_RAM_PATH, page_config.TOTAL_FIGURE_FOLDER,
-                               f'{plot_config.FINAL_OUTPUT_NAME}.png')
+    target_file = os.path.join(page_config.WEB_RAM_PATH, page_config.TOTAL_FIGURE_FOLDER + "_tmp",
+                               f'{config_name}.png')
     initial_figure_url = '#'
     if os.path.exists(target_file):
         Logger.logger(f'{target_file} exists, return it first')
@@ -399,10 +399,13 @@ def exp_figure():
     saving_png = f'{os.path.join(output_path, plot_config.FINAL_OUTPUT_NAME)}.png'
     Logger.logger(f'return figure {saving_png}, drawing cost {time.time() - start_time}')
     target_folder = os.path.join(page_config.WEB_RAM_PATH, page_config.TOTAL_FIGURE_FOLDER, f'{plot_config.FINAL_OUTPUT_NAME}.png')
+    target_folder_tmp = os.path.join(page_config.WEB_RAM_PATH, page_config.TOTAL_FIGURE_FOLDER + "_tmp", f'{config_name}.png')
 
     Logger.logger(f'cp {saving_png} {target_folder}')
     os.makedirs(os.path.dirname(target_folder), exist_ok=True)
+    os.makedirs(os.path.dirname(target_folder_tmp), exist_ok=True)
     os.system(f'cp {saving_png} {target_folder}')
+    os.system(f'cp {saving_png} {target_folder_tmp}')
     return send_from_directory(output_path, f'{plot_config.FINAL_OUTPUT_NAME}.png', as_attachment=False)
 
 
@@ -412,7 +415,7 @@ def lst_output_figure():
     config_name = request.cookies['used_config']
     config = load_config(config_name)
     _overwrite_config(config)
-    target_file = os.path.join(page_config.WEB_RAM_PATH, page_config.TOTAL_FIGURE_FOLDER, f'{plot_config.FINAL_OUTPUT_NAME}.png')
+    target_file = os.path.join(page_config.WEB_RAM_PATH, page_config.TOTAL_FIGURE_FOLDER + "_tmp", f'{config_name}.png')
     target_dir = os.path.dirname(target_file)
     file_name = os.path.basename(target_file)
     Logger.logger(f'dir: {target_dir}, name: {file_name}, exists: {os.path.exists(target_file)}')
