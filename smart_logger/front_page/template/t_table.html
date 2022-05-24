@@ -124,6 +124,7 @@
                if (localStorage.getItem("{{config_name}}" + "table_win_data_config") === "{{config_name}}") {
                    table.innerHTML = data;
                }
+               MathJax.Hub.Queue(["Typeset", MathJax.Hub]);
             }
         }
         function change_config_cb(){
