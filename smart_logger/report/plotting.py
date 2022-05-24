@@ -106,6 +106,8 @@ def sort_algs(exist_algs, color_ind=None, alg_to_color_idx=None):
         for _alg in exist_algs:
             if _alg not in algs:
                 algs.append(_alg)
+        if plot_config.PRIMARY_ALG in algs:
+            algs = [plot_config.PRIMARY_ALG] + [a for a in algs if not a == plot_config.PRIMARY_ALG]
         for ind, item in enumerate(plot_config.PLOTTING_ORDER):
             color_ind = ind
             if item in exist_algs and item not in alg_to_color_idx:
@@ -113,9 +115,9 @@ def sort_algs(exist_algs, color_ind=None, alg_to_color_idx=None):
             color_ind += 1
     else:
         algs = sorted(algs)
-    if plot_config.PRIMARY_ALG in algs:
-        algs = [plot_config.PRIMARY_ALG] + [a for a in algs if not a == plot_config.PRIMARY_ALG]
-        alg_to_color_idx[plot_config.PRIMARY_ALG] = 0
+        if plot_config.PRIMARY_ALG in algs:
+            algs = [plot_config.PRIMARY_ALG] + [a for a in algs if not a == plot_config.PRIMARY_ALG]
+
     return algs, color_ind, alg_to_color_idx
 
 
