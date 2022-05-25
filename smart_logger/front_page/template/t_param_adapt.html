@@ -412,7 +412,7 @@
             top: 195%;
         }
 
-        .future_work {
+        .legend_order {
             font-family:monospace;
             position: absolute;
             left: 58%;
@@ -747,7 +747,7 @@
 </div>
 
 <div class="plotting_order" id="plotting_order_id">
-    <h3>曲线绘制顺序</h3>
+    <h3>曲线绘制顺序 (影响线的颜色、线型)</h3>
     <h3>已标序</h3>
     {% for item in exists_ordered_curves %}
         &nbsp;&nbsp;> [ {{loop.index0}} ] {{item}}&nbsp;&nbsp; <a href="{{url_for('change_plot_order', alg_name=exists_ordered_curves_encode[loop.index0], idx=loop.index0, method='top')}}" style="font-family: monospace">置顶</a>
@@ -769,10 +769,26 @@
                 &nbsp;&nbsp;> placeholder&nbsp;&nbsp;<a href="{{url_for('change_plot_order', alg_name='placeholder', idx='None', method='top')}}" style="font-family: monospace">置顶</a>
         <a href="{{url_for('change_plot_order', alg_name='placeholder', idx='None', method='down')}}" style="font-family: monospace" >置底</a>
 </div>
-<div class="future_work">
-    <h3>正在施工...</h3>
-
-
+<div class="legend_order">
+    <h3>图例顺序 (影响图例中的排序)</h3>
+    <h3>已标序</h3>
+    {% for item in exists_ordered_legends %}
+        &nbsp;&nbsp;> [ {{loop.index0}} ] {{item}}&nbsp;&nbsp; <a href="{{url_for('change_legend_order', alg_name=exists_ordered_legends_encode[loop.index0], idx=loop.index0, method='top')}}" style="font-family: monospace">置顶</a>
+        <a href="{{url_for('change_legend_order', alg_name=exists_ordered_legends_encode[loop.index0], idx=loop.index0, method='down')}}" style="font-family: monospace">置底</a>
+        <a href="{{url_for('change_legend_order', alg_name=exists_ordered_legends_encode[loop.index0], idx=loop.index0, method='up_once')}}" style="font-family: monospace">上移一级</a>
+        <a href="{{url_for('change_legend_order', alg_name=exists_ordered_legends_encode[loop.index0], idx=loop.index0, method='down_once')}}" style="font-family: monospace">下移一级</a>
+        <a href="{{url_for('change_legend_order', alg_name=exists_ordered_legends_encode[loop.index0], idx=loop.index0, method='remove')}}" style="font-family: monospace">删除</a>
+        <br/>
+        <br/>
+    {% endfor %}
+    &nbsp;&nbsp;> [ ----- ] 集体操作&nbsp;&nbsp; <a href="{{url_for('change_legend_order', alg_name='All', idx='None', method='remove_all')}}" style="font-family: monospace">全部删除</a>
+    <h3>未标序</h3>
+    {% for item in exists_unordered_legends %}
+            &nbsp;&nbsp;> {{item}}&nbsp;&nbsp;<a href="{{url_for('change_legend_order', alg_name=exists_unordered_legends_encode[loop.index0], idx=loop.index0, method='top')}}" style="font-family: monospace">置顶</a>
+        <a href="{{url_for('change_legend_order', alg_name=exists_unordered_legends_encode[loop.index0], idx=loop.index0, method='down')}}" style="font-family: monospace">置底</a>
+        <br/>
+        <br/>
+    {% endfor %}
 </div>
 <div class="bottom_box">
 </div>

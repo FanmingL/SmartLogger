@@ -262,7 +262,8 @@ def plot():
                                                            'PLOT_FIGURE_SAVING_PATH', 'FIGURE_SERVER_MACHINE_IP',
                                                            'FIGURE_SERVER_MACHINE_PORT', 'FIGURE_SERVER_MACHINE_USER',
                                                            'FIGURE_SERVER_MACHINE_PASSWD',
-                                                           'FIGURE_SERVER_MACHINE_TARGET_PATH', 'PLOTTING_ORDER']}
+                                                           'FIGURE_SERVER_MACHINE_TARGET_PATH', 'PLOTTING_ORDER',
+                                                           'LEGEND_ORDER']}
     config_description = plot_config.DESCRIPTION
     for k in config:
         if k not in config_description:
@@ -463,10 +464,17 @@ def param_adjust():
     separators = separators
     nick_name_set = set(nick_name_list)
     Logger.logger(f'nick name set: {nick_name_set}')
+
     exists_ordered_curves = plot_config.PLOTTING_ORDER
     remain_unordered_curves = [item for item in nick_name_set if item not in exists_ordered_curves]
     exists_ordered_curves_encode = [base64.urlsafe_b64encode(item.encode()).decode() for item in exists_ordered_curves]
     remain_unordered_curves_encode = [base64.urlsafe_b64encode(item.encode()).decode() for item in remain_unordered_curves]
+    total_curves = exists_ordered_curves + remain_unordered_curves
+    total_curves = [item for item in total_curves if item in nick_name_set]
+    exists_ordered_legends = plot_config.LEGEND_ORDER
+    exists_unordered_legends = [item for item in total_curves if item not in exists_ordered_legends]
+    exists_ordered_legends_encode = [base64.urlsafe_b64encode(item.encode()).decode() for item in exists_ordered_legends]
+    exists_unordered_legends_encode = [base64.urlsafe_b64encode(item.encode()).decode() for item in exists_unordered_legends]
     return render_template('t_param_adapt.html',
                            exp_data=exp_data,
                            exp_data_encoded=exp_data_encoded,
@@ -490,7 +498,11 @@ def param_adjust():
                            exists_ordered_curves=exists_ordered_curves,
                            remain_unordered_curves=remain_unordered_curves,
                            exists_ordered_curves_encode=exists_ordered_curves_encode,
-                           remain_unordered_curves_encode=remain_unordered_curves_encode
+                           remain_unordered_curves_encode=remain_unordered_curves_encode,
+                           exists_ordered_legends=exists_ordered_legends,
+                           exists_unordered_legends=exists_unordered_legends,
+                           exists_ordered_legends_encode=exists_ordered_legends_encode,
+                           exists_unordered_legends_encode=exists_unordered_legends_encode
                            )
 
 
@@ -754,6 +766,53 @@ def change_plot_order(alg_name, idx, method):
         else:
             raise NotImplementedError(f'{method} has not been implemented!')
     config['PLOTTING_ORDER'] = orders
+    save_config(config, config_name)
+    return redirect('/param_adjust')
+
+
+@app.route("/change_legend_order/<alg_name>/<idx>/<method>", methods=['GET'])
+@require_login(source_name='change_legend_order', allow_guest=True)
+def change_legend_order(alg_name, idx, method):
+    config_name = request.cookies['used_config']
+    config = load_config(config_name)
+    if 'LEGEND_ORDER' not in config:
+        config['LEGEND_ORDER'] = []
+    orders = config['LEGEND_ORDER']
+    if not idx == 'None':
+        alg_name = base64.urlsafe_b64decode(alg_name.encode()).decode()
+        idx = int(idx)
+    Logger.logger(f'operate {alg_name} with operator {method}, idx: {idx}')
+    if method == 'remove_all':
+        orders = []
+    else:
+        alg_in_current = alg_name in orders
+        if method == 'top':
+            if not alg_in_current:
+                orders = [alg_name] + orders
+            else:
+                orders = [item for item in orders if not item == alg_name]
+                orders = [alg_name] + orders
+        elif method == 'down':
+            if not alg_in_current:
+                orders = orders + [alg_name]
+            else:
+                orders = [item for item in orders if not item == alg_name]
+                orders = orders + [alg_name]
+        elif method == 'remove':
+            orders = [item for item in orders if not item == alg_name]
+        elif method == 'up_once':
+            if idx > 0:
+                tmp = orders[idx-1]
+                orders[idx-1] = orders[idx]
+                orders[idx] = tmp
+        elif method == 'down_once':
+            if idx < len(orders) - 1:
+                tmp = orders[idx + 1]
+                orders[idx + 1] = orders[idx]
+                orders[idx] = tmp
+        else:
+            raise NotImplementedError(f'{method} has not been implemented!')
+    config['LEGEND_ORDER'] = orders
     save_config(config, config_name)
     return redirect('/param_adjust')
 

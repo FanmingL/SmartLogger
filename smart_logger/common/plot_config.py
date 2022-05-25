@@ -12,6 +12,8 @@ PLOT_FIGURE_SAVING_PATH = f"{DATA_PATH}/{LOG_DIR_BACKING_NAME}_figure"
 PLOTTING_XY = [['timestep', 'EpRetTrain'], ['timestep', 'EpRetTest']]
 # 曲线绘制顺序
 PLOTTING_ORDER = []
+# 曲线绘制顺序
+LEGEND_ORDER = []
 # 不同图片之间的数据，按照FIGURE_SEPARATION分开
 FIGURE_SEPARATION = ['env_name']
 # DATA_MERGER中所包含的量的值都一样的，看成是同一种数据
@@ -143,6 +145,14 @@ DESCRIPTION['FIXED_Y_LABEL'] = '自定义Y轴label名'
 # 标题命名方法
 TITLE_NAME_IDX = None
 DESCRIPTION['TITLE_NAME_IDX'] = '标题根据什么进行定义'
+
+# 阴影透明度
+SHADING_ALPHA = 0.2
+DESCRIPTION['SHADING_ALPHA'] = '阴影透明度'
+
+# 是否使用图例边框
+USE_LEGEND_FRAME = True
+DESCRIPTION['USE_LEGEND_FRAME'] = '是否使用图例边框'
 
 
 # 配置结束

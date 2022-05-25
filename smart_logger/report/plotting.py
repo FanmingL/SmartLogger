@@ -308,7 +308,8 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
                 alg_to_line_handler[alg_name] = curve
                 alg_to_seed_num[alg_name] = seed_num
             if len(data_len) > 1:
-                ax.fill_between(x_data, y_data - y_data_error, y_data + y_data_error, color=line_color, alpha=.2)
+                ax.fill_between(x_data, y_data - y_data_error, y_data + y_data_error, color=line_color,
+                                alpha=plot_config.SHADING_ALPHA)
             if _col == 0:
                 if str(plot_config.FIXED_Y_LABEL) == 'None':
                     ax.set_ylabel(y_name, fontsize=plot_config.FONTSIZE_LABEL)
@@ -333,6 +334,10 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
 
         fig_ind += 1
     names = [k for k in alg_to_line_handler]
+    if len(plot_config.LEGEND_ORDER) > 0:
+        ordered_names = [k for k in plot_config.LEGEND_ORDER if k in names]
+        remain_names = [k for k in names if k not in ordered_names]
+        names = ordered_names + remain_names
     curves = [alg_to_line_handler[k] for k in names]
     final_names = []
     for ind, name in enumerate(names):
@@ -341,7 +346,7 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
         else:
             final_names.append(name)
     axarr[0][0].legend(handles=curves, labels=final_names, loc='center left', bbox_to_anchor=(plot_config.LEGEND_POSITION_X, plot_config.LEGEND_POSITION_Y),
-                       ncol=plot_config.LEGEND_COLUMN, fontsize=plot_config.FONTSIZE_LEGEND)
+                       ncol=plot_config.LEGEND_COLUMN, fontsize=plot_config.FONTSIZE_LEGEND, frameon=plot_config.USE_LEGEND_FRAME)
     sup_title_name = y_name
     if plot_config.RECORD_DATE_TIME:
         sup_title_name += ': {}'.format(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
