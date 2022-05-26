@@ -358,6 +358,11 @@ def plot_config_update():
                 elif _type == 'int':
                     config[k] = int(v)
                 elif _type == 'str':
+                    if k == 'PLOT_LOG_PATH':
+                        v_ = str(v)
+                        while v_[-1] == '/':
+                            v_ = v_[:-1]
+                        v = v_
                     config[k] = str(v)
                 else:
                     raise NotImplementedError(f'type {_type} not implemented!')

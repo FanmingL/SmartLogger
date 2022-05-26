@@ -303,6 +303,8 @@ def config_to_short_name(config, data_merger, short_name_from_config):
 def can_ignore(config, data_ignore, data_merger):
     if len(data_ignore) == 0:
         return False
+    if config is None:
+        return True
     match_ignore = False
     short_name_origin, _ = config_to_short_name(config, data_merger, {})
     for data_ignore_item in data_ignore:
