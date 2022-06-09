@@ -118,6 +118,10 @@ class Logger(LoggerBase):
                 MAIN_MACHINE_IP, MAIN_MACHINE_PORT,
             ])
             _user, _passwd, _log_path = MAIN_MACHINE_USER, MAIN_MACHINE_PASSWD, MAIN_MACHINE_LOG_PATH
+            while _log_path.endswith('/'):
+                _log_path = _log_path[:-1]
+            while self.output_dir.endswith('/'):
+                self.output_dir = self.output_dir[:-1]
             try:
                 ssh = paramiko.SSHClient()
                 ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -139,18 +143,17 @@ class Logger(LoggerBase):
                         full_path_in_remote = full_path_in_local.replace(local_path, remote_path)
                         full_path_remote_dir = os.path.dirname(full_path_in_remote)
                         if full_path_remote_dir not in process_dir:
+                            full_path_remote_dir_normal = full_path_remote_dir.replace(' ', '\ ')
+                            full_path_remote_dir_normal = full_path_remote_dir_normal.replace('&', '\&')
                             if replace:
-                                rm_cmd = f'rm -rf {full_path_remote_dir} && mkdir -p {full_path_remote_dir}'
+                                rm_cmd = f'rm -rf {full_path_remote_dir_normal} && mkdir -p {full_path_remote_dir_normal}'
                                 _, stdout, _ = ssh.exec_command(rm_cmd)
                                 self.log(f"ssh {_user}@{_ip} {rm_cmd}")
                             else:
-                                mkdir_cmd = f'mkdir -p {full_path_remote_dir}'
+                                mkdir_cmd = f'mkdir -p {full_path_remote_dir_normal}'
                                 _, stdout, _ = ssh.exec_command(mkdir_cmd)
                                 self.log(mkdir_cmd)
                             process_dir.add(full_path_remote_dir)
-
-                ssh.close()
-                time.sleep(1.0)
 
                 t = paramiko.Transport((_ip, _port))
                 t.connect(username=_user, password=_passwd)
@@ -161,8 +164,22 @@ class Logger(LoggerBase):
                         full_path_in_remote = full_path_in_local.replace(local_path, remote_path)
                         self.log(f'sync local: {full_path_in_local} to '
                                  f'{_user}@{_ip}:{full_path_in_remote}')
-                        sftp.put(full_path_in_local, full_path_in_remote, confirm=False)
+                        full_path_in_remote_no_process = full_path_in_remote
+                        full_path_in_remote = full_path_in_remote.replace(' ', '\ ')
+                        full_path_in_remote = full_path_in_remote.replace('&', '\&')
+
+                        for _ in range(10):
+                            try:
+                                sftp.put(full_path_in_local, full_path_in_remote_no_process, confirm=False)
+                                break
+                            except FileNotFoundError as e:
+                                full_path_remote_dir = os.path.dirname(full_path_in_remote)
+                                print(f'file {full_path_remote_dir} not found!!')
+                                mkdir_cmd = f'mkdir -p {full_path_remote_dir}'
+                                _, stdout, _ = ssh.exec_command(mkdir_cmd)
+                                print(mkdir_cmd)
                 t.close()
+                ssh.close()
                 self.log(f'transfer the log to {_user}@{_ip}:{_log_path} success!!!')
                 break
             except Exception as e:
