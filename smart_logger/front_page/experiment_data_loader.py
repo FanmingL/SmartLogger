@@ -93,10 +93,13 @@ def list_current_experiment():
     for root, _, files in os.walk(base_path, topdown=True):
         for file in files:
             if file == 'progress.csv':
-                folder_name = root[len(base_path) + 1:]
-                total_folders.append(root[len(base_path) + 1:])
-                # Logger.logger(f'append {folder_name}')
-                break
+                if os.path.exists(os.path.join(root, 'parameter.json')) or \
+                    os.path.exists(os.path.join(root, 'config', 'parameter.json')) or \
+                        os.path.exists(os.path.join(root, 'config', 'running_config.json')):
+                    folder_name = root[len(base_path) + 1:]
+                    total_folders.append(root[len(base_path) + 1:])
+                    # Logger.logger(f'append {folder_name}')
+                    break
     return sorted(total_folders)
 
 
@@ -344,6 +347,8 @@ def analyze_experiment(need_ignore=False, data_ignore=None, data_merge=None, dat
     short_name_to_ind = dict()
     for folder in all_folders:
         config, important_config = _get_parameter(folder)
+        if config is None:
+            continue
         if can_ignore(config, data_ignore, data_merge):
             folder_ignore.append(folder)
             continue

@@ -35,11 +35,40 @@
             }
             return scrollTop;
         }
+        function getScrollTop(){
+            var scrollTop=0;
+            if(document.documentElement&&document.documentElement.scrollTop){
+                scrollTop=document.documentElement.scrollTop;
+            }else if(document.body){
+                scrollTop=document.body.scrollTop;
+            }
+            return scrollTop;
+        }
+        window.addEventListener('scroll',(event) => {
+                localStorage.setItem("scroll_top_t_plot", getScrollTop());
+      });
+        function scroll_to_history(){
+            var totop = 0;
+            if (localStorage.hasOwnProperty('scroll_top_t_plot')){
+               totop = localStorage.getItem("scroll_top_t_plot");
+            }
+            else{
+               totop = 0;
+            }
+            window.scrollTo(0, totop);
+            // console.log(totop)
+        }
         function www_onload() {
             document.getElementById('config_div_id').addEventListener('scroll', (event) => {
                 localStorage.setItem("scroll_top_config_div", getScrollTopElement(document.getElementById('config_div_id')));
             })
+
+            document.getElementById('file_list_div_id').addEventListener('scroll', (event) => {
+                localStorage.setItem("scroll_top_file_list_div", getScrollTopElement(document.getElementById('file_list_div_id')));
+            })
             scroll_to_history_element(document.getElementById('config_div_id'), 'scroll_top_config_div');
+            scroll_to_history_element(document.getElementById('file_list_div_id'), 'scroll_top_file_list_div');
+            scroll_to_history();
         }
         function change_config_cb(){
             let form_rename = document.getElementById('frm_rename_config_choose_select');
@@ -60,6 +89,29 @@
             overflow: scroll;
             top: 17%;
 
+        }
+        .file_list {
+            position: absolute;
+            left: 1%;
+            text-align: left;
+            width: 35%;
+            line-height: 30px;
+            background-color: rgba(255, 255, 255, 0.8);
+            height: 20%;
+            overflow: scroll;
+            top: 100%;
+            margin-bottom: 5%;
+        }
+        .bottom_box {
+            font-family:monospace;
+            position: absolute;
+            left: 0%;
+            text-align: left;
+            width: 2%;
+            background-color:rgba(0,0,0,0.3);
+            height: 1px;
+            overflow: scroll;
+            top: 130%;
         }
         .right_image{
             position: absolute;
@@ -91,6 +143,12 @@
             /*font-style: italic;*/
         }
 
+        .file_list b {
+            margin: 10px;
+            font-family: "Monaco";
+            /*font-style: italic;*/
+        }
+
         li a {
             width: 200px;
         }
@@ -106,7 +164,25 @@
             text-decoration: none;
             text-align: left;
         }
+        .file_list li a{
+                /*font-family:"Arial";*/
+            font-family:"Monaco";
+                color: #252525;
 
+                /*display: inline-block;!*注意如果要更改a链接的尺寸，必须给他block化*!*/
+                width: 100%;
+                /*height: 30px;*/
+            line-height:30px;
+                /*text-decoration: none;*/
+            text-decoration: none;
+            text-align:left;
+            margin-left: 35px;
+            /*text-indent: -55px;*/
+             /*style=";margin-left: 90px;"*/
+            padding-left:58px;
+            text-indent:-58px;
+            padding-right: 0px;
+        }
         div li a:hover {
             background-color: #fff;
         }
@@ -131,7 +207,7 @@
 <h3>图像绘制</h3>
 <div class="main_images" id="config_div_id">
     <b>
-        参数{{config_name}}
+        参数: {{config_name}}
     </b>
     <form name="form_plot" action="{{url_for('plot_config_update')}}" method="POST">
     <p>
@@ -206,6 +282,19 @@
 <div class="right_image">
 		<img id="ret_image" src="{{initial_figure_url}}" alt="plotting" {% if initial_figure_url == "#" %} style="display:none;" {% endif %} onload="finish_figure()"><br/>
 	</div>
+<div class="file_list" id="file_list_div_id">
+    <b>
+        原始图像下载: {{config_name}}
+    </b>
+    <p style="line-height: 18px; font-family: monospace">
+        {% for file_name in file_list %}
+        <li><a>> {{file_name}}</a></li>&nbsp;&nbsp;&nbsp; <a href="{{url_for('query_pregenerated_file', file_name=file_list_encode[loop.index0], attach=1)}}">下载</a>/<a href="{{url_for('query_pregenerated_file', file_name=file_list_encode[loop.index0], attach=0)}}">预览</a> <br/>
+        {% endfor %}
+    </p>
+
+</div>
+<div class="bottom_box">
+</div>
 </body>
 
 </html>

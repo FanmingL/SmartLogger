@@ -225,9 +225,9 @@ def obtain_experiment_parameter(folder_name):
                            recorded_data=recorded_data)
 
 
-@app.route("/experiment_data_download/<folder_name>", methods=['GET'])
+@app.route("/experiment_data_download/<folder_name>/<attach>", methods=['GET'])
 @require_login(source_name='experiment_data_download', allow_guest=True)
-def experiment_data_download(folder_name):
+def experiment_data_download(folder_name, attach):
     # return "Hello World"
     folder_name = base64.urlsafe_b64decode(folder_name.encode()).decode()
     file_name = os.path.join(plot_config.PLOT_LOG_PATH, folder_name)
@@ -238,9 +238,10 @@ def experiment_data_download(folder_name):
         Logger.logger(f'file {file_name} exists')
         filename = os.path.basename(file_name)
         dirname = os.path.dirname(file_name)
-        as_attachment = True if not (
-                    filename.lower().endswith('png') or filename.lower().endswith('jpg') or filename.lower().endswith(
-                'txt') or filename.lower().endswith('json')) else False
+        # as_attachment = True if not (
+        #             filename.lower().endswith('png') or filename.lower().endswith('jpg') or filename.lower().endswith(
+        #         'txt') or filename.lower().endswith('json')) else False
+        as_attachment = True if int(attach) == 1 else False
         return send_from_directory(dirname, filename, as_attachment=as_attachment)
 
     else:
@@ -279,7 +280,16 @@ def plot():
         initial_figure_url = url_for('lst_output_figure')
         initial_figure_url = initial_figure_url + f'?rand={random.random()}&file_name={file_name}'
     else:
-        Logger.logger(f'{target_file} does not exist, leave it empty.')
+        Logger.logger(f'{target_file} does not exist, leave it EMPTY.')
+    file_list = []
+    if config_name.endswith('.json'):
+        figure_saving_path = os.path.join(page_config.FIGURE_PATH, request.cookies['user_name'], config_name[:-5])
+    else:
+        figure_saving_path = os.path.join(page_config.FIGURE_PATH, request.cookies['user_name'], config_name)
+    if os.path.exists(figure_saving_path) and os.path.isdir(figure_saving_path):
+        file_list = [item for item in os.listdir(figure_saving_path) if item.endswith('pdf') or item.endswith('png')]
+    file_list = sorted(file_list, key=lambda x: x.split('.')[-1])
+    file_list_encode = [base64.urlsafe_b64encode(os.path.join(item).encode()).decode() for item in file_list]
 
     return render_template('t_plot.html',
                              plot_config=config,   # plot_config list list
@@ -287,9 +297,27 @@ def plot():
                              config_name=config_name,
                            description=config_description,
                            config_file_list=config_file_list,
-                           initial_figure_url=initial_figure_url)
+                           initial_figure_url=initial_figure_url,
+                           file_list=file_list,
+                           file_list_encode=file_list_encode,
+                           )
 
 
+
+@app.route("/query_pregenerated_file/<file_name>/<attach>", methods=['GET'])
+@require_login(source_name='query_pregenerated_file', allow_guest=True)
+def query_pregenerated_file(file_name, attach):
+    config_name = request.cookies['used_config']
+    if config_name.endswith('.json'):
+        figure_saving_path = os.path.join(page_config.FIGURE_PATH, request.cookies['user_name'], config_name[:-5])
+    else:
+        figure_saving_path = os.path.join(page_config.FIGURE_PATH, request.cookies['user_name'], config_name)
+    file_name = base64.urlsafe_b64decode(file_name.encode()).decode()
+
+    if not os.path.exists(os.path.join(figure_saving_path, file_name)):
+        return render_template('404.html')
+    as_attach = True if int(attach) == 1 else False
+    return send_from_directory(figure_saving_path, file_name, as_attachment=as_attach)
 
 @app.route("/table", methods=['GET'])
 @require_login(source_name='table', allow_guest=True)

@@ -78,7 +78,7 @@
         {% if full_path[desc_ind] == 'None'%}
         {{dtree_desc[desc_ind]}}
         {% else %}
-        {{dtree_desc[desc_ind]}} <a href="{{url_for('experiment_data_download', folder_name=full_path[desc_ind])}}">[下载/预览]</a>
+        {{dtree_desc[desc_ind]}} [<a href="{{url_for('experiment_data_download', folder_name=full_path[desc_ind], attach=1)}}">下载</a>/<a href="{{url_for('experiment_data_download', folder_name=full_path[desc_ind], attach=0)}}">预览</a>]
         ({{filesize[desc_ind]}})
         {% endif %}
         <br/>

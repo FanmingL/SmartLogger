@@ -134,6 +134,9 @@ DESCRIPTION['SHOW_SEED_NUM'] = '是否在图例中体现种子个数'
 # 导出的图像的名字
 FINAL_OUTPUT_NAME = "total_curve"
 DESCRIPTION['FINAL_OUTPUT_NAME'] = '导出的图像的名字'
+# 储存的图像文件的前缀
+OUTPUT_FILE_PREFIX = "None"
+DESCRIPTION['OUTPUT_FILE_PREFIX'] = "储存的图像文件的前缀"
 # 是否需要SUP_TITLE
 NEED_SUP_TITLE = True
 DESCRIPTION['NEED_SUP_TITLE'] = '是否需要大标题'
@@ -154,7 +157,8 @@ DESCRIPTION['SHADING_ALPHA'] = '阴影透明度'
 USE_LEGEND_FRAME = True
 DESCRIPTION['USE_LEGEND_FRAME'] = '是否使用图例边框'
 
-
+TITLE_SUFFIX = "None"
+DESCRIPTION['TITLE_SUFFIX'] = '标题尾缀'
 # 配置结束
 
 def get_global_plot_configs(things):

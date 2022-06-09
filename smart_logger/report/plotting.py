@@ -323,8 +323,10 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
             if plot_config.X_AXIS_SCI_FORM:
                 ax.ticklabel_format(style='sci', scilimits=(-1, 2), axis='x')
                 ax.xaxis.offsetText.set_fontsize(plot_config.FONTSIZE_YTICK)
-
-            ax.set_title(title_tuple_to_str(sub_figure), fontsize=plot_config.FONTSIZE_TITLE)
+            title_name = title_tuple_to_str(sub_figure)
+            if not plot_config.TITLE_SUFFIX == 'None':
+                title_name = f'{title_name}{plot_config.TITLE_SUFFIX}'
+            ax.set_title(title_name, fontsize=plot_config.FONTSIZE_TITLE)
             ax.grid(True)
             alg_count += 1
             if plot_config.XMAX is not None and not str(plot_config.XMAX) == 'None':
@@ -352,10 +354,12 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
         sup_title_name += ': {}'.format(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
     if plot_config.NEED_SUP_TITLE:
         plt.suptitle(sup_title_name, fontsize=plot_config.FONTSIZE_SUPTITLE, y=plot_config.SUPTITLE_Y)
-
+    saving_name = y_name
+    if not plot_config.OUTPUT_FILE_PREFIX == 'None':
+        saving_name = plot_config.OUTPUT_FILE_PREFIX + saving_name
     os.makedirs(plot_config.PLOT_FIGURE_SAVING_PATH, exist_ok=True)
-    png_saving_path = os.path.join(plot_config.PLOT_FIGURE_SAVING_PATH, f'{y_name}.png')
-    pdf_saving_path = os.path.join(plot_config.PLOT_FIGURE_SAVING_PATH, f'{y_name}.pdf')
+    png_saving_path = os.path.join(plot_config.PLOT_FIGURE_SAVING_PATH, f'{saving_name}.png')
+    pdf_saving_path = os.path.join(plot_config.PLOT_FIGURE_SAVING_PATH, f'{saving_name}.pdf')
     os.makedirs(os.path.dirname(png_saving_path), exist_ok=True)
     print(f'saving PDF to file://{pdf_saving_path}')
     print(f'saving PNG to file://{png_saving_path}')
