@@ -344,8 +344,11 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
             data_len = [len(item) for item in x_data]
             min_data_len = min(data_len)
             seed_num = len(data_len)
-            x_data = [list(data)[:min_data_len] for data in x_data]
-            y_data = [list(data)[:min_data_len] for data in y_data]
+
+            x_data = [list(data[:min_data_len:plot_config.PLOT_FOR_EVERY]) for data in x_data]
+            y_data = [list(data[:min_data_len:plot_config.PLOT_FOR_EVERY]) for data in y_data]
+            min_data_len = min_data_len // plot_config.PLOT_FOR_EVERY
+
             x_data = x_data[0]
             y_data, y_data_error = stat_data(y_data)
             y_data = np.array(y_data)
@@ -353,16 +356,12 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
             x_data = np.array(x_data)
             if plot_config.USE_SMOOTH:
                 y_data = smooth(y_data, radius=plot_config.SMOOTH_RADIUS)
-            print(f'figure: {sub_figure}, alg: {alg_name}, data_len: {data_len}, min len: {min(data_len)}')
+            print(f'figure: {sub_figure}, alg: {alg_name}, data_len: {data_len}, min len: {min(data_len)}, {min_data_len}')
             color_idx, type_idx, marker_idx = alg_to_color_idx[alg_name]
             line_color = line_style[color_idx][0]
             line_type = line_style[type_idx][1]
             marker = line_style[marker_idx][2]
-            if plot_config.PLOT_FOR_EVERY > 1:
-                x_data = x_data[::plot_config.PLOT_FOR_EVERY]
-                y_data = y_data[::plot_config.PLOT_FOR_EVERY]
-                y_data_error = y_data_error[::plot_config.PLOT_FOR_EVERY]
-                min_data_len = min_data_len // plot_config.PLOT_FOR_EVERY
+
             curve, = ax.plot(x_data, y_data, color=line_color,
                              linestyle=line_type, marker=marker, label=alg_name,
                              linewidth=plot_config.LINE_WIDTH, markersize=plot_config.MARKER_SIZE,
