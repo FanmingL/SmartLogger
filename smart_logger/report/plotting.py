@@ -1,5 +1,7 @@
 import sys
 import os
+import time
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 # from smart_logger.common.plot_config import PLOT_LOG_PATH, PLOT_FIGURE_SAVING_PATH
 # from smart_logger.common.plot_config import PLOTTING_XY, FIGURE_SEPARATION, DATA_MERGER, DATA_IGNORE, MAX_COLUMN
@@ -122,15 +124,22 @@ def sort_algs(exist_algs, color_ind=None, alg_to_color_idx=None):
 
 
 def stat_data(data):
-    data_mean = [0 for _ in data[0]]
-    data_error = [0 for _ in data[0]]
-    for i in range(len(data_mean)):
-        data_list = [item[i] for item in data]
-        mean_val = np.mean(data_list)
-        std = 1e-9 if len(data_list) == 1 else np.std(data_list)
-        std_error = std / np.sqrt(len(data_list))
-        data_mean[i] = mean_val
-        data_error[i] = std_error
+    # data_mean = [0 for _ in data[0]]
+    # data_error = [0 for _ in data[0]]
+    data = np.array(data)
+    data_mean = np.mean(data, axis=0)
+    if data.shape[-1] > 1:
+        data_std = np.std(data, axis=0)
+    else:
+        data_std = np.ones_like(data) * 1e-9
+    data_error = data_std / np.sqrt(data.shape[0])
+    # for i in range(len(data_mean)):
+    #     data_list = [item[i] for item in data]
+    #     mean_val = np.mean(data_list)
+    #     std = 1e-9 if len(data_list) == 1 else np.std(data_list)
+    #     std_error = std / np.sqrt(len(data_list))
+    #     data_mean[i] = mean_val
+    #     data_error[i] = std_error
     return data_mean, data_error
 
 
@@ -164,7 +173,7 @@ def _load_data(folder_name):
             with open(running_config_data, 'r') as f:
                 param2 = json.load(f)
             param.update(param2)
-        assert len(param) > 0, "at least one parameter should exist!!!!"
+        assert len(param) > 0, f"at least one parameter should exist!!!! {folder_name} {param}"
         data_merger_feature = []
         for merger in plot_config.DATA_MERGER:
             # assert merger in param, f"{merger} not in configs, it should be found!!"
@@ -230,7 +239,9 @@ def _load_data_one_thread(folder_name, task_ind):
     return result
 
 
-def _load_data_multi_thread(thread_num, path_list, task_ind_list):
+def _load_data_multi_thread(thread_num, path_list, task_ind_list, plot_config_dict):
+    for k in plot_config_dict:
+        setattr(plot_config, k, plot_config_dict[k])
     thread_num = min(thread_num, len(path_list))
     thread_exe = ThreadPoolExecutor(max_workers=thread_num)
     result_dict = dict()
@@ -257,9 +268,11 @@ def _load_data_multi_process(process_num, thread_num, path_list):
         start_ind = start_ind + tasks_num_per_thread
     if start_ind < len(path_list):
         path_array.append(path_list[start_ind:])
-        task_ind_array.append(path_list[start_ind:])
+        task_ind_array.append(task_ind_list[start_ind:])
     thread_num_list = [thread_num for _ in path_array]
-    args = [thread_num_list, path_array, task_ind_array]
+    plot_config_dict = {k: getattr(plot_config, k) for k in plot_config.global_plot_configs()}
+    plot_config_list = [plot_config_dict for _ in path_array]
+    args = [thread_num_list, path_array, task_ind_array, plot_config_list]
     for result_tmp in process_exe.map(_load_data_multi_thread, *args):
         for k, v in result_tmp.items():
             result_dict[k] = v
@@ -309,6 +322,7 @@ def collect_data():
 
 
 def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_name, y_name, plot_config_dict):
+    print(f'PID: {os.getpid()} started!!')
     for k in plot_config_dict:
         setattr(plot_config, k, plot_config_dict[k])
     sub_figure_content = [k for k in data]
@@ -344,19 +358,18 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
             data_len = [len(item) for item in x_data]
             min_data_len = min(data_len)
             seed_num = len(data_len)
-
-            x_data = [list(data[:min_data_len:plot_config.PLOT_FOR_EVERY]) for data in x_data]
-            y_data = [list(data[:min_data_len:plot_config.PLOT_FOR_EVERY]) for data in y_data]
-            min_data_len = min_data_len // plot_config.PLOT_FOR_EVERY
-
+            x_data = [np.array(data[:min_data_len:plot_config.PLOT_FOR_EVERY]) for data in x_data]
+            y_data = [np.array(data[:min_data_len:plot_config.PLOT_FOR_EVERY]) for data in y_data]
             x_data = x_data[0]
+            if not str(plot_config.XMAX) == 'None':
+                final_ind = np.argmin(np.square(np.array(x_data) - float(plot_config.XMAX))) + 1
+                x_data = x_data[:final_ind]
+                y_data = [data[:final_ind] for data in y_data]
+            min_data_len = min_data_len // plot_config.PLOT_FOR_EVERY
             y_data, y_data_error = stat_data(y_data)
-            y_data = np.array(y_data)
-            y_data_error = np.array(y_data_error)
-            x_data = np.array(x_data)
             if plot_config.USE_SMOOTH:
                 y_data = smooth(y_data, radius=plot_config.SMOOTH_RADIUS)
-            print(f'figure: {sub_figure}, alg: {alg_name}, data_len: {data_len}, min len: {min(data_len)}, {min_data_len}')
+            print(f'PID:{os.getpid()}, figure: {sub_figure}, alg: {alg_name}, data_len: {data_len}, min len: {min(data_len)}, {min_data_len}')
             color_idx, type_idx, marker_idx = alg_to_color_idx[alg_name]
             line_color = line_style[color_idx][0]
             line_type = line_style[type_idx][1]
@@ -430,7 +443,6 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
     return png_saving_path, x_name, y_name
 
 
-
 def _make_subtable(data, x_name, y_name, at_x, plot_config_dict, iter):
     for k in plot_config_dict:
         setattr(plot_config, k, plot_config_dict[k])
@@ -455,18 +467,16 @@ def _make_subtable(data, x_name, y_name, at_x, plot_config_dict, iter):
             y_data = [data_alg['data'][y_name] for data_alg in data_alg_list]
             data_len = [len(item) for item in x_data]
             min_data_len = min(data_len)
-            x_data = [list(data)[:min_data_len] for data in x_data]
-            y_data = [list(data)[:min_data_len] for data in y_data]
+            x_data = [np.array(data[:min_data_len]) for data in x_data]
+            y_data = [np.array(data[:min_data_len]) for data in y_data]
             x_data = x_data[0]
             if not str(plot_config.XMAX) == 'None':
                 final_ind = np.argmin(np.square(np.array(x_data) - float(plot_config.XMAX))) + 1
                 x_data = x_data[:final_ind]
-                y_data = [list(data)[:final_ind] for data in y_data]
+                y_data = [data[:final_ind] for data in y_data]
 
             y_data, y_data_error = stat_data(y_data)
-            y_data = np.array(y_data)
             y_data_error = np.array(y_data_error)
-            x_data = np.array(x_data)
             if plot_config.USE_SMOOTH:
                 y_data = smooth(y_data, radius=plot_config.SMOOTH_RADIUS)
             if at_x is not None:
@@ -541,8 +551,24 @@ def _plotting(data):
     futures = []
     for x_name, y_name in plot_config.PLOTTING_XY:
         plot_config_dict = {k: getattr(plot_config, k) for k in plot_config.global_plot_configs()}
-
-        futures.append(plotting_executor.submit(_plot_sub_figure, data, fig_row,
+        data_it = {}
+        for k1 in data:
+            for k2 in data[k1]:
+                data_array = data[k1][k2]
+                if k1 not in data_it:
+                    data_it[k1] = {}
+                if k2 not in data_it[k1]:
+                    data_it[k1][k2] = []
+                for _data in data_array:
+                    if x_name in _data['data'] and y_name in _data['data']:
+                        data_candidate = {}
+                        for k in _data:
+                            if k == 'data':
+                                data_candidate['data'] = _data['data'][[x_name, y_name]]
+                            else:
+                                data_candidate[k] = _data[k]
+                        data_it[k1][k2].append(data_candidate)
+        futures.append(plotting_executor.submit(_plot_sub_figure, data_it, fig_row,
                                                 fig_column, figsize, alg_to_color_idx, x_name, y_name, plot_config_dict))
     config_to_png_path = dict()
     for future in as_completed(futures):
@@ -557,7 +583,9 @@ def _plotting(data):
     # pdf.close()
     # 汇总png
     # merge png
+    print(f'start to merge PNG')
     png_images = []
+    start_merge_time = time.time()
     from PIL import Image
     for png_file in total_png:
         print('load image from {}'.format(png_file))
@@ -571,8 +599,7 @@ def _plotting(data):
         merge_png.paste(png_file, (0, start_row))
     total_png_output_path = os.path.join(plot_config.PLOT_FIGURE_SAVING_PATH, f"{plot_config.FINAL_OUTPUT_NAME}.png")
     merge_png.save(total_png_output_path, "PNG")
-    print(f'saving png to {total_png_output_path}')
-
+    print(f'saved png to {total_png_output_path} cost: {time.time() - start_merge_time}')
 
 
 def _to_table(data, atx, iter, privileged_col_idx=None, placeholder=None, md=True):
@@ -604,7 +631,6 @@ def _to_table(data, atx, iter, privileged_col_idx=None, placeholder=None, md=Tru
     futures = []
     for x_name, y_name in plot_config.PLOTTING_XY:
         plot_config_dict = {k: getattr(plot_config, k) for k in plot_config.global_plot_configs()}
-
         futures.append(plotting_executor.submit(_make_subtable, data, x_name, y_name, atx, plot_config_dict, iter))
     summary_dict_buffer = dict()
     for future in as_completed(futures):
@@ -616,6 +642,7 @@ def _to_table(data, atx, iter, privileged_col_idx=None, placeholder=None, md=Tru
         result_editor = summary_buffer_to_output(summary_dict_buffer, privileged_col_idx, placeholder)
     result = summary_buffer_to_output_html(summary_dict_buffer, privileged_col_idx, placeholder)
     return result, result_editor
+
 
 def summary_buffer_to_output(summary_dict_buffer, privileged_col_idx=None, placeholder=None):
     final_str = ''
