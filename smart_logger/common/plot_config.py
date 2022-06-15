@@ -84,6 +84,12 @@ DESCRIPTION['LEGEND_POSITION_Y'] = '图例纵向位置'
 # 最大并行进程数量
 PROCESS_NUM = 5
 DESCRIPTION['PROCESS_NUM'] = '绘图最大允许进程数'
+# 最大并行进程数量
+PROCESS_NUM_LOAD_DATA = 5
+DESCRIPTION['PROCESS_NUM_LOAD_DATA'] = '数据加载进程数'
+# 最大并行进程数量
+THREAD_NUM = 5
+DESCRIPTION['THREAD_NUM'] = '每个进程的线程数'
 # 子图宽度
 SUBFIGURE_WIDTH = 6.4
 DESCRIPTION['SUBFIGURE_WIDTH'] = '子图宽度'
@@ -159,6 +165,9 @@ DESCRIPTION['USE_LEGEND_FRAME'] = '是否使用图例边框'
 
 TITLE_SUFFIX = "None"
 DESCRIPTION['TITLE_SUFFIX'] = '标题尾缀'
+
+PLOT_FOR_EVERY = 1
+DESCRIPTION['PLOT_FOR_EVERY'] = '绘图数据的下采样间隔'
 # 配置结束
 
 def get_global_plot_configs(things):

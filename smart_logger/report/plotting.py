@@ -195,6 +195,7 @@ def _load_data(folder_name):
         data_str = data.select_dtypes(include=['object'])
         if len(list(data_str.keys())) > 0:
             print(f'invalid keys (not numerical value): {list(data_str.keys())}')
+        data = data.dropna(how='all')
         separator_values = []
         for separator in plot_config.FIGURE_SEPARATION:
             assert separator in param, f"{separator} not in configs, it should be found!!"
@@ -217,6 +218,60 @@ def _load_data(folder_name):
     return result
 
 
+def _load_data_one_thread(folder_name, task_ind):
+    result = {task_ind: None}
+    try:
+        _result = _load_data(folder_name)
+        result[task_ind] = _result
+    except Exception as e:
+        import traceback
+        print(f'[WARNING] unexpected Excepetion!!!! {e}')
+        traceback.print_exc()
+    return result
+
+
+def _load_data_multi_thread(thread_num, path_list, task_ind_list):
+    thread_num = min(thread_num, len(path_list))
+    thread_exe = ThreadPoolExecutor(max_workers=thread_num)
+    result_dict = dict()
+    args = [path_list, task_ind_list]
+    for result_tmp in thread_exe.map(_load_data_one_thread, *args):
+        for k, v in result_tmp.items():
+            result_dict[k] = v
+
+    return result_dict
+
+
+def _load_data_multi_process(process_num, thread_num, path_list):
+    process_num = min(process_num, len(path_list))
+    process_exe = ProcessPoolExecutor(max_workers=process_num)
+    result_dict = dict()
+    task_ind_list = [i for i in range(len(path_list))]
+    path_array = []
+    task_ind_array = []
+    tasks_num_per_thread = len(path_list) // process_num
+    start_ind = 0
+    for i in range(process_num - 1):
+        path_array.append(path_list[start_ind:start_ind+tasks_num_per_thread])
+        task_ind_array.append(task_ind_list[start_ind:start_ind+tasks_num_per_thread])
+        start_ind = start_ind + tasks_num_per_thread
+    if start_ind < len(path_list):
+        path_array.append(path_list[start_ind:])
+        task_ind_array.append(path_list[start_ind:])
+    thread_num_list = [thread_num for _ in path_array]
+    args = [thread_num_list, path_array, task_ind_array]
+    for result_tmp in process_exe.map(_load_data_multi_thread, *args):
+        for k, v in result_tmp.items():
+            result_dict[k] = v
+    results = []
+    for i in range(len(path_list)):
+        if i in result_dict:
+            results.append(result_dict[i])
+        else:
+            results.append(None)
+    return results
+
+
 def collect_data():
     """
     返回一个字典, 第一个key对应了FIGURE_SEPARATION[0]对应的属性的所有取值, 下一层对应了FIGURE_SEPARATION[1]的所有取值...
@@ -225,23 +280,26 @@ def collect_data():
     另外两个key描述其特征
     """
     data = dict()
+    folder_list = []
     for root, _, files in os.walk(plot_config.PLOT_LOG_PATH, topdown=True):
         for name in files:
             if name == 'progress.csv':
-                print(f'try to load data from {root}')
-                raw_data = _load_data(root)
-                if raw_data is None:
-                    print(f'load data from {root} failed')
-                    continue
-                separator = raw_data['separator']
-                merger = raw_data['merger']
-                figure_content = tuple(separator)
-                alg_name = merger_to_short_name(merger, plot_config.SHORT_NAME_FROM_CONFIG)
-                if figure_content not in data:
-                    data[figure_content] = dict()
-                if alg_name not in data[figure_content]:
-                    data[figure_content][alg_name] = []
-                data[figure_content][alg_name].append(raw_data)
+                folder_list.append(root)
+    total_raw_data = _load_data_multi_process(plot_config.PROCESS_NUM, plot_config.THREAD_NUM, folder_list)
+    for root, raw_data in zip(folder_list, total_raw_data):
+        print(f'try to load data from {root}')
+        if raw_data is None:
+            print(f'load data from {root} failed')
+            continue
+        separator = raw_data['separator']
+        merger = raw_data['merger']
+        figure_content = tuple(separator)
+        alg_name = merger_to_short_name(merger, plot_config.SHORT_NAME_FROM_CONFIG)
+        if figure_content not in data:
+            data[figure_content] = dict()
+        if alg_name not in data[figure_content]:
+            data[figure_content][alg_name] = []
+        data[figure_content][alg_name].append(raw_data)
     data_key_sorted = sorted([k for k in data], key=lambda x: x[0])
     data = {k: data[k] for k in data_key_sorted}
     for k, v in data.items():
@@ -300,6 +358,11 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
             line_color = line_style[color_idx][0]
             line_type = line_style[type_idx][1]
             marker = line_style[marker_idx][2]
+            if plot_config.PLOT_FOR_EVERY > 1:
+                x_data = x_data[::plot_config.PLOT_FOR_EVERY]
+                y_data = y_data[::plot_config.PLOT_FOR_EVERY]
+                y_data_error = y_data_error[::plot_config.PLOT_FOR_EVERY]
+                min_data_len = min_data_len // plot_config.PLOT_FOR_EVERY
             curve, = ax.plot(x_data, y_data, color=line_color,
                              linestyle=line_type, marker=marker, label=alg_name,
                              linewidth=plot_config.LINE_WIDTH, markersize=plot_config.MARKER_SIZE,
