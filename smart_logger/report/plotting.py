@@ -234,7 +234,7 @@ def _load_data_one_thread(folder_name, task_ind):
         result[task_ind] = _result
     except Exception as e:
         import traceback
-        print(f'[WARNING] unexpected Excepetion!!!! {e}')
+        print(f'[WARNING] unexpected Exception!!!! {e}')
         traceback.print_exc()
     return result
 
@@ -352,6 +352,9 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
                 if y_name in data_alg_list[0]['data']:
                     print(
                         f'path need to be check, alg_name: {alg_name}, {[item["folder_name"] for item in data_alg_list]}')
+                continue
+            if len(data_alg_list) == 0:
+                print(f'{x_name}-{y_name} cannot be found in data-{sub_figure}-{alg_name}')
                 continue
             x_data = [data_alg['data'][x_name] for data_alg in data_alg_list]
             y_data = [data_alg['data'][y_name] for data_alg in data_alg_list]
