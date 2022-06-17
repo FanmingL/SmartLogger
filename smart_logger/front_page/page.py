@@ -255,6 +255,7 @@ def plot():
     config_name = request.cookies['used_config']
     config = load_config(config_name)
     _overwrite_config(config)
+    _choose_config(config_name)
 
     config = {k: v for k, v in config.items() if k not in ['SHORT_NAME_FROM_CONFIG', 'DATA_IGNORE', 'DATA_MERGER',
                                                            'PLOTTING_XY', 'FIGURE_TO_SYNC', 'FIGURE_SEPARATION',
@@ -264,7 +265,7 @@ def plot():
                                                            'FIGURE_SERVER_MACHINE_PORT', 'FIGURE_SERVER_MACHINE_USER',
                                                            'FIGURE_SERVER_MACHINE_PASSWD',
                                                            'FIGURE_SERVER_MACHINE_TARGET_PATH', 'PLOTTING_ORDER',
-                                                           'LEGEND_ORDER']}
+                                                           'LEGEND_ORDER', 'DATA_SELECT', 'USE_IGNORE_RULE']}
     config_description = plot_config.DESCRIPTION
     for k in config:
         if k not in config_description:
@@ -325,6 +326,7 @@ def table():
     config_name = request.cookies['used_config']
     config = load_config(config_name)
     config_file_list = list_current_configs()
+    _choose_config(config_name)
     return render_template('t_table.html',
                              plot_config=config,   # plot_config list list
                              config_name=config_name,
@@ -462,11 +464,19 @@ def param_adjust():
     config_name = request.cookies['used_config']
     config = load_config(config_name)
     _overwrite_config(config)
-    data_ignore = {} if 'DATA_IGNORE' not in config else config['DATA_IGNORE']
+    _choose_config(config_name)
+    data_ignore = [] if 'DATA_IGNORE' not in config else config['DATA_IGNORE']
+    data_choose = [] if 'DATA_SELECT' not in config else config['DATA_SELECT']
     data_merge = [] if 'DATA_MERGER' not in config else config['DATA_MERGER']
     data_short_name_dict = {} if 'SHORT_NAME_FROM_CONFIG' not in config else config['SHORT_NAME_FROM_CONFIG']
-    exp_data, exp_data_ignores, selected_choices, alg_idx, possible_config, short_name_to_ind, nick_name_list = analyze_experiment(need_ignore=True, data_ignore=data_ignore,
-                                                                      data_merge=data_merge, data_short_name_dict=data_short_name_dict)
+    exp_data, exp_data_ignores, selected_choices, possible_config_ignore, selected_choices_ignore, alg_idxs_ignore, \
+        folder_ignore, nick_name_ignore_list, alg_idx, possible_config, \
+            short_name_to_ind, nick_name_list = analyze_experiment(need_ignore=config['USE_IGNORE_RULE'],
+                                                                   data_ignore=data_ignore,
+                                                                   need_select=not config['USE_IGNORE_RULE'],
+                                                                   data_select=data_choose,
+                                                                   data_merge=data_merge,
+                                                                   data_short_name_dict=data_short_name_dict)
     exp_data_encoded = [base64.urlsafe_b64encode(item.encode()).decode() for item in exp_data]
     exp_data_ignores_encoded = [base64.urlsafe_b64encode(item.encode()).decode() for item in exp_data_ignores]
     Logger.logger(f'selected_choices keys: {[k for k in selected_choices]}')
@@ -479,7 +489,11 @@ def param_adjust():
             merge_config_file[k] = [False, len(possible_config[k])]
     merge_config_file = [(k, v[0], v[1]) for k, v in merge_config_file.items()]
     merge_config_file = list(reversed(sorted(sorted(merge_config_file, key=lambda x: x[1]), key=lambda x: x[2])))
-    possible_config = [(k, v) for k, v in possible_config.items()]
+    if plot_config.USE_IGNORE_RULE:
+        possible_config = [(k, v) for k, v in possible_config.items()]
+    else:
+        possible_config = [(k, v) for k, v in possible_config_ignore.items()]
+
     possible_config = [*reversed(sorted(possible_config, key=lambda x: len(x[1])))]
     # Logger.logger(f'possible config json: {json.dumps(possible_config)}')
     encode_possible_config_js = base64.urlsafe_b64encode(json.dumps(possible_config).encode()).decode()
@@ -516,6 +530,7 @@ def param_adjust():
                            selected_choices=selected_choices,
                            merge_config_file=merge_config_file,  # merge_config_file list list
                            alg_idx=alg_idx,
+                           alg_idxs_ignore=alg_idxs_ignore,
                            data_ignore=data_ignore,  # data_ignore list list
                            rename_rule_dict=rename_rule_dict,
                            possible_config=possible_config,
@@ -524,6 +539,7 @@ def param_adjust():
                            plotting_xy=plotting_xy,  # plotting_xy list list
                            possible_short_name=possible_short_name,
                            nick_name_list=nick_name_list,
+                           nick_name_ignore_list=nick_name_ignore_list,
                            config_file_list=config_file_list,
                            config_name=config_name,
                            rename_rule_data=rename_rule_data,
@@ -535,7 +551,9 @@ def param_adjust():
                            exists_ordered_legends=exists_ordered_legends,
                            exists_unordered_legends=exists_unordered_legends,
                            exists_ordered_legends_encode=exists_ordered_legends_encode,
-                           exists_unordered_legends_encode=exists_unordered_legends_encode
+                           exists_unordered_legends_encode=exists_unordered_legends_encode,
+                           filter_data_with_ignore=plot_config.USE_IGNORE_RULE,
+                           data_choose_rule=data_choose
                            )
 
 
@@ -550,7 +568,12 @@ def merge_process():
     save_config(config, config_name)
     return redirect('param_adjust')
 
+
+chosen_config_name_dict = dict()
 def _choose_config(config_name):
+    if config_name in chosen_config_name_dict:
+        return
+    chosen_config_name_dict[config_name] = True
     config_new = load_config(config_name)
     for k, v in config_new.items():
         if hasattr(plot_config, k):
@@ -681,10 +704,16 @@ def add_ignore():
     config_name = request.cookies['used_config']
     config = load_config(config_name)
     newly_added_ignore = json.loads(request.data.decode())
-    if 'DATA_IGNORE' not in config:
-        config['DATA_IGNORE'] = []
-    if len(newly_added_ignore) > 0:
-        config['DATA_IGNORE'].append(newly_added_ignore)
+    if 'USE_IGNORE_RULE' in config and config['USE_IGNORE_RULE']:
+        if 'DATA_IGNORE' not in config:
+            config['DATA_IGNORE'] = []
+        if len(newly_added_ignore) > 0:
+            config['DATA_IGNORE'].append(newly_added_ignore)
+    else:
+        if 'DATA_SELECT' not in config:
+            config['DATA_SELECT'] = []
+        if len(newly_added_ignore) > 0:
+            config['DATA_SELECT'].append(newly_added_ignore)
     save_config(config, config_name)
     return redirect('param_adjust')
 
@@ -695,10 +724,16 @@ def del_ignore(rule_idx):
     Logger.logger(f'try to rm {rule_idx} {type(rule_idx)}')
     config_name = request.cookies['used_config']
     config = load_config(config_name)
-    if 'DATA_IGNORE' not in config:
-        config['DATA_IGNORE'] = []
+    if 'USE_IGNORE_RULE' in config and config['USE_IGNORE_RULE']:
+        if 'DATA_IGNORE' not in config:
+            config['DATA_IGNORE'] = []
+        else:
+            config['DATA_IGNORE'] = [config['DATA_IGNORE'][i] for i in range(len(config['DATA_IGNORE'])) if not str(i) == str(rule_idx)]
     else:
-        config['DATA_IGNORE'] = [config['DATA_IGNORE'][i] for i in range(len(config['DATA_IGNORE'])) if not str(i) == str(rule_idx)]
+        if 'DATA_SELECT' not in config:
+            config['DATA_SELECT'] = []
+        else:
+            config['DATA_SELECT'] = [config['DATA_SELECT'][i] for i in range(len(config['DATA_SELECT'])) if not str(i) == str(rule_idx)]
     save_config(config, config_name)
     return redirect('/param_adjust')
 
@@ -855,11 +890,13 @@ def change_legend_order(alg_name, idx, method):
 def ignore_with_unnamed(rule_idx):
     config_name = request.cookies['used_config']
     config = load_config(config_name)
-    data_ignore = {} if 'DATA_IGNORE' not in config else config['DATA_IGNORE']
+    data_ignore = [] if 'DATA_IGNORE' not in config else config['DATA_IGNORE']
+    data_select = [] if 'DATA_SELECT' not in config else config['DATA_SELECT']
     data_merge = [] if 'DATA_MERGER' not in config else config['DATA_MERGER']
     data_short_name_dict = {} if 'SHORT_NAME_FROM_CONFIG' not in config else config['SHORT_NAME_FROM_CONFIG']
-    _, _, _, _, _, short_name_to_ind, _ = analyze_experiment(
-        need_ignore=True, data_ignore=data_ignore,
+    _, _, _, _, _, _, _, _, _, _, short_name_to_ind, _ = analyze_experiment(
+        need_ignore=config['USE_IGNORE_RULE'], data_ignore=data_ignore,
+        need_select=not config['USE_IGNORE_RULE'], data_select=data_select,
         data_merge=data_merge, data_short_name_dict=data_short_name_dict)
     rename_rule = {} if 'SHORT_NAME_FROM_CONFIG' not in config else config['SHORT_NAME_FROM_CONFIG']
     standardize_rule = standardize_merger_item(rename_rule)
@@ -935,6 +972,19 @@ def add_xy():
     xy_list = [] if 'PLOTTING_XY' not in config else config['PLOTTING_XY']
     xy_list.append([request.form['x_name'], request.form['y_name']])
     config['PLOTTING_XY'] = xy_list
+    save_config(config, config_name)
+    return redirect('/param_adjust')
+
+
+@app.route("/change_filter_rule", methods=['POST'])
+@require_login(source_name='change_filter_rule', allow_guest=True)
+def change_filter_rule():
+    config_name = request.cookies['used_config']
+    config = load_config(config_name)
+    if 'filter_data_with_ignore' in request.form:
+        config['USE_IGNORE_RULE'] = True
+    else:
+        config['USE_IGNORE_RULE'] = False
     save_config(config, config_name)
     return redirect('/param_adjust')
 

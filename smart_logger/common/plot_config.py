@@ -24,6 +24,10 @@ DATA_IGNORE = [
     {'information': "local_test"},
     {'SHORT_NAME_SUFFIX': "test_speed"},
 ]
+# 数据选择规则
+DATA_SELECT = [
+    {'information': "MAIN"},
+]
 # 图例重命名规则
 SHORT_NAME_FROM_CONFIG = {
 }
@@ -168,6 +172,9 @@ DESCRIPTION['TITLE_SUFFIX'] = '标题尾缀'
 
 PLOT_FOR_EVERY = 1
 DESCRIPTION['PLOT_FOR_EVERY'] = '绘图数据的下采样间隔'
+
+USE_IGNORE_RULE = True
+DESCRIPTION['USE_IGNORE_RULE'] = '是否使用过滤规则'
 # 配置结束
 
 def get_global_plot_configs(things):

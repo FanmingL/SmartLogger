@@ -180,18 +180,33 @@ def _load_data(folder_name):
             if merger in param:
                 data_merger_feature.append(make_merger_feature(merger, param[merger]))
         match_ignore = False
-        for data_ignore in plot_config.DATA_IGNORE:
-            match_ignore = True
-            for k, v in data_ignore.items():
-                if k == '__SHORT_NAME__':
-                    if not standardize_string(v) == standardize_string(list_embedding(data_merger_feature)):
+        if plot_config.USE_IGNORE_RULE:
+            for data_ignore in plot_config.DATA_IGNORE:
+                match_ignore = True
+                for k, v in data_ignore.items():
+                    if k == '__SHORT_NAME__':
+                        if not standardize_string(v) == standardize_string(list_embedding(data_merger_feature)):
+                            match_ignore = False
+                            break
+                    elif k not in param or not param[k] == v:
                         match_ignore = False
                         break
-                elif k not in param or not param[k] == v:
-                    match_ignore = False
+                if match_ignore:
                     break
-            if match_ignore:
-                break
+        else:
+            match_select = False
+            for data_select in plot_config.DATA_SELECT:
+                match_select = True
+                for k, v in data_select.items():
+                    if k not in param or not param[k] == v:
+                        match_select = False
+                        break
+                if match_select:
+                    break
+            if match_select:
+                match_ignore = False
+            else:
+                match_ignore = True
         if match_ignore:
             return None
         data = pd.read_csv(progress_data)

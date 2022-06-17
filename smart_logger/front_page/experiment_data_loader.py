@@ -327,58 +327,103 @@ def can_ignore(config, data_ignore, data_merger):
     return False
 
 
-def analyze_experiment(need_ignore=False, data_ignore=None, data_merge=None, data_short_name_dict=None):
+def can_preserve(config, data_select, data_merger):
+    if len(data_select) == 0:
+        return False
+    if config is None:
+        return False
+    match_select = False
+    short_name_origin, _ = config_to_short_name(config, data_merger, {})
+    for data_select_item in data_select:
+        match_select = True
+        for k, v in data_select_item.items():
+            if k not in config or not config[k] == v:
+                match_select = False
+                break
+        if match_select:
+            break
+    return match_select
+
+
+def analyze_experiment(need_ignore=False, data_ignore=None, need_select=False, data_select=None, data_merge=None, data_short_name_dict=None):
     all_folders = list_current_experiment()
     folder_ignore = []
     if need_ignore:
         if data_ignore is None:
-            config = default_config()
-            if 'DATA_IGNORE' in config:
-                data_ignore = config['DATA_IGNORE']
-            else:
-                data_ignore = {}
+            data_ignore = plot_config.DATA_IGNORE
     else:
-        data_ignore = {}
+        data_ignore = []
+    if need_select:
+        if data_select is None:
+            data_select = plot_config.DATA_SELECT
+    else:
+        data_select = []
     data_short_name_dict = {} if data_short_name_dict is None else data_short_name_dict
     folder_list = []
     config_list = []
     alg_idxs = []
+
+    config_list_ignore = []
+    alg_idxs_ignore = []
+
     nick_name_list = []
+    nick_name_ignore_list = []
+    config_list_ignore = []
     short_name_to_ind = dict()
+    short_name_to_ind_ignore = dict()
     for folder in all_folders:
         config, important_config = _get_parameter(folder)
         if config is None:
             continue
-        if can_ignore(config, data_ignore, data_merge):
+        ignore_file = False
+        if need_ignore and can_ignore(config, data_ignore, data_merge):
             folder_ignore.append(folder)
-            continue
+            config_list_ignore.append(config)
+            ignore_file = True
+        if not ignore_file and need_select and not can_preserve(config, data_select, data_merge):
+            folder_ignore.append(folder)
+            config_list_ignore.append(config)
+            ignore_file = True
         short_name, short_name_nick = config_to_short_name(config, data_merge, data_short_name_dict)
-        nick_name_list.append(short_name_nick)
-        if short_name not in short_name_to_ind:
-            short_name_to_ind[short_name] = len(short_name_to_ind)
-        alg_idxs.append(short_name_to_ind[short_name])
-        folder_list.append(folder)
-        config_list.append(config)
-    possible_config = dict()
-    for config in config_list:
-        for k, v in config.items():
-            if k not in possible_config:
-                possible_config[k] = set()
-            if isinstance(v, list):
-                v = tuple(v)
-            possible_config[k].add(v)
-    selected_choices = dict()
-    for k in possible_config:
-        possible_config[k] = list(possible_config[k])
-    for k, v in possible_config.items():
-        if len(v) > 1:
-            Logger.logger(f'{k}: {len(v)}---{v}')
-            selected_choices[k] = list(v)
+        if not ignore_file:
+            nick_name_list.append(short_name_nick)
+            if short_name not in short_name_to_ind:
+                short_name_to_ind[short_name] = len(short_name_to_ind)
+            alg_idxs.append(short_name_to_ind[short_name])
+            folder_list.append(folder)
+            config_list.append(config)
+        else:
+            nick_name_ignore_list.append(short_name_nick)
+            if short_name not in short_name_to_ind_ignore:
+                short_name_to_ind_ignore[short_name] = len(short_name_to_ind_ignore)
+            alg_idxs_ignore.append(short_name_to_ind_ignore[short_name])
+    def stat_config(_config_list):
+        _possible_config = dict()
+        for config in _config_list:
+            for k, v in config.items():
+                if k not in _possible_config:
+                    _possible_config[k] = set()
+                if isinstance(v, list):
+                    v = tuple(v)
+                _possible_config[k].add(v)
+        _selected_choices = dict()
+        for k in _possible_config:
+            _possible_config[k] = list(_possible_config[k])
+        for k, v in _possible_config.items():
+            if len(v) > 1:
+                _selected_choices[k] = list(v)
+        return _possible_config, _selected_choices
+
+    possible_config, selected_choices = stat_config(config_list)
+    possible_config_ignore, selected_choices_ignore = stat_config(config_list_ignore)
     Logger.logger(f'short name to ind: {short_name_to_ind}')
     sorted_res = [*zip(*sorted([*zip(alg_idxs, folder_list, nick_name_list)], key=lambda x: x[0]))]
+    sorted_res_ignore = [*zip(*sorted([*zip(alg_idxs_ignore, folder_ignore, nick_name_ignore_list)], key=lambda x: x[0]))]
     if len(sorted_res) > 0:
         alg_idxs, folder_list, nick_name_list = sorted_res
-    return folder_list, folder_ignore, selected_choices, alg_idxs, possible_config, short_name_to_ind, nick_name_list
+    if len(sorted_res_ignore) > 0:
+        alg_idxs_ignore, folder_ignore, nick_name_ignore_list = sorted_res_ignore
+    return folder_list, folder_ignore, selected_choices, possible_config_ignore, selected_choices_ignore, alg_idxs_ignore, folder_ignore, nick_name_ignore_list, alg_idxs, possible_config, short_name_to_ind, nick_name_list
     # for
 
 
