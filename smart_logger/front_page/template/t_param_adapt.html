@@ -587,7 +587,7 @@
             <div style="font-family: monospace; margin: 5px" >
              key:<select id="select_key"  onchange="set_option()">
                 {% for name, items in possible_config %}
-                  <option value ="{{name}}">{{name}}</option>
+                  <option value ="{{name}}">{{name}} ({{items|length}})</option>
                 {% endfor %}
             </select>
             value:<select id="select_value">
@@ -664,7 +664,7 @@
        <tr>
        {% endif %}
       <td><input type="checkbox" name="{{k}}" id="{{k}}_cb" value="{{k}}_value" {% if v %}checked="checked" {%endif%} onchange="submit_selection()">
-      <label for="{{k}}_cb" style="font-family: monospace">{{k}}</label> </td>
+      <label for="{{k}}_cb" style="font-family: monospace">{{k}}({{v1}})</label> </td>
        {%if loop.index0 is odd%}
        </tr>
        {% endif %}
