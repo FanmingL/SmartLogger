@@ -461,7 +461,7 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
     return png_saving_path, x_name, y_name
 
 
-def _make_subtable(data, x_name, y_name, at_x, plot_config_dict, iter):
+def _make_subtable(data, x_name, y_name, at_x, plot_config_dict, iter, alg_as_row_header):
     for k in plot_config_dict:
         setattr(plot_config, k, plot_config_dict[k])
     sub_figure_content = [k for k in data]
@@ -512,9 +512,17 @@ def _make_subtable(data, x_name, y_name, at_x, plot_config_dict, iter):
             if sub_figure not in summary_dict:
                 summary_dict[sub_figure] = dict()
             summary_dict[sub_figure][alg_name] = (selected_mean, selected_error)
-            print(f'figure: {sub_figure}, alg: {alg_name}, x-y: {x_name}-{y_name}, data_len: {data_len}, min len: {min(data_len)}, selected mean: {selected_mean}, selected error: {selected_error}')
+            print(f'table: {sub_figure}, alg: {alg_name}, x-y: {x_name}-{y_name}, data_len: {data_len}, min len: {min(data_len)}, selected mean: {selected_mean}, selected error: {selected_error}')
 
         fig_ind += 1
+    if alg_as_row_header:
+        summary_dict_transpose = dict()
+        for k1 in summary_dict:
+            for k2 in summary_dict[k1]:
+                if k2 not in summary_dict_transpose:
+                    summary_dict_transpose[k2] = dict()
+                summary_dict_transpose[k2][k1] = summary_dict[k1][k2]
+        summary_dict = summary_dict_transpose
     return summary_dict, x_name, y_name
 
 
@@ -647,22 +655,40 @@ def _to_table(data, atx, iter, privileged_col_idx=None, placeholder=None, md=Tru
                     continue
     plotting_executor = ProcessPoolExecutor(max_workers=plot_config.PROCESS_NUM)
     futures = []
+    alg_as_row_header = False
     for x_name, y_name in plot_config.PLOTTING_XY:
         plot_config_dict = {k: getattr(plot_config, k) for k in plot_config.global_plot_configs()}
-        futures.append(plotting_executor.submit(_make_subtable, data, x_name, y_name, atx, plot_config_dict, iter))
+        futures.append(plotting_executor.submit(_make_subtable, data, x_name, y_name, atx, plot_config_dict, iter, alg_as_row_header))
     summary_dict_buffer = dict()
     for future in as_completed(futures):
         summary_dict, x_name, y_name = future.result()
         summary_dict_buffer[y_name] = summary_dict
     if md:
-        result_editor = summary_buffer_to_output_md(summary_dict_buffer, privileged_col_idx, placeholder)
+        result_editor = summary_buffer_to_output_md(summary_dict_buffer, privileged_col_idx, placeholder, alg_as_row_header)
     else:
-        result_editor = summary_buffer_to_output(summary_dict_buffer, privileged_col_idx, placeholder)
-    result = summary_buffer_to_output_html(summary_dict_buffer, privileged_col_idx, placeholder)
+        result_editor = summary_buffer_to_output(summary_dict_buffer, privileged_col_idx, placeholder, alg_as_row_header)
+    result = summary_buffer_to_output_html(summary_dict_buffer, privileged_col_idx, placeholder, alg_as_row_header)
     return result, result_editor
 
 
-def summary_buffer_to_output(summary_dict_buffer, privileged_col_idx=None, placeholder=None):
+def standardize_row_and_col(item_name, row_header, alg_as_row_header):
+    # row_header：是否是行首
+    if row_header:
+        if alg_as_row_header:
+            # alg_name, str
+            return item_name.replace('_', '-')
+        else:
+            return str(title_tuple_to_str(item_name)).replace('_', '-')
+    else:
+        if alg_as_row_header:
+            # env_name, tuple
+            return str(title_tuple_to_str(item_name)).replace('_', '-')
+        else:
+            # alg_name, str
+            return item_name.replace('_', '-')
+
+
+def summary_buffer_to_output(summary_dict_buffer, privileged_col_idx=None, placeholder=None, alg_as_row_header=False):
     final_str = ''
     for table_name in summary_dict_buffer:
         final_str = final_str + '\n\n' + '='*15 + f'Table: {table_name}' + '='*15 + '\n'
@@ -692,10 +718,7 @@ def summary_buffer_to_output(summary_dict_buffer, privileged_col_idx=None, place
 
         for ind, task in enumerate(task_list):
             final_str = final_str + '\\multicolumn{2}{c}{'
-            if '_' in task:
-                task_safe = task.replace('_', '-')
-            else:
-                task_safe = task
+            task_safe = standardize_row_and_col(item_name=task, row_header=False, alg_as_row_header=alg_as_row_header)
             final_str = final_str + str(task_safe) + '}'
             if ind < len(task_list) - 1:
                 final_str += ' & '
@@ -704,7 +727,7 @@ def summary_buffer_to_output(summary_dict_buffer, privileged_col_idx=None, place
         for row_name in row_id_list:
             row_content = summary_dict[row_name]
             max_performance_ind, max_performance = 0, -10000000
-            final_str = final_str + str(title_tuple_to_str(row_name)).replace('_', '-') + ' & '
+            final_str = final_str + standardize_row_and_col(item_name=row_name, row_header=True, alg_as_row_header=alg_as_row_header) + ' & '
             for ind_task, task in enumerate(task_list):
                 if task in row_content:
                     data_mean, data_error = row_content[task]
@@ -734,7 +757,7 @@ def summary_buffer_to_output(summary_dict_buffer, privileged_col_idx=None, place
 
 
 
-def summary_buffer_to_output_md(summary_dict_buffer, privileged_col_idx=None, placeholder=None):
+def summary_buffer_to_output_md(summary_dict_buffer, privileged_col_idx=None, placeholder=None, alg_as_row_header=False):
     final_str = ''
     for table_name in summary_dict_buffer:
         final_str = final_str + '## ' + f'Table: {table_name}' + '\n'
@@ -764,10 +787,7 @@ def summary_buffer_to_output_md(summary_dict_buffer, privileged_col_idx=None, pl
         task_list, _, _ = sort_algs(task_list)
         final_str = final_str + '||'
         for ind, task in enumerate(task_list):
-            if '_' in task:
-                task_safe = task.replace('_', '-')
-            else:
-                task_safe = task
+            task_safe = standardize_row_and_col(task, row_header=False, alg_as_row_header=alg_as_row_header)
             final_str = final_str + task_safe + '|'
         final_str += '\n'
         length_placeholder = '-' * 6
@@ -779,7 +799,7 @@ def summary_buffer_to_output_md(summary_dict_buffer, privileged_col_idx=None, pl
         for row_name in row_id_list:
             row_content = summary_dict[row_name]
             max_performance_ind, max_performance = 0, -10000000
-            final_str = final_str + '|' + str(title_tuple_to_str(row_name)).replace('_', '-') + ' | '
+            final_str = final_str + '|' + standardize_row_and_col(row_name, row_header=True, alg_as_row_header=alg_as_row_header) + ' | '
             for ind_task, task in enumerate(task_list):
                 if task in row_content:
                     data_mean, data_error = row_content[task]
@@ -812,7 +832,7 @@ def summary_buffer_to_output_md(summary_dict_buffer, privileged_col_idx=None, pl
     return final_str
 
 
-def summary_buffer_to_output_html(summary_dict_buffer, privileged_col_idx=None, placeholder=None):
+def summary_buffer_to_output_html(summary_dict_buffer, privileged_col_idx=None, placeholder=None, alg_as_row_header=False):
     final_str = ''
     for table_name in summary_dict_buffer:
         final_str = final_str + '<h3> ' + f'Table: {table_name}' + '</h3>' + '\n'
@@ -844,18 +864,15 @@ def summary_buffer_to_output_html(summary_dict_buffer, privileged_col_idx=None, 
         final_str = final_str + '<tr>\n'
         final_str = final_str + '<td>&nbsp;</td>\n'
         for ind, task in enumerate(task_list):
-            if '_' in task:
-                task_safe = task.replace('_', '-')
-            else:
-                task_safe = task
-            final_str = final_str + '<th>' + task_safe + '</th>\n'
+            task_safe = standardize_row_and_col(task, row_header=False, alg_as_row_header=alg_as_row_header)
+            final_str = final_str + '<th>' + '{}'.format(task_safe) + '</th>\n'
         final_str += '</tr>\n'
         valid_bit = 2
         for row_name in row_id_list:
             row_content = summary_dict[row_name]
             max_performance_ind, max_performance = 0, -10000000
             final_str = final_str + '<tr>'
-            final_str = final_str + '<td style="text-align: left;">' + str(title_tuple_to_str(row_name)).replace('_', '-') + '</td>\n'
+            final_str = final_str + '<td style="text-align: left;">' + standardize_row_and_col(row_name, row_header=True, alg_as_row_header=alg_as_row_header) + '</td>\n'
             for ind_task, task in enumerate(task_list):
                 if task in row_content:
                     data_mean, data_error = row_content[task]
