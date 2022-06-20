@@ -255,7 +255,6 @@ def plot():
     config_name = request.cookies['used_config']
     config = load_config(config_name)
     _overwrite_config(config)
-    _choose_config(config_name)
 
     config = {k: v for k, v in config.items() if k not in ['SHORT_NAME_FROM_CONFIG', 'DATA_IGNORE', 'DATA_MERGER',
                                                            'PLOTTING_XY', 'FIGURE_TO_SYNC', 'FIGURE_SEPARATION',
@@ -326,7 +325,6 @@ def table():
     config_name = request.cookies['used_config']
     config = load_config(config_name)
     config_file_list = list_current_configs()
-    _choose_config(config_name)
     return render_template('t_table.html',
                              plot_config=config,   # plot_config list list
                              config_name=config_name,
@@ -464,7 +462,6 @@ def param_adjust():
     config_name = request.cookies['used_config']
     config = load_config(config_name)
     _overwrite_config(config)
-    _choose_config(config_name)
     data_ignore = [] if 'DATA_IGNORE' not in config else config['DATA_IGNORE']
     data_choose = [] if 'DATA_SELECT' not in config else config['DATA_SELECT']
     data_merge = [] if 'DATA_MERGER' not in config else config['DATA_MERGER']
@@ -569,35 +566,6 @@ def merge_process():
     return redirect('param_adjust')
 
 
-chosen_config_name_dict = dict()
-def _choose_config(config_name):
-    if config_name in chosen_config_name_dict:
-        return
-    chosen_config_name_dict[config_name] = True
-    config_new = load_config(config_name)
-    for k, v in config_new.items():
-        if hasattr(plot_config, k):
-            setattr(plot_config, k, v)
-    _default_config = load_config('default_config.json')
-    k_set_mismatch = False
-    for k in _default_config:
-        if k not in config_new:
-            config_new[k] = _default_config[k]
-            k_set_mismatch = True
-    deleted_keys = set()
-    for k in config_new:
-        if k not in _default_config:
-            deleted_keys.add(k)
-    if len(deleted_keys) > 0:
-        k_set_mismatch = True
-        config_new = {k: v for k, v in config_new.items() if k not in deleted_keys}
-    for k, v in _default_config['DESCRIPTION'].items():
-        if k not in config_new['DESCRIPTION'] or not config_new['DESCRIPTION'][k] == v:
-            config_new['DESCRIPTION'][k] = v
-            k_set_mismatch = True
-    if k_set_mismatch:
-        save_config(config_new, config_name)
-
 @app.route("/choose_config/<source>", methods=['POST'])
 @require_login(source_name='choose_config', allow_guest=True)
 def choose_config(source):
@@ -614,7 +582,6 @@ def choose_config(source):
     config_name = request.form.get('chosen_config', None)
     if config_name is not None:
         response.set_cookie('used_config', config_name, expires=outdate_config_path)
-    _choose_config(config_name)
     return response
 
 @app.route("/rename_config", methods=['POST'])

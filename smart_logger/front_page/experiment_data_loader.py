@@ -73,6 +73,7 @@ def has_config(file_name):
     return os.path.exists(get_config_path(file_name))
 
 def load_config(file_name):
+    _choose_config(config_name=file_name)
     config = _load_config(file_name)
     return config_post_process(config)
 
@@ -302,6 +303,37 @@ def config_to_short_name(config, data_merger, short_name_from_config):
     short_name = merger_to_short_name(elements, short_name_from_config)
     return short_name_origin, short_name
 
+
+chosen_config_name_dict = dict()
+
+
+def _choose_config(config_name):
+    if config_name in chosen_config_name_dict:
+        return
+    chosen_config_name_dict[config_name] = True
+    config_new = load_config(config_name)
+    for k, v in config_new.items():
+        if hasattr(plot_config, k):
+            setattr(plot_config, k, v)
+    _default_config = load_config('default_config.json')
+    k_set_mismatch = False
+    for k in _default_config:
+        if k not in config_new:
+            config_new[k] = _default_config[k]
+            k_set_mismatch = True
+    deleted_keys = set()
+    for k in config_new:
+        if k not in _default_config:
+            deleted_keys.add(k)
+    if len(deleted_keys) > 0:
+        k_set_mismatch = True
+        config_new = {k: v for k, v in config_new.items() if k not in deleted_keys}
+    for k, v in _default_config['DESCRIPTION'].items():
+        if k not in config_new['DESCRIPTION'] or not config_new['DESCRIPTION'][k] == v:
+            config_new['DESCRIPTION'][k] = v
+            k_set_mismatch = True
+    if k_set_mismatch:
+        save_config(config_new, config_name)
 
 def can_ignore(config, data_ignore, data_merger):
     if len(data_ignore) == 0:
