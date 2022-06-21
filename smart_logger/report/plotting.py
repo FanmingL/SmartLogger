@@ -131,7 +131,7 @@ def stat_data(data):
     if data.shape[-1] > 1:
         data_std = np.std(data, axis=0)
     else:
-        data_std = np.ones_like(data) * 1e-9
+        data_std = np.ones_like(data_mean) * 1e-9
     data_error = data_std / np.sqrt(data.shape[0])
     # for i in range(len(data_mean)):
     #     data_list = [item[i] for item in data]
