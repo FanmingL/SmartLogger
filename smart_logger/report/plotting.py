@@ -145,11 +145,14 @@ def stat_data(data):
 
 def merger_to_short_name(merger, short_name_from_config):
     _res = list_embedding(merger)
+    _res_standard = standardize_string(_res)
+
     short_name_config = dict()
     for k, v in short_name_from_config.items():
         short_name_config[standardize_string(k)] = v
-    if _res in short_name_config:
-        _res = short_name_config[_res]
+
+    if _res_standard in short_name_config:
+        _res = short_name_config[_res_standard]
     return _res
 
 
