@@ -339,6 +339,19 @@ def collect_data():
     return data
 
 
+def _remove_nan(x_data, y_data_list):
+    y_data = np.array(y_data_list)
+    y_data_mean = np.mean(y_data, axis=0)
+    nan_mask = np.isnan(y_data_mean)
+    if np.any(nan_mask):
+        y_data = y_data[:, ~nan_mask]
+        x_data = x_data[~nan_mask]
+        y_data_list = [item for item in y_data]
+        return x_data, y_data_list
+    else:
+        return x_data, y_data_list
+
+
 def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_name, y_name, plot_config_dict):
     print(f'PID: {os.getpid()} started!!')
     for k in plot_config_dict:
@@ -382,6 +395,7 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
             x_data = [np.array(data[:min_data_len:plot_config.PLOT_FOR_EVERY]) for data in x_data]
             y_data = [np.array(data[:min_data_len:plot_config.PLOT_FOR_EVERY]) for data in y_data]
             x_data = x_data[0]
+            x_data, y_data = _remove_nan(x_data, y_data)
             if not str(plot_config.XMAX) == 'None':
                 final_ind = np.argmin(np.square(np.array(x_data) - float(plot_config.XMAX))) + 1
                 x_data = x_data[:final_ind]
@@ -491,6 +505,7 @@ def _make_subtable(data, x_name, y_name, at_x, plot_config_dict, iter, alg_as_ro
             x_data = [np.array(data[:min_data_len]) for data in x_data]
             y_data = [np.array(data[:min_data_len]) for data in y_data]
             x_data = x_data[0]
+            x_data, y_data = _remove_nan(x_data, y_data)
             if not str(plot_config.XMAX) == 'None':
                 final_ind = np.argmin(np.square(np.array(x_data) - float(plot_config.XMAX))) + 1
                 x_data = x_data[:final_ind]
