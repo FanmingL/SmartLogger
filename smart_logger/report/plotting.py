@@ -342,7 +342,7 @@ def collect_data():
 def _remove_nan(x_data, y_data_list):
     y_data = np.array(y_data_list)
     y_data_mean = np.mean(y_data, axis=0)
-    nan_mask = np.isnan(y_data_mean)
+    nan_mask = np.isnan(y_data_mean) | np.isnan(x_data)
     if np.any(nan_mask):
         y_data = y_data[:, ~nan_mask]
         x_data = x_data[~nan_mask]
