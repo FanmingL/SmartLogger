@@ -38,7 +38,7 @@ pip install -e .
 ## 前端展示效果
 前端页面如图所示，登录之后我们就可以看到所有的实验记录，任意点击一个实验记录即可看到内部的所有数据，我们可以预览或下载任意一个文件。通过对绘图设置进行配置之后，我们可以将算法对比图绘制出来。
 ![image](img_asset/full_merge_image.jpg)
-快速启动前段页面
+快速启动前端页面
 ```bash
 python -m smart_logger.htmlpage -p 8000 -u user -pw 123456 -wks ~/Desktop/small_logger_cache
 ```
