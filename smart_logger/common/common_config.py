@@ -30,9 +30,11 @@ BACKUP_IGNORE_HEAD = ['__p', '.']
 BACKUP_IGNORE_KEY = [LOG_FOLDER_NAME, LOG_FOLDER_NAME_BK, 'baselines']
 # 进行代码备份时，以此结尾的文件或者文件夹不备份
 BACKUP_IGNORE_TAIL = []
-
-
+# 基础路径
+BASE_PATH = None
 # 配置结束
+
+
 def get_global_configs(things):
     res = dict()
     for k, v in things:
@@ -46,11 +48,25 @@ def global_configs(things=[*locals().items()]):
 
 
 def get_base_path():
-    return osp.dirname(osp.dirname(osp.dirname(osp.abspath(__file__))))
+    if BASE_PATH is None:
+        return osp.dirname(osp.dirname(osp.dirname(osp.abspath(__file__))))
+    return BASE_PATH
 
 
 def get_log_base_path():
     return get_base_path()
+
+
+def _to_yaml(file_name):
+    data = global_configs()
+    import yaml
+    yaml.dump(data, open(file_name, 'w'))
+
+
+def _to_json(file_name):
+    data = global_configs()
+    import json
+    json.dump(data, open(file_name, 'w'))
 
 
 def system(cmd, print_func=None):

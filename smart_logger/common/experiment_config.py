@@ -7,8 +7,12 @@ SHORT_NAME_SUFFIX = 'INIT_TEST'
 # 本次训练目的的简要描述
 EXPERIMENT_TARGET = "初始化训练"
 
-
+EXPERIMENT_COMMON_PARAMETERS = dict(
+    demo_variable='test'
+)
 # 配置结束
+
+
 def get_global_configs_exp(things):
     res = dict()
     for k, v in things:
@@ -16,8 +20,28 @@ def get_global_configs_exp(things):
             res[k] = v
     return res
 
+
 def global_configs_exp(things=[*locals().items()]):
     return get_global_configs_exp(things)
 
+
+def _to_yaml(file_name):
+    data = global_configs_exp()
+    import yaml
+    yaml.dump(data, open(file_name, 'w'))
+
+
+def _to_json(file_name):
+    data = global_configs_exp()
+    import json
+    json.dump(data, open(file_name, 'w'))
+
+
+def register_customized_value(k, v):
+    EXPERIMENT_COMMON_PARAMETERS[k] = v
+
+
+def get_customized_value(k):
+    return EXPERIMENT_COMMON_PARAMETERS.get(k)
 # ALL_CONFIGS = get_global_configs([*locals().items()])
 

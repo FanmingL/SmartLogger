@@ -15,8 +15,8 @@ class ParameterTemplate:
         self.base_path = self.get_base_path()
         self.debug = debug
         self.experiment_target = experiment_config.EXPERIMENT_TARGET
-        self.DEFAULT_CONFIGS = common_config.global_configs()
-        self.DEFAULT_CONFIGS_EXP = experiment_config.global_configs_exp()
+        self.DEFAULT_CONFIGS = {k: getattr(common_config, k) for k in common_config.global_configs()}
+        self.DEFAULT_CONFIGS_EXP = {k: getattr(experiment_config, k) for k in experiment_config.global_configs_exp()}
         self.arg_names = []
         self.host_name = "my_machine"
         self.ip = "127.0.0.1"
@@ -82,7 +82,9 @@ class ParameterTemplate:
         for k, v in self.DEFAULT_CONFIGS.items():
             res[k] = v
         for k, v in self.DEFAULT_CONFIGS_EXP.items():
-            res[k] = v
+            if k == 'EXPERIMENT_COMMON_PARAMETERS':
+                for k2, v2 in self.DEFAULT_CONFIGS_EXP[k].items():
+                    res[k2] = v2
         return res
 
     def parse(self):
@@ -218,7 +220,7 @@ class ParameterTemplate:
                 name += item
             else:
                 name += f'{item}_{value}'
-        if hasattr(self, 'information'):
+        if hasattr(self, 'information') and not getattr(self, 'information') == 'None':
             name += '-{}'.format(getattr(self, 'information'))
         else:
             name += '-{}'.format(experiment_config.SHORT_NAME_SUFFIX)

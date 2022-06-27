@@ -16,6 +16,11 @@ def set_experiment_config(**kwargs):
             setattr(experiment_config, k, v)
 
 
+def set_experiment_customized_config(**kwargs):
+    for k, v in kwargs:
+        experiment_config.register_customized_value(k, v)
+
+
 def set_page_config(**kwargs):
     for k, v in kwargs.items():
         if hasattr(page_config, k):

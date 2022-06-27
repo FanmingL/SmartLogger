@@ -1,6 +1,7 @@
 import os
 import time
-import os
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from smart_logger.report.plotting import plot
 from smart_logger.common import plot_config
 
@@ -22,8 +23,6 @@ def auto_plot():
         except Exception as e:
             print(f'ploting failed, because: {e}')
         time.sleep(60 * 10)
-
-
 
 
 if __name__ == '__main__':
