@@ -2,9 +2,7 @@ import os
 import time
 import os
 from smart_logger.report.plotting import plot
-from smart_logger.common.plot_config import FIGURE_SERVER_MACHINE_PASSWD, FIGURE_SERVER_MACHINE_USER, \
-    FIGURE_SERVER_MACHINE_PORT, FIGURE_SERVER_MACHINE_TARGET_PATH, PLOT_FIGURE_SAVING_PATH, FIGURE_TO_SYNC, \
-    FIGURE_SERVER_MACHINE_IP
+from smart_logger.common import plot_config
 
 
 def system(cmd):
@@ -17,10 +15,10 @@ def auto_plot():
         try:
             base_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
             system(f'cd {base_path} && python smart_logger/report/plotting.py')
-            if FIGURE_SERVER_MACHINE_PASSWD is None:
-                for file in FIGURE_TO_SYNC:
-                    system(f'scp -P {FIGURE_SERVER_MACHINE_PORT} -r {os.path.join(PLOT_FIGURE_SAVING_PATH, file)}'
-                           f' {FIGURE_SERVER_MACHINE_USER}@{FIGURE_SERVER_MACHINE_IP}:{FIGURE_SERVER_MACHINE_TARGET_PATH}')
+            if plot_config.FIGURE_SERVER_MACHINE_PASSWD is None:
+                for file in plot_config.FIGURE_TO_SYNC:
+                    system(f'scp -P {plot_config.FIGURE_SERVER_MACHINE_PORT} -r {os.path.join(plot_config.PLOT_FIGURE_SAVING_PATH, file)}'
+                           f' {plot_config.FIGURE_SERVER_MACHINE_USER}@{plot_config.FIGURE_SERVER_MACHINE_IP}:{plot_config.FIGURE_SERVER_MACHINE_TARGET_PATH}')
         except Exception as e:
             print(f'ploting failed, because: {e}')
         time.sleep(60 * 10)

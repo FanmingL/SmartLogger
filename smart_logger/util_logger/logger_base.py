@@ -3,7 +3,10 @@ try:
 except Exception as e:
     from tensorboardX import SummaryWriter
 import time, atexit, copy
-from smart_logger.common.common_config import *
+import os
+import os.path as osp
+from smart_logger.common import common_config
+from smart_logger.common.common_config import system
 color2num = dict(
     gray=30,
     red=31,
@@ -175,7 +178,7 @@ class LoggerBase:
 
 
 if __name__ == '__main__':
-    logger = LoggerBase(output_dir=os.path.join(get_base_path(), 'log_file', 'log_file', 'log_file'))
+    logger = LoggerBase(output_dir=os.path.join(common_config.get_base_path(), 'log_file', 'log_file', 'log_file'))
     logger.init_tb()
     logger.log('123123', '2232', color="green")
     for i in range(10):

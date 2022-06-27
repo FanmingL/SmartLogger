@@ -1,5 +1,5 @@
 from smart_logger.parameter.ParameterTemplate import ParameterTemplate
-from smart_logger.common.experiment_config import *
+from smart_logger.common import experiment_config
 import argparse
 
 
@@ -8,7 +8,7 @@ class Parameter(ParameterTemplate):
         super(Parameter, self).__init__(config_path, debug)
 
     def parse(self):
-        parser = argparse.ArgumentParser(description=EXPERIMENT_TARGET)
+        parser = argparse.ArgumentParser(description=experiment_config.EXPERIMENT_TARGET)
 
         self.env_name = 'Hopper-v2'
         parser.add_argument('--env_name', type=str, default=self.env_name, metavar='N',

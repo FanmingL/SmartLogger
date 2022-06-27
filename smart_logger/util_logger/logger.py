@@ -1,5 +1,6 @@
 from smart_logger.util_logger.logger_base import LoggerBase
-from smart_logger.common.common_config import *
+from smart_logger.common import common_config
+from smart_logger.common.common_config import system
 from datetime import datetime
 import os
 import numpy as np
@@ -14,11 +15,11 @@ class Logger(LoggerBase):
                  log_signature=None, logger_category=None, base_path=None):
         self.log_name = log_name
         self.logger_category = logger_category
-        base_path = base_path if base_path is not None else get_log_base_path()
+        base_path = base_path if base_path is not None else common_config.get_log_base_path()
         if self.logger_category is not None:
-            self.output_dir = os.path.join(base_path, LOG_FOLDER_NAME, self.logger_category, log_name)
+            self.output_dir = os.path.join(base_path, common_config.LOG_FOLDER_NAME, self.logger_category, log_name)
         else:
-            self.output_dir = os.path.join(base_path, LOG_FOLDER_NAME, log_name)
+            self.output_dir = os.path.join(base_path, common_config.LOG_FOLDER_NAME, log_name)
         os.makedirs(self.output_dir, exist_ok=True)
         if log_to_file:
             if os.path.exists(os.path.join(self.output_dir, 'log.txt')):
@@ -68,7 +69,7 @@ class Logger(LoggerBase):
                     self.log(f'config is completely same, file will be overwrited anyway...')
                 else:
                     self.log(f'config is not same, file will backup first...')
-                    backup_dir = os.path.join(get_base_path(), LOG_FOLDER_NAME_BK,
+                    backup_dir = os.path.join(common_config.get_base_path(), common_config.LOG_FOLDER_NAME_BK,
                                               f"backup_{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}")
                     os.makedirs(backup_dir, exist_ok=True)
                     system(f"cp -r {self.output_dir} {backup_dir}", lambda x: self.log(x))
@@ -76,17 +77,17 @@ class Logger(LoggerBase):
                         f.write(log_signature)
 
     def backup_code(self):
-        base_path = get_base_path()
+        base_path = common_config.get_base_path()
         things = []
 
         def need_backup(name: str):
-            for ignore_head in BACKUP_IGNORE_HEAD:
+            for ignore_head in common_config.BACKUP_IGNORE_HEAD:
                 if name.startswith(ignore_head):
                     return False
-            for ignore_key in BACKUP_IGNORE_KEY:
+            for ignore_key in common_config.BACKUP_IGNORE_KEY:
                 if ignore_key in name:
                     return False
-            for ignore_tail in BACKUP_IGNORE_TAIL:
+            for ignore_tail in common_config.BACKUP_IGNORE_TAIL:
                 if name.endswith(ignore_tail):
                     return False
             return True
@@ -113,11 +114,13 @@ class Logger(LoggerBase):
 
     def sync_log_to_remote(self, replace=False):
         import paramiko
-        for target_machine_ind in range(len(MAIN_MACHINE_IP)):
+        for target_machine_ind in range(len(common_config.MAIN_MACHINE_IP)):
             _ip, _port = map(lambda x: x[target_machine_ind], [
-                MAIN_MACHINE_IP, MAIN_MACHINE_PORT,
+                common_config.MAIN_MACHINE_IP, common_config.MAIN_MACHINE_PORT,
             ])
-            _user, _passwd, _log_path = MAIN_MACHINE_USER, MAIN_MACHINE_PASSWD, MAIN_MACHINE_LOG_PATH
+            _user, _passwd, _log_path = common_config.MAIN_MACHINE_USER, \
+                                            common_config.MAIN_MACHINE_PASSWD, \
+                                                common_config.MAIN_MACHINE_LOG_PATH
             while _log_path.endswith('/'):
                 _log_path = _log_path[:-1]
             while self.output_dir.endswith('/'):

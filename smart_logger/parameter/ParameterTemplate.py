@@ -3,8 +3,9 @@ import argparse
 import json
 import socket
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from smart_logger.common.common_config import *
-from smart_logger.common.experiment_config import *
+from smart_logger.common import common_config
+from smart_logger.common import experiment_config
+import os.path as osp
 from datetime import datetime
 import hashlib
 
@@ -13,9 +14,9 @@ class ParameterTemplate:
     def __init__(self, config_path=None, debug=False):
         self.base_path = self.get_base_path()
         self.debug = debug
-        self.experiment_target = EXPERIMENT_TARGET
-        self.DEFAULT_CONFIGS = global_configs()
-        self.DEFAULT_CONFIGS_EXP = global_configs_exp()
+        self.experiment_target = experiment_config.EXPERIMENT_TARGET
+        self.DEFAULT_CONFIGS = common_config.global_configs()
+        self.DEFAULT_CONFIGS_EXP = experiment_config.global_configs_exp()
         self.arg_names = []
         self.host_name = "my_machine"
         self.ip = "127.0.0.1"
@@ -35,7 +36,7 @@ class ParameterTemplate:
             self.config_path = config_path
         else:
             self.info('use default config path')
-            self.config_path = osp.join(get_base_path(), 'logfile', 'config')
+            self.config_path = osp.join(common_config.get_base_path(), 'logfile', 'config')
         if config_path:
             self.load_config()
         else:
@@ -51,14 +52,14 @@ class ParameterTemplate:
 
     @staticmethod
     def get_base_path():
-        return get_base_path()
+        return common_config.get_base_path()
 
     def set_config_path(self, config_path):
         self.config_path = config_path
 
     @staticmethod
     def important_configs():
-        res = IMPORTANT_CONFIGS
+        res = experiment_config.IMPORTANT_CONFIGS
         return res
 
     def apply_vars(self, args):
@@ -85,7 +86,7 @@ class ParameterTemplate:
         return res
 
     def parse(self):
-        parser = argparse.ArgumentParser(description=EXPERIMENT_TARGET)
+        parser = argparse.ArgumentParser(description=experiment_config.EXPERIMENT_TARGET)
 
         self.env_name = 'Hopper-v2'
         parser.add_argument('--env_name', type=str, default=self.env_name, metavar='N',
@@ -220,7 +221,7 @@ class ParameterTemplate:
         if hasattr(self, 'information'):
             name += '-{}'.format(getattr(self, 'information'))
         else:
-            name += '-{}'.format(SHORT_NAME_SUFFIX)
+            name += '-{}'.format(experiment_config.SHORT_NAME_SUFFIX)
         if self.debug:
             name += '-debug'
 
@@ -231,12 +232,12 @@ class ParameterTemplate:
         suffix = None
         if hasattr(self, 'name_suffix') and not getattr(self, 'name_suffix') == 'None':
             suffix = f'{self.name_suffix}'
-        elif not len(SHORT_NAME_SUFFIX) == 0:
-            suffix = f'{SHORT_NAME_SUFFIX}'
+        elif not len(experiment_config.SHORT_NAME_SUFFIX) == 0:
+            suffix = f'{experiment_config.SHORT_NAME_SUFFIX}'
         return suffix
 
     def get_commit_id(self):
-        base_path = get_base_path()
+        base_path = common_config.get_base_path()
         cmd = f'cd {base_path} && git log'
         commit_id = None
         try:

@@ -8,5 +8,5 @@ figs
 logfile
 logfile_bk
 baselines.tar.gz
-
+*egg-info
 

@@ -3,10 +3,6 @@ import os
 import time
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-# from smart_logger.common.plot_config import PLOT_LOG_PATH, PLOT_FIGURE_SAVING_PATH
-# from smart_logger.common.plot_config import PLOTTING_XY, FIGURE_SEPARATION, DATA_MERGER, DATA_IGNORE, MAX_COLUMN
-# from smart_logger.common.plot_config import USE_SMOOTH, SMOOTH_RADIUS, LEGEND_COLUMN, RECORD_DATE_TIME, X_AXIS_SCI_FORM
-# from smart_logger.common.plot_config import SHORT_NAME_FROM_CONFIG, SUBPLOT_WSPACE, SUBPLOT_HSPACE, LEGEND_POSITION
 import smart_logger.common.plot_config as plot_config
 import pandas as pd
 import json
@@ -19,23 +15,7 @@ from datetime import datetime
 from concurrent.futures import ProcessPoolExecutor, as_completed, ThreadPoolExecutor
 import json
 sns.set_theme()
-# 绘图相关
-# # 在绘图的时候，从哪里加载数据绘制
-# PLOT_LOG_PATH = f"/home/luofm/Data/{LOG_DIR_BACKING_NAME}"
-# # 绘图之后，将输出的图像文件存到哪里
-# PLOT_FIGURE_SAVING_PATH = f"/home/luofm/Data/{LOG_DIR_BACKING_NAME}_figure"
-# # 绘图时，忽略哪些日志文件
-# PLOTTING_IGNORE_HEAD = []
-# # 绘图时，X-Y轴数据
-# PLOTTING_XY = [['timestep', 'EpRetTrain'], ['timestep', 'EpRetTest']]
-# # 不同图片之间的数据，按照FIGURE_SEPARATION分开
-# FIGURE_SEPARATION = ['env_name']
-# # DATA_MERGER中所包含的量的值都一样的，看成是同一种数据
-# DATA_MERGER = ['SHORT_NAME_SUFFIX', "information", "learn_embedding"]
-# # 数据过滤规则
-# DATA_IGNORE = [
-#     {'information': "test_speed"}
-# ]
+
 
 line_style = [
     ['tab:red', '-', 'o'],
