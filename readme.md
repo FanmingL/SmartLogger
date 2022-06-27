@@ -59,7 +59,7 @@ python -m smart_logger.htmlpage -p 8000 -u user -pw 123456 -wks ~/Desktop/small_
 
 ```python
 # 标准初始化方法
-from parameter.Parameter import Parameter
+from demo_parameter.Parameter import Parameter
 from smart_logger.util_logger.logger import Logger
 import os
 
@@ -127,7 +127,7 @@ Logger.logger.add_tabular_data(xxxxx)
 你可以只用参数系统
 
 ```python
-from parameter.Parameter import Parameter
+from demo_parameter.Parameter import Parameter
 import os
 
 parameter = Parameter()
