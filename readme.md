@@ -30,14 +30,18 @@
 - Pillow # [ 绘图 ] 我们使用Pillow对绘制的图像进行整合等后处理操作
 - pandas # [ 基础 ] 我们使用pandas读取和处理表格数据
 ```
-使用为了确保`smart_logger`能够正常运行，请安装以上几个库。我们也把以上依赖写入了`requirement.txt`。用以下命令可以一键安装
+使用为了确保`smart_logger`能够正常运行，请安装以上几个库。我们也把以上依赖写入了`requirement.txt`与`setup.py`。用以下命令可以一键安装
 ```bash
-pip install -r requirement.txt
+pip install -e .
 ```
 
 ## 前端展示效果
 前端页面如图所示，登录之后我们就可以看到所有的实验记录，任意点击一个实验记录即可看到内部的所有数据，我们可以预览或下载任意一个文件。通过对绘图设置进行配置之后，我们可以将算法对比图绘制出来。
 ![image](img_asset/full_merge_image.jpg)
+快速启动前段页面
+```bash
+python -m smart_logger.htmlpage -p 8000 -u user -pw 123456 -wks ~/Desktop/small_logger_cache
+```
 ## 怎么用
 
 
