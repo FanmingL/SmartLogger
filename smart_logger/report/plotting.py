@@ -725,13 +725,20 @@ def summary_buffer_to_output(summary_dict_buffer, privileged_col_idx=None, place
         for row_name in row_id_list:
             row_content = summary_dict[row_name]
             max_performance_ind, max_performance = 0, -10000000
+            if not plot_config.TABLE_BOLD_MAX:
+                max_performance = -max_performance
             final_str = final_str + standardize_row_and_col(item_name=row_name, row_header=True, alg_as_row_header=alg_as_row_header) + ' & '
             for ind_task, task in enumerate(task_list):
                 if task in row_content:
                     data_mean, data_error = row_content[task]
-                    if data_mean > max_performance:
-                        max_performance = data_mean
-                        max_performance_ind = ind_task
+                    if plot_config.TABLE_BOLD_MAX:
+                        if data_mean > max_performance:
+                            max_performance = data_mean
+                            max_performance_ind = ind_task
+                    else:
+                        if data_mean < max_performance:
+                            max_performance = data_mean
+                            max_performance_ind = ind_task
             for ind_task, task in enumerate(task_list):
 
                 if task in row_content:
@@ -797,13 +804,20 @@ def summary_buffer_to_output_md(summary_dict_buffer, privileged_col_idx=None, pl
         for row_name in row_id_list:
             row_content = summary_dict[row_name]
             max_performance_ind, max_performance = 0, -10000000
+            if not plot_config.TABLE_BOLD_MAX:
+                max_performance = -max_performance
             final_str = final_str + '|' + standardize_row_and_col(row_name, row_header=True, alg_as_row_header=alg_as_row_header) + ' | '
             for ind_task, task in enumerate(task_list):
                 if task in row_content:
                     data_mean, data_error = row_content[task]
-                    if data_mean > max_performance:
-                        max_performance = data_mean
-                        max_performance_ind = ind_task
+                    if plot_config.TABLE_BOLD_MAX:
+                        if data_mean > max_performance:
+                            max_performance = data_mean
+                            max_performance_ind = ind_task
+                    else:
+                        if data_mean < max_performance:
+                            max_performance = data_mean
+                            max_performance_ind = ind_task
             for ind_task, task in enumerate(task_list):
 
                 if task in row_content:
@@ -869,14 +883,21 @@ def summary_buffer_to_output_html(summary_dict_buffer, privileged_col_idx=None, 
         for row_name in row_id_list:
             row_content = summary_dict[row_name]
             max_performance_ind, max_performance = 0, -10000000
+            if not plot_config.TABLE_BOLD_MAX:
+                max_performance = -max_performance
             final_str = final_str + '<tr>'
             final_str = final_str + '<td style="text-align: left;">' + standardize_row_and_col(row_name, row_header=True, alg_as_row_header=alg_as_row_header) + '</td>\n'
             for ind_task, task in enumerate(task_list):
                 if task in row_content:
                     data_mean, data_error = row_content[task]
-                    if data_mean > max_performance:
-                        max_performance = data_mean
-                        max_performance_ind = ind_task
+                    if plot_config.TABLE_BOLD_MAX:
+                        if data_mean > max_performance:
+                            max_performance = data_mean
+                            max_performance_ind = ind_task
+                    else:
+                        if data_mean < max_performance:
+                            max_performance = data_mean
+                            max_performance_ind = ind_task
             for ind_task, task in enumerate(task_list):
                 final_str = final_str + '<td>'
                 if task in row_content:

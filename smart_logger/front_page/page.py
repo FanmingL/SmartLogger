@@ -72,6 +72,7 @@ def check_user(user_data, allow_guest=False):
     Logger.logger(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: check user {user_data}')
     if 'user_name' in request.cookies and 'cookie_code' in request.cookies and 'used_config' in request.cookies:
         if not has_config(request.cookies['used_config']):
+            Logger.logger(f'config file {request.cookies["used_config"]} not exists!!!')
             return False
         _user_name = request.cookies['user_name']
         _code = request.cookies['cookie_code']
@@ -79,6 +80,7 @@ def check_user(user_data, allow_guest=False):
             user_data['name'] = _user_name
         return True
     else:
+        Logger.logger(f'cookies do not exist or cookies are not complete: {request.cookies}!')
         return False
 
 
@@ -264,7 +266,8 @@ def plot():
                                                            'FIGURE_SERVER_MACHINE_PORT', 'FIGURE_SERVER_MACHINE_USER',
                                                            'FIGURE_SERVER_MACHINE_PASSWD',
                                                            'FIGURE_SERVER_MACHINE_TARGET_PATH', 'PLOTTING_ORDER',
-                                                           'LEGEND_ORDER', 'DATA_SELECT', 'USE_IGNORE_RULE']}
+                                                           'LEGEND_ORDER', 'DATA_SELECT', 'USE_IGNORE_RULE',
+                                                           'TABLE_BOLD_MAX']}
     config_description = plot_config.DESCRIPTION
     for k in config:
         if k not in config_description:
@@ -328,7 +331,8 @@ def table():
     return render_template('t_table.html',
                              plot_config=config,   # plot_config list list
                              config_name=config_name,
-                             config_file_list=config_file_list)
+                             config_file_list=config_file_list,
+                             bold_max=config['TABLE_BOLD_MAX'])
 
 
 @app.route("/query_table", methods=['GET'])
@@ -484,6 +488,7 @@ def param_adjust():
             merge_config_file[k] = [True, len(possible_config[k])]
         else:
             merge_config_file[k] = [False, len(possible_config[k])]
+    possible_config_keys_list = [k for k in possible_config]
     merge_config_file = [(k, v[0], v[1]) for k, v in merge_config_file.items()]
     merge_config_file = list(sorted(sorted(sorted(merge_config_file, key=lambda x: x[0]), key=lambda x: x[1], reverse=True), key=lambda x: x[2], reverse=True))
     if plot_config.USE_IGNORE_RULE:
@@ -532,6 +537,7 @@ def param_adjust():
                            rename_rule_dict=rename_rule_dict,
                            possible_config=possible_config,
                            possible_config_js=encode_possible_config_js,
+                           possible_config_keys_list=possible_config_keys_list,
                            rename_rule=rename_rule,  # rename_rule list list
                            plotting_xy=plotting_xy,  # plotting_xy list list
                            possible_short_name=possible_short_name,
@@ -954,6 +960,19 @@ def change_filter_rule():
         config['USE_IGNORE_RULE'] = False
     save_config(config, config_name)
     return redirect('/param_adjust')
+
+@app.route("/change_table_bold_rule", methods=['POST'])
+@require_login(source_name='change_table_bold_rule', allow_guest=True)
+def change_table_bold_rule():
+    config_name = request.cookies['used_config']
+    config = load_config(config_name)
+    if 'table_bold_rule' in request.form:
+        config['TABLE_BOLD_MAX'] = True
+    else:
+        config['TABLE_BOLD_MAX'] = False
+    save_config(config, config_name)
+    return redirect('/table')
+
 
 @app.route("/del_separator/<rule_idx>", methods=['GET'])
 @require_login(source_name='del_separator', allow_guest=True)

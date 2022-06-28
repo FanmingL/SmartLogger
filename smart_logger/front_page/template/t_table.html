@@ -40,7 +40,10 @@
             localStorage.setItem("{{config_name}}" + "table_win_data_config", "{{config_name}}");
 
         }
-
+        function submit_change_table_bold(){
+            let form_rename = document.getElementById('change_table_bold_rule_mode_id');
+            form_rename.submit();
+        }
         function query_source_latex(){
             let httpRequest = new XMLHttpRequest();
           httpRequest.onreadystatechange = function () {
@@ -186,6 +189,12 @@
             left: 10%;
             top: 10%;
         }
+        .checkbox_container {
+            font-family:monospace;
+            position: absolute;
+            left: 60%;
+            top: 11%;
+        }
         .for_button2 {
             position: absolute;
             left: 2%;
@@ -261,6 +270,12 @@
     <ul>
         <li><a href="{{url_for('logout')}}" style="width: 80px">下线</a></li>
     </ul>
+</div>
+<div class="checkbox_container" id="checkbox_container_id">
+<form name="change_table_bold_rule_mode" id="change_table_bold_rule_mode_id" action="{{url_for('change_table_bold_rule')}}" method="POST" style="margin: 15px">
+        <input type="checkbox" name="table_bold_rule" id="table_bold_rule_id" value="table_bold_rule_value" {% if bold_max %}checked="checked" {%endif%} onchange="submit_change_table_bold()">
+        <label for="table_bold_rule_id" style="font-family: monospace">加粗最大值, 不勾选表示加粗最小值</label>
+</form>
 </div>
 <ul>
     <li><a href="{{url_for('hello')}}">实验列表</a></li>

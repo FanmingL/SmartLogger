@@ -175,6 +175,9 @@ DESCRIPTION['PLOT_FOR_EVERY'] = '绘图数据的下采样间隔'
 
 USE_IGNORE_RULE = True
 DESCRIPTION['USE_IGNORE_RULE'] = '是否使用过滤规则'
+
+TABLE_BOLD_MAX = True
+DESCRIPTION['TABLE_BOLD_MAX'] = '表格是否加粗最高值'
 # 配置结束
 
 def get_global_plot_configs(things):

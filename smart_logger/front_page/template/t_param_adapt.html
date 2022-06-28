@@ -409,6 +409,9 @@
             overflow: scroll;
             top: 160%;
         }
+        select{
+            width: 150px;
+        }
 
         .plotting_order {
             font-family:monospace;
@@ -680,13 +683,17 @@
         <b>说明</b>：你可以通过这一栏来配置需要拿日志中的哪些数据去进行绘图。X表示需要绘制的图像的横坐标对应的数据的键（key），Y表示纵坐标对应的数据键。
         对于每一个X-Y数据键对，都会绘制一张以X数据为横轴，以Y数据为纵轴的曲线图。
     </p>
-    {% for k, v in plotting_xy %}
-        &nbsp;&nbsp;>XY[{{loop.index0}}]
-        <a href="{{url_for('del_xy', rule_idx=loop.index0)}}" style="font-family: monospace">删除</a>
-        <br/>
-        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{k}} --> {{v}};
-        <br/>
-        {% endfor %}
+    {% if plotting_xy|length > 0 %}
+        {% for k, v in plotting_xy %}
+            &nbsp;&nbsp;>XY[{{loop.index0}}]
+            <a href="{{url_for('del_xy', rule_idx=loop.index0)}}" style="font-family: monospace">删除</a>
+            <br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{k}} --> {{v}};
+            <br/>
+            {% endfor %}
+    {% else %}
+    <b style="margin: 30px"><font color="red">没有设定对比类型！</font></b>
+    {% endif %}
     <form name="frm_rename_select_xy" action="{{url_for('add_xy')}}" method="POST">
         <div align="left" style="margin: 20px">
         <p>
@@ -722,7 +729,7 @@
         <div align="left" style="margin: 20px">
         <p>
             <label for="rename_rule_cb" style="font-family: monospace">长名:</label>
-            <select id="rename_rule_cb" name="added_rule_rename_long" >
+            <select id="rename_rule_cb" name="added_rule_rename_long" style="width: auto" >
                 {% for short_name in possible_short_name %}
                   <option value ="{{short_name}}">{{short_name}}</option>
                 {% endfor %}<br/>
@@ -780,7 +787,7 @@
     </p>
     {% for separator_item in separators %}
         &nbsp;&nbsp;>{{loop.index0}}. {{separator_item}}
-        <a href="{{url_for('del_separator', rule_idx=loop.index0)}}" style="font-family: monospace">删除</a>
+    <a href="{{url_for('del_separator', rule_idx=loop.index0)}}" style="font-family: monospace">删除</a> {% if separator_item not in possible_config_keys_list  %} <b style="font-size: 13px">(<font color="red">无效项</font>)</b> {% endif %}
         <br/>
         {% endfor %}
     <form name="frm_separator_select" id="frm_rename_separator_rule" action="{{url_for('add_separator')}}" method="POST">
