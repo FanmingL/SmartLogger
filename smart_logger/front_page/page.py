@@ -492,11 +492,16 @@ def param_adjust():
     merge_config_file = [(k, v[0], v[1]) for k, v in merge_config_file.items()]
     merge_config_file = list(sorted(sorted(sorted(merge_config_file, key=lambda x: x[0]), key=lambda x: x[1], reverse=True), key=lambda x: x[2], reverse=True))
     if plot_config.USE_IGNORE_RULE:
+        for k in possible_config:
+            possible_config[k] = sorted(possible_config[k], key=lambda x: str(x))
         possible_config = [(k, v) for k, v in possible_config.items()]
     else:
+        for k in possible_config_ignore:
+            possible_config_ignore[k] = sorted(possible_config_ignore[k], key=lambda x: str(x))
         possible_config = [(k, v) for k, v in possible_config_ignore.items()]
 
     possible_config = list(sorted(sorted(possible_config, key=lambda x: x[0]), key=lambda x: len(x[1]), reverse=True))
+    print('possible config', possible_config)
     # Logger.logger(f'possible config json: {json.dumps(possible_config)}')
     encode_possible_config_js = base64.urlsafe_b64encode(json.dumps(possible_config).encode()).decode()
     rename_rule = {} if 'SHORT_NAME_FROM_CONFIG' not in config else config['SHORT_NAME_FROM_CONFIG']
