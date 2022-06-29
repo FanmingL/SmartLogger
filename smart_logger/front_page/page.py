@@ -491,6 +491,7 @@ def param_adjust():
     possible_config_keys_list = [k for k in possible_config]
     merge_config_file = [(k, v[0], v[1]) for k, v in merge_config_file.items()]
     merge_config_file = list(sorted(sorted(sorted(merge_config_file, key=lambda x: x[0]), key=lambda x: x[1], reverse=True), key=lambda x: x[2], reverse=True))
+    selected_config_list = [(k, v) for k, v in possible_config.items()]
     if plot_config.USE_IGNORE_RULE:
         for k in possible_config:
             possible_config[k] = sorted(possible_config[k], key=lambda x: str(x))
@@ -501,6 +502,7 @@ def param_adjust():
         possible_config = [(k, v) for k, v in possible_config_ignore.items()]
 
     possible_config = list(sorted(sorted(possible_config, key=lambda x: x[0]), key=lambda x: len(x[1]), reverse=True))
+    selected_config_list = list(sorted(sorted(selected_config_list, key=lambda x: x[0]), key=lambda x: len(x[1]), reverse=True))
     print('possible config', possible_config)
     # Logger.logger(f'possible config json: {json.dumps(possible_config)}')
     encode_possible_config_js = base64.urlsafe_b64encode(json.dumps(possible_config).encode()).decode()
@@ -561,7 +563,8 @@ def param_adjust():
                            exists_ordered_legends_encode=exists_ordered_legends_encode,
                            exists_unordered_legends_encode=exists_unordered_legends_encode,
                            filter_data_with_ignore=plot_config.USE_IGNORE_RULE,
-                           data_choose_rule=data_choose
+                           data_choose_rule=data_choose,
+                           selected_config_list=selected_config_list
                            )
 
 

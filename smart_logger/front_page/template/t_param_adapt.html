@@ -9,6 +9,10 @@
         function set_option(){
             let key_selection = document.getElementById("select_key");
             let value_selection = document.getElementById("select_value");
+            if (key_selection.selectedIndex < 0)
+            {
+                return;
+            }
             let selected_key = key_selection.options[key_selection.selectedIndex].value;
              let possible_config_js = "{{possible_config_js}}";
              possible_config_js = atob(possible_config_js);
@@ -698,7 +702,7 @@
         <div align="left" style="margin: 20px">
         <p>
             <label for="x_name_cb" style="font-family: monospace">X:</label> <br/>
-        <input type="text" name="x_name" id="x_name_cb" value="timestep" style="width: 400px; font-family: monospace"  ><br/>
+        <input type="text" name="x_name" id="x_name_cb" value={% if plotting_xy|length > 0 %}"{{plotting_xy[-1][0]}}"{%else%}"timestep"{%endif%} style="width: 400px; font-family: monospace"  ><br/>
             <label for="y_name_cb" style="font-family: monospace">Y:</label> <br/>
         <input type="text" name="y_name" id="y_name_cb" value="" style="width: 400px; font-family: monospace"  ><br/>
         </p>
@@ -795,7 +799,7 @@
         <p>
             <label for="rename_separator_rule_id" style="font-family: monospace">子图分隔依据:</label>
             <select id="rename_separator_rule_id" name="separator_item" onchange="submit_separator()">
-                {% for name, items in possible_config %}
+                {% for name, items in selected_config_list %}
                 {% if name not in separators %}
                   <option value ="{{name}}">{{name}}</option>
                 {% endif %}
