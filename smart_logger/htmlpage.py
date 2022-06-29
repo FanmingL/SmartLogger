@@ -1,6 +1,5 @@
 import os
 import sys
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import smart_logger.common.page_config as page_config
 import smart_logger.common.plot_config as plot_config
 from smart_logger.front_page.page import start_page_server

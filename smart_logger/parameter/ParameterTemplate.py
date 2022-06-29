@@ -2,7 +2,6 @@ import os, sys
 import argparse
 import json
 import socket
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from smart_logger.common import common_config
 from smart_logger.common import experiment_config
 import os.path as osp

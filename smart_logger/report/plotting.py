@@ -2,7 +2,6 @@ import sys
 import os
 import time
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 import smart_logger.common.plot_config as plot_config
 import pandas as pd
 import json

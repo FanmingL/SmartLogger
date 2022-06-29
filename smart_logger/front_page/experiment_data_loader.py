@@ -3,7 +3,6 @@ import os
 
 import pandas as pd
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 import smart_logger.common.plot_config as plot_config
 import json
 

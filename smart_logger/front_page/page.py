@@ -1,8 +1,6 @@
 import random
 import sys, os
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-
 from flask import Flask, redirect, url_for, request, send_from_directory, send_file, render_template, make_response
 import smart_logger.common.page_config as page_config
 from smart_logger.util_logger.logger import Logger
