@@ -38,6 +38,11 @@ def serialize_experiment_config_from_json(path):
 
 
 def init_config(common_config_file=None, experiment_config_file=None, base_path=None):
+    if base_path is not None:
+        if not common_config_file.startswith('/'):
+            common_config_file = os.path.join(base_path, common_config_file)
+        if not experiment_config_file.startswith('/'):
+            experiment_config_file = os.path.join(base_path, experiment_config_file)
     if common_config_file is not None:
         if common_config_file.endswith('json'):
             serialize_common_config_from_json(common_config_file)
@@ -54,6 +59,18 @@ def init_config(common_config_file=None, experiment_config_file=None, base_path=
             raise NotImplemented(f'experiment config file {experiment_config_file} does not belong to [json, yaml].')
     if base_path is not None:
         common_config.BASE_PATH = base_path
+
+
+def get_total_config():
+    config = dict()
+    config['common'] = {k: getattr(common_config, k) for k in common_config.global_configs()}
+    config['experiment'] = {k: getattr(experiment_config, k) for k in experiment_config.global_configs_exp()}
+    return config
+
+
+def set_total_config(config):
+    set_common_config(**config['common'])
+    set_experiment_config(**config['experiment'])
 
 
 if __name__ == '__main__':

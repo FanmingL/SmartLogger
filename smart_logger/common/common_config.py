@@ -1,5 +1,6 @@
 import os.path as osp
 import os
+from multiprocessing import current_process
 # 配置开始，本文件存放与实验内容无关的配置
 # 我们把日志文件夹同步到远程时，会放在远程的/home/luofm/Data/LOG_DIR_BACKING_NAME路径下
 LOG_DIR_BACKING_NAME = 'RAMRLLog'
@@ -35,7 +36,24 @@ BASE_PATH = None
 # 配置结束
 
 
-def get_global_configs(things):
+__REWRITE = False
+__WARN_DICT = {}
+
+
+def _is_main_process():
+    return current_process().name == 'MainProcess'
+
+
+def _check_multiprocess():
+    if not _is_main_process() and not __REWRITE and 'mutiprocess' not in __WARN_DICT:
+        print(f'[ WARN ] [_check_multiprocess in smart_logger.common.experiment_config.py] You are trying to '
+              f'query config in a sub-process without rewriting it with the data in the parent process. '
+              f'Remember to call set_xxxx_config '
+              f'[smart_logger.common.serialize_config or smart_logger.common.set_config] first in the subprocess!!')
+        __WARN_DICT['mutiprocess'] = True
+
+
+def _get_global_configs(things):
     res = dict()
     for k, v in things:
         if not k.startswith('__') and not hasattr(v, '__call__') and 'module' not in str(type(v)):
@@ -44,27 +62,31 @@ def get_global_configs(things):
 
 
 def global_configs(things=[*locals().items()]):
-    return get_global_configs(things)
+    return _get_global_configs(things)
 
 
 def get_base_path():
+    _check_multiprocess()
     if BASE_PATH is None:
         return osp.dirname(osp.dirname(osp.dirname(osp.abspath(__file__))))
     return BASE_PATH
 
 
 def get_log_base_path():
+    _check_multiprocess()
     return get_base_path()
 
 
 def _to_yaml(file_name):
-    data = global_configs()
+    _check_multiprocess()
+    data = {k: getattr(locals(), k) for k in global_configs()}
     import yaml
     yaml.dump(data, open(file_name, 'w'))
 
 
 def _to_json(file_name):
-    data = global_configs()
+    _check_multiprocess()
+    data = {k: getattr(locals(), k) for k in global_configs()}
     import json
     json.dump(data, open(file_name, 'w'))
 
@@ -75,3 +97,6 @@ def system(cmd, print_func=None):
     else:
         print_func(cmd)
     os.system(cmd)
+
+
+

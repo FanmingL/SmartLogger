@@ -5,19 +5,22 @@ from smart_logger.common import plot_config
 
 
 def set_common_config(**kwargs):
+    common_config.__REWRITE = True
     for k, v in kwargs.items():
         if hasattr(common_config, k):
             setattr(common_config, k, v)
 
 
 def set_experiment_config(**kwargs):
+    experiment_config.__REWRITE = True
     for k, v in kwargs.items():
         if hasattr(experiment_config, k):
             setattr(experiment_config, k, v)
 
 
 def set_experiment_customized_config(**kwargs):
-    for k, v in kwargs:
+    experiment_config.__REWRITE = True
+    for k, v in kwargs.items():
         experiment_config.register_customized_value(k, v)
 
 
