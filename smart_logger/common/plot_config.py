@@ -191,7 +191,3 @@ def get_global_plot_configs(things):
 def global_plot_configs(things=[*locals().items()]):
     return get_global_plot_configs(things)
 
-
-if __name__ == '__main__':
-    for k, v in global_plot_configs().items():
-        print(f'{k}: {v}')

@@ -11,6 +11,7 @@ import shutil
 
 class Logger(LoggerBase):
     logger = None
+
     def __init__(self, log_to_file=True, log_name='log', force_backup=False,
                  log_signature=None, logger_category=None, base_path=None):
         self.log_name = log_name
@@ -35,12 +36,24 @@ class Logger(LoggerBase):
         self.init_tb()
         self.backup_code()
         self.tb_header_dict = {}
+        if Logger.logger is None:
+            self.set_as_default_logger()
 
     @staticmethod
     def init_global_logger(log_to_file=True, log_name='log', force_backup=False,
                            log_signature=None, logger_category=None, base_path=None):
         Logger.logger = Logger(log_to_file=log_to_file, log_name=log_name, force_backup=force_backup,
                                log_signature=log_signature, logger_category=logger_category, base_path=base_path)
+
+    def set_as_default_logger(self):
+        Logger.logger = self
+
+    @staticmethod
+    def local_log(*args, **kwargs):
+        if Logger.logger is not None:
+            Logger.logger.logger(*args, **kwargs)
+        else:
+            print(*args, **kwargs)
 
     @staticmethod
     def add_key_suffix(suffix, data:dict):
@@ -177,10 +190,10 @@ class Logger(LoggerBase):
                                 break
                             except FileNotFoundError as e:
                                 full_path_remote_dir = os.path.dirname(full_path_in_remote)
-                                print(f'file {full_path_remote_dir} not found!!')
+                                self.log(f'file {full_path_remote_dir} not found!!')
                                 mkdir_cmd = f'mkdir -p {full_path_remote_dir}'
                                 _, stdout, _ = ssh.exec_command(mkdir_cmd)
-                                print(mkdir_cmd)
+                                self.log(mkdir_cmd)
                 t.close()
                 ssh.close()
                 self.log(f'transfer the log to {_user}@{_ip}:{_log_path} success!!!')

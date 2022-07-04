@@ -3,6 +3,7 @@ import os
 import time
 
 import smart_logger.common.plot_config as plot_config
+from smart_logger.util_logger.logger import Logger
 import pandas as pd
 import json
 import numpy as np
@@ -197,10 +198,10 @@ def _load_data(folder_name):
         for k, v in plot_config.DATA_KEY_RENAME_CONFIG.items():
             if k in data and v not in data:
                 data[v] = data[k]
-        print(f'[ {len(data)} ] data rows for {folder_name}: {len(data)}')
+        Logger.local_log(f'[ {len(data)} ] data rows for {folder_name}: {len(data)}')
         data_str = data.select_dtypes(include=['object'])
         if len(list(data_str.keys())) > 0:
-            print(f'invalid keys (not numerical value): {list(data_str.keys())}')
+            Logger.local_log(f'invalid keys (not numerical value): {list(data_str.keys())}')
         data = data.dropna(how='all')
         separator_values = []
         for separator in plot_config.FIGURE_SEPARATION:
@@ -219,7 +220,7 @@ def _load_data(folder_name):
         result = dict(separator=separator_values, merger=data_merger_feature, config_dict=param, data=data,
                       folder_name=os.path.basename(folder_name))
     except Exception as e:
-        print('[WARNING] meeting an exception while reading: {}'.format(e))
+        Logger.local_log('[WARNING] meeting an exception while reading: {}'.format(e))
         result = None
     return result
 
@@ -231,7 +232,7 @@ def _load_data_one_thread(folder_name, task_ind):
         result[task_ind] = _result
     except Exception as e:
         import traceback
-        print(f'[WARNING] unexpected Exception!!!! {e}')
+        Logger.local_log(f'[WARNING] unexpected Exception!!!! {e}')
         traceback.print_exc()
     return result
 
@@ -297,9 +298,9 @@ def collect_data():
                 folder_list.append(root)
     total_raw_data = _load_data_multi_process(plot_config.PROCESS_NUM, plot_config.THREAD_NUM, folder_list)
     for root, raw_data in zip(folder_list, total_raw_data):
-        print(f'try to load data from {root}')
+        Logger.local_log(f'try to load data from {root}')
         if raw_data is None:
-            print(f'load data from {root} failed')
+            Logger.local_log(f'load data from {root} failed')
             continue
         separator = raw_data['separator']
         merger = raw_data['merger']
@@ -314,7 +315,7 @@ def collect_data():
     data = {k: data[k] for k in data_key_sorted}
     for k, v in data.items():
         for k1, v1 in v.items():
-            print(f'figure_content: {k}, algo_name: {k1}, data num: {len(v1)}')
+            Logger.local_log(f'figure_content: {k}, algo_name: {k1}, data num: {len(v1)}')
     return data
 
 
@@ -332,7 +333,7 @@ def _remove_nan(x_data, y_data_list):
 
 
 def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_name, y_name, plot_config_dict):
-    print(f'PID: {os.getpid()} started!!')
+    Logger.local_log(f'PID: {os.getpid()} started!!')
     for k in plot_config_dict:
         setattr(plot_config, k, plot_config_dict[k])
     sub_figure_content = [k for k in data]
@@ -360,11 +361,11 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
                     have_y_name = False
             if not have_y_name:
                 if y_name in data_alg_list[0]['data']:
-                    print(
+                    Logger.local_log(
                         f'path need to be check, alg_name: {alg_name}, {[item["folder_name"] for item in data_alg_list]}')
                 continue
             if len(data_alg_list) == 0:
-                print(f'{x_name}-{y_name} cannot be found in data-{sub_figure}-{alg_name}')
+                Logger.local_log(f'{x_name}-{y_name} cannot be found in data-{sub_figure}-{alg_name}')
                 continue
             x_data = [data_alg['data'][x_name] for data_alg in data_alg_list]
             y_data = [data_alg['data'][y_name] for data_alg in data_alg_list]
@@ -383,7 +384,7 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
             y_data, y_data_error = stat_data(y_data)
             if plot_config.USE_SMOOTH:
                 y_data = smooth(y_data, radius=plot_config.SMOOTH_RADIUS)
-            print(f'PID:{os.getpid()}, figure: {sub_figure}, alg: {alg_name}, data_len: {data_len}, min len: {min(data_len)}, {min_data_len}')
+            Logger.local_log(f'PID:{os.getpid()}, figure: {sub_figure}, alg: {alg_name}, data_len: {data_len}, min len: {min(data_len)}, {min_data_len}')
             color_idx, type_idx, marker_idx = alg_to_color_idx[alg_name]
             line_color = line_style[color_idx][0]
             line_type = line_style[type_idx][1]
@@ -450,8 +451,8 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
     png_saving_path = os.path.join(plot_config.PLOT_FIGURE_SAVING_PATH, f'{saving_name}.png')
     pdf_saving_path = os.path.join(plot_config.PLOT_FIGURE_SAVING_PATH, f'{saving_name}.pdf')
     os.makedirs(os.path.dirname(png_saving_path), exist_ok=True)
-    print(f'saving PDF to file://{pdf_saving_path}')
-    print(f'saving PNG to file://{png_saving_path}')
+    Logger.local_log(f'saving PDF to file://{pdf_saving_path}')
+    Logger.local_log(f'saving PNG to file://{png_saving_path}')
     f.savefig(png_saving_path, bbox_inches='tight', dpi=plot_config.PNG_DPI)
     f.savefig(pdf_saving_path, bbox_inches='tight')
     return png_saving_path, x_name, y_name
@@ -474,7 +475,7 @@ def _make_subtable(data, x_name, y_name, at_x, plot_config_dict, iter, alg_as_ro
                     have_y_name = False
             if not have_y_name:
                 if y_name in data_alg_list[0]['data']:
-                    print(
+                    Logger.local_log(
                         f'path need to be check, alg_name: {alg_name}, {[item["folder_name"] for item in data_alg_list]}')
                 continue
             x_data = [data_alg['data'][x_name] for data_alg in data_alg_list]
@@ -509,7 +510,7 @@ def _make_subtable(data, x_name, y_name, at_x, plot_config_dict, iter, alg_as_ro
             if sub_figure not in summary_dict:
                 summary_dict[sub_figure] = dict()
             summary_dict[sub_figure][alg_name] = (selected_mean, selected_error)
-            print(f'table: {sub_figure}, alg: {alg_name}, x-y: {x_name}-{y_name}, data_len: {data_len}, min len: {min(data_len)}, selected mean: {selected_mean}, selected error: {selected_error}')
+            Logger.local_log(f'table: {sub_figure}, alg: {alg_name}, x-y: {x_name}-{y_name}, data_len: {data_len}, min len: {min(data_len)}, selected mean: {selected_mean}, selected error: {selected_error}')
 
         fig_ind += 1
     if alg_as_row_header:
@@ -526,13 +527,13 @@ def _make_subtable(data, x_name, y_name, at_x, plot_config_dict, iter, alg_as_ro
 def _plotting(data):
     sub_figure_content = [k for k in data]
     sub_figure_content = sorted(sub_figure_content, key=lambda x: x[0])
-    print(f'total sub-figures: {sub_figure_content}')
+    Logger.local_log(f'total sub-figures: {sub_figure_content}')
     fig_row = int(np.ceil(len(sub_figure_content) / plot_config.MAX_COLUMN))
     fig_column = min(plot_config.MAX_COLUMN, len(sub_figure_content))
     fig_row = max(fig_row, 1)
     fig_column = max(fig_column, 1)
     figsize = (plot_config.SUBFIGURE_WIDTH * fig_column, plot_config.SUBFIGURE_HEIGHT * fig_row)
-    print(f'making figure {fig_row} row {fig_column} col, size: {figsize}')
+    Logger.local_log(f'making figure {fig_row} row {fig_column} col, size: {figsize}')
     random.seed(1)
     total_f = []
     total_png = []
@@ -550,7 +551,7 @@ def _plotting(data):
                         have_y_name = False
                 if not have_y_name:
                     if y_name in data_alg_list[0]['data']:
-                        print(f'path need to be check, alg_name: {alg_name}, {[item["folder_name"] for item in data_alg_list]}')
+                        Logger.local_log(f'path need to be check, alg_name: {alg_name}, {[item["folder_name"] for item in data_alg_list]}')
                     continue
                 if alg_name not in alg_to_color_idx:
                     alg_idx = color_ind
@@ -606,12 +607,12 @@ def _plotting(data):
     # pdf.close()
     # 汇总png
     # merge png
-    print(f'start to merge PNG')
+    Logger.local_log(f'start to merge PNG')
     png_images = []
     start_merge_time = time.time()
     from PIL import Image
     for png_file in total_png:
-        print('load image from {}'.format(png_file))
+        Logger.local_log('load image from {}'.format(png_file))
         png_images.append(Image.open(png_file))
     cols = [image.size[0] for image in png_images]
     rows = [image.size[1] for image in png_images]
@@ -622,19 +623,19 @@ def _plotting(data):
         merge_png.paste(png_file, (0, start_row))
     total_png_output_path = os.path.join(plot_config.PLOT_FIGURE_SAVING_PATH, f"{plot_config.FINAL_OUTPUT_NAME}.png")
     merge_png.save(total_png_output_path, "PNG")
-    print(f'saved png to {total_png_output_path} cost: {time.time() - start_merge_time}')
+    Logger.local_log(f'saved png to {total_png_output_path} cost: {time.time() - start_merge_time}')
 
 
 def _to_table(data, atx, iter, privileged_col_idx=None, placeholder=None, md=True):
     sub_figure_content = [k for k in data]
     sub_figure_content = sorted(sub_figure_content, key=lambda x: x[0])
-    print(f'total sub-figures: {sub_figure_content}')
+    Logger.local_log(f'total sub-figures: {sub_figure_content}')
     fig_row = int(np.ceil(len(sub_figure_content) / plot_config.MAX_COLUMN))
     fig_column = min(plot_config.MAX_COLUMN, len(sub_figure_content))
     fig_row = max(fig_row, 1)
     fig_column = max(fig_column, 1)
     figsize = (plot_config.SUBFIGURE_WIDTH * fig_column, plot_config.SUBFIGURE_HEIGHT * fig_row)
-    print(f'making figure {fig_row} row {fig_column} col, size: {figsize}')
+    Logger.local_log(f'making figure {fig_row} row {fig_column} col, size: {figsize}')
     random.seed(1)
     for x_name, y_name in plot_config.PLOTTING_XY:
         for sub_figure in sub_figure_content:
@@ -647,7 +648,7 @@ def _to_table(data, atx, iter, privileged_col_idx=None, placeholder=None, md=Tru
                         have_y_name = False
                 if not have_y_name:
                     if y_name in data_alg_list[0]['data']:
-                        print(
+                        Logger.local_log(
                             f'path need to be check, alg_name: {alg_name}, {[item["folder_name"] for item in data_alg_list]}')
                     continue
     plotting_executor = ProcessPoolExecutor(max_workers=plot_config.PROCESS_NUM)
@@ -756,7 +757,7 @@ def summary_buffer_to_output(summary_dict_buffer, privileged_col_idx=None, place
             final_str = final_str + '\\\\' + '\n'
         final_str = final_str + '\\bottomrule' + '\n'
         final_str = final_str + '='*15 + f'End Table: {table_name}' + '='*15 + '\n'
-    print(final_str)
+    Logger.local_log(final_str)
     return final_str
 
 
@@ -839,7 +840,7 @@ def summary_buffer_to_output_md(summary_dict_buffer, privileged_col_idx=None, pl
             final_str = final_str + '\n'
         final_str = final_str + '\n'
 
-    print(final_str)
+    Logger.local_log(final_str)
     return final_str
 
 
@@ -919,14 +920,14 @@ def summary_buffer_to_output_html(summary_dict_buffer, privileged_col_idx=None, 
                 final_str = final_str + ' </td> \n'
             final_str = final_str + ' </tr> \n'
         final_str = final_str + '</table>'
-    print(final_str)
+    Logger.local_log(final_str)
     return final_str
 
 def _overwrite_config(config):
     for k in plot_config.global_plot_configs():
         if k in config:
             if not config[k] == getattr(plot_config, k):
-                print(f'config {k} in file is {config[k]}, '
+                Logger.local_log(f'config {k} in file is {config[k]}, '
                       f'which is {getattr(plot_config, k)} in code, overwrite it!')
                 setattr(plot_config, k, config[k])
 
@@ -938,7 +939,7 @@ def overwrite_config(config_json_path):
                 config = json.load(f)
                 _overwrite_config(config)
         else:
-            print(f'{config_json_path} not exists! load failed!')
+            Logger.local_log(f'{config_json_path} not exists! load failed!')
 
 
 def plot(config_json_path=None):

@@ -236,8 +236,10 @@ def experiment_data_download(folder_name, attach):
         return render_template('404.html')
     if os.path.exists(file_name):
         Logger.logger(f'file {file_name} exists')
+        file_name = os.path.abspath(file_name)
         filename = os.path.basename(file_name)
         dirname = os.path.dirname(file_name)
+
         # as_attachment = True if not (
         #             filename.lower().endswith('png') or filename.lower().endswith('jpg') or filename.lower().endswith(
         #         'txt') or filename.lower().endswith('json')) else False
@@ -313,6 +315,7 @@ def query_pregenerated_file(file_name, attach):
         figure_saving_path = os.path.join(page_config.FIGURE_PATH, request.cookies['user_name'], config_name[:-5])
     else:
         figure_saving_path = os.path.join(page_config.FIGURE_PATH, request.cookies['user_name'], config_name)
+    figure_saving_path = os.path.abspath(figure_saving_path)
     file_name = base64.urlsafe_b64decode(file_name.encode()).decode()
 
     if not os.path.exists(os.path.join(figure_saving_path, file_name)):
@@ -426,6 +429,7 @@ def exp_figure():
         output_path = os.path.join(page_config.FIGURE_PATH, request.cookies['user_name'], config_name[:-5])
     else:
         output_path = os.path.join(page_config.FIGURE_PATH, request.cookies['user_name'], config_name)
+    output_path = os.path.abspath(output_path)
     config = load_config(config_name)
     config['PLOT_FIGURE_SAVING_PATH'] = output_path
     save_config(config, config_name)
@@ -452,6 +456,7 @@ def lst_output_figure():
     config = load_config(config_name)
     _overwrite_config(config)
     target_file = os.path.join(page_config.WEB_RAM_PATH, page_config.TOTAL_FIGURE_FOLDER + "_tmp", f'{config_name}.png')
+    target_file = os.path.abspath(target_file)
     target_dir = os.path.dirname(target_file)
     file_name = os.path.basename(target_file)
     Logger.logger(f'dir: {target_dir}, name: {file_name}, exists: {os.path.exists(target_file)}')
@@ -501,7 +506,7 @@ def param_adjust():
 
     possible_config = list(sorted(sorted(possible_config, key=lambda x: x[0]), key=lambda x: len(x[1]), reverse=True))
     selected_config_list = list(sorted(sorted(selected_config_list, key=lambda x: x[0]), key=lambda x: len(x[1]), reverse=True))
-    print('possible config', possible_config)
+    Logger.local_log('possible config', possible_config)
     # Logger.logger(f'possible config json: {json.dumps(possible_config)}')
     encode_possible_config_js = base64.urlsafe_b64encode(json.dumps(possible_config).encode()).decode()
     rename_rule = {} if 'SHORT_NAME_FROM_CONFIG' not in config else config['SHORT_NAME_FROM_CONFIG']

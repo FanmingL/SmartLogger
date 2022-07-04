@@ -21,9 +21,9 @@ def main():
                         help="Server port")
     args = parser.parse_args()
     # 关键配置项1：数据目录，该目录下存有日志文件
-    plot_config.DATA_PATH = args.data_path
+    plot_config.DATA_PATH = os.path.abspath(args.data_path)
     # 关键配置项2：本地工作目录，该目录会自动创建，并会在里面写入一些缓存文件，如缓存的配置信息，绘制的曲线图
-    page_config.WORKSPAPCE = os.path.expanduser(args.workspace_path)
+    page_config.WORKSPAPCE = os.path.abspath(os.path.expanduser(args.workspace_path))
 
     # 如何判断哪些日志会被看作是同一个算法
     plot_config.DATA_MERGER = []
