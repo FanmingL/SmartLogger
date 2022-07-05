@@ -61,8 +61,12 @@ def register_customized_value(k, v):
     EXPERIMENT_COMMON_PARAMETERS[k] = v
 
 
+def has_customized_value(k):
+    return k in EXPERIMENT_COMMON_PARAMETERS
+
+
 def get_customized_value(k):
     _check_multiprocess()
-    return EXPERIMENT_COMMON_PARAMETERS.get(k)
+    return EXPERIMENT_COMMON_PARAMETERS[k]
 # ALL_CONFIGS = get_global_configs([*locals().items()])
 
