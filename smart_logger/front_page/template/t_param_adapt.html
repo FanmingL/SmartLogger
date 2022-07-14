@@ -51,14 +51,19 @@
             let input_box = document.getElementById("added_rule_select_cb");
             let input_text = input_box.value;
             let selected_key = key_selection.options[key_selection.selectedIndex].value;
-            let selected_value = value_selection.options[value_selection.selectedIndex].value;
-            let selected_text = value_selection.options[value_selection.selectedIndex].text;
+            let manual_input = document.getElementById('change_manual_flag_id').checked;
+
+            var selected_value;
+            if (!manual_input){
+                selected_value = value_selection.options[value_selection.selectedIndex].value;
+            }else{
+                selected_value = value_selection.value;
+            }
             let possible_config_js = "{{possible_config_js}}";
              possible_config_js = atob(possible_config_js);
              possible_config_js = JSON.parse(possible_config_js);
             console.log(selected_key)
             console.log(selected_value)
-            console.log(selected_text)
             console.log(input_text)
             var found_data = false;
             for (var i = 0; i < possible_config_js.length; i++) {
@@ -66,9 +71,15 @@
                 // console.log(possible_config_js[i][1]);
                 if (possible_config_js[i][0] == selected_key) {
                     found_data = true;
-                    let svalue = possible_config_js[i][1][selected_value];
+                    var svalue;
+                    if (manual_input){
+                        svalue = selected_value;
+                    }
+                    else{
+                        svalue = possible_config_js[i][1][selected_value];
+
+                    }
                     added_dict[selected_key] = svalue;
-                    console.log(svalue)
                     input_box.value += selected_key.toString() + "=" + svalue.toString() + ";";
                     console.log(JSON.stringify(added_dict));
                 }
@@ -117,6 +128,25 @@
             var data_to_send = {'delete_config': selected_config}
             httpRequest.send(JSON.stringify(data_to_send));
         }
+
+
+        function change_manual(){
+            let checkbox = document.getElementById('change_manual_flag_id');
+            let value_box = document.getElementById('select_value');
+            if (checkbox.checked){
+                value_box.outerHTML = "<input type=\"text\" name=\"select_value_text\" id=\"select_value\" value=\"\"/>"
+            }else{
+                value_box.outerHTML = "<select id=\"select_value\">\n" +
+                    "                {% if possible_config|length > 0 %}\n" +
+                    "                {% for item in possible_config[0][1] %}\n" +
+                    "               <option value =\"{{item}}\">{{item}}</option>\n" +
+                    "                {% endfor %}\n" +
+                    "                {% endif %}\n" +
+                    "            </select>";
+                set_option();
+            }
+        }
+
         function submit_selection(){
             let form_rename = document.getElementById('frm_merge_selection');
             form_rename.submit();
@@ -603,12 +633,16 @@
                <option value ="{{item}}">{{item}}</option>
                 {% endfor %}
                 {% endif %}
-            </select><br/>
+            </select>
+        <input type="checkbox" name="change_manual_flag" id="change_manual_flag_id" value="manual" onchange="change_manual()">
+        <label for="change_manual_flag_id" style="font-family: monospace">手动输入</label>
+                <br/>
             </div>
             <button type="button" style="width:80px;height:30px" onclick="change_input_text()">添加规则</button>&nbsp&nbsp&nbsp
             <button type="button" style="width:60px;height:30px" onclick="clear_input_box()">清空</button>&nbsp&nbsp&nbsp
             <button type="button" style="width:60px;height:30px" onclick="add_ignore()">提交</button></div>
     </form>
+
 </div>
 <div class="choose_config">
     <form name="frm_rename_config_choose_select" id="frm_rename_config_choose_select" action="{{url_for('choose_config', source='adapt')}}" method="POST">

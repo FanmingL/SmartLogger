@@ -14,6 +14,7 @@ import matplotlib
 from datetime import datetime
 from concurrent.futures import ProcessPoolExecutor, as_completed, ThreadPoolExecutor
 import json
+import re
 sns.set_theme()
 
 
@@ -166,12 +167,14 @@ def _load_data(folder_name):
         if plot_config.USE_IGNORE_RULE:
             for data_ignore in plot_config.DATA_IGNORE:
                 match_ignore = True
+
                 for k, v in data_ignore.items():
                     if k == '__SHORT_NAME__':
                         if not standardize_string(v) == standardize_string(list_embedding(data_merger_feature)):
                             match_ignore = False
                             break
-                    elif k not in param or not param[k] == v:
+                    elif k not in param or (isinstance(v, str) and re.match(v, param[k]) is None) \
+                    or (not isinstance(v, str) and not v == param[k]):
                         match_ignore = False
                         break
                 if match_ignore:
@@ -180,8 +183,10 @@ def _load_data(folder_name):
             match_select = False
             for data_select in plot_config.DATA_SELECT:
                 match_select = True
+
                 for k, v in data_select.items():
-                    if k not in param or not param[k] == v:
+                    if k not in param or (isinstance(v, str) and re.match(v, param[k]) is None) \
+                    or (not isinstance(v, str) and not v == param[k]):
                         match_select = False
                         break
                 if match_select:

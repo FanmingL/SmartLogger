@@ -10,9 +10,10 @@ import hashlib
 
 
 class ParameterTemplate:
-    def __init__(self, config_path=None, debug=False):
+    def __init__(self, config_path=None, debug=False, silence=False):
         self.base_path = self.get_base_path()
         self.debug = debug
+        self.silence = silence
         self.experiment_target = experiment_config.EXPERIMENT_TARGET
         self.DEFAULT_CONFIGS = {k: getattr(common_config, k) for k in common_config.global_configs()}
         self.DEFAULT_CONFIGS_EXP = {k: getattr(experiment_config, k) for k in experiment_config.global_configs_exp()}
@@ -44,7 +45,8 @@ class ParameterTemplate:
             self.apply_vars(self.args)
 
     def info(self, info):
-        self.log_func(info)
+        if not self.silence or not self.log_func == print:
+            self.log_func(info)
 
     def set_logger(self, logger):
         self.log_func = logger

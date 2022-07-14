@@ -10,6 +10,7 @@ import smart_logger.common.page_config as page_config
 from smart_logger.util_logger.logger import Logger
 from smart_logger.report.plotting import merger_to_short_name, list_embedding, standardize_string, make_merger_feature
 from pathlib import Path
+import re
 
 
 def get_config_path(config_name, user_name=None):
@@ -348,7 +349,9 @@ def can_ignore(config, data_ignore, data_merger):
                 if not standardize_string(v) == standardize_string(short_name_origin):
                     match_ignore = False
                     break
-            elif k not in config or not config[k] == v:
+            elif k not in config \
+                    or (isinstance(v, str) and re.match(v, config[k]) is None) \
+                    or (not isinstance(v, str) and not v == config[k]):
                 match_ignore = False
                 break
         if match_ignore:
@@ -367,8 +370,10 @@ def can_preserve(config, data_select, data_merger):
     short_name_origin, _ = config_to_short_name(config, data_merger, {})
     for data_select_item in data_select:
         match_select = True
+
         for k, v in data_select_item.items():
-            if k not in config or not config[k] == v:
+            if k not in config or (isinstance(v, str) and re.match(v, config[k]) is None) \
+                    or (not isinstance(v, str) and not v == config[k]):
                 match_select = False
                 break
         if match_select:
