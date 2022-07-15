@@ -464,7 +464,10 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
 
             if plot_config.X_AXIS_SCI_FORM:
                 ax.ticklabel_format(style='sci', scilimits=(-1, 2), axis='x')
-                ax.xaxis.offsetText.set_fontsize(plot_config.FONTSIZE_YTICK)
+                ax.xaxis.offsetText.set_fontsize(plot_config.FONTSIZE_XTICK)
+            if plot_config.Y_AXIS_SCI_FORM:
+                ax.ticklabel_format(style='sci', scilimits=(-1, 2), axis='y')
+                ax.yaxis.offsetText.set_fontsize(plot_config.FONTSIZE_YTICK)
             title_name = title_tuple_to_str(sub_figure)
             if not plot_config.TITLE_SUFFIX == 'None':
                 title_name = f'{title_name}{plot_config.TITLE_SUFFIX}'
