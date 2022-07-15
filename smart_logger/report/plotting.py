@@ -415,13 +415,18 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
                 continue
             x_data = [data_alg['data'][x_name] for data_alg in data_alg_list]
             y_data = [data_alg['data'][y_name] for data_alg in data_alg_list]
+            for i in range(len(x_data)):
+                x_data[i].fillna(method='ffill', inplace=True)
+            for i in range(len(y_data)):
+                y_data[i].fillna(method='ffill', inplace=True)
             data_len = [len(item) for item in x_data]
             min_data_len = min(data_len)
             seed_num = len(data_len)
             x_data = [np.array(data[:min_data_len:plot_config.PLOT_FOR_EVERY]) for data in x_data]
             y_data = [np.array(data[:min_data_len:plot_config.PLOT_FOR_EVERY]) for data in y_data]
             x_data = x_data[0]
-            x_data, y_data = _remove_nan(x_data, y_data)
+            # x_data, y_data = _remove_nan(x_data, y_data)
+            min_data_len = np.shape(x_data)[0]
             if not str(plot_config.XMAX) == 'None':
                 final_ind = np.argmin(np.square(np.array(x_data) - float(plot_config.XMAX))) + 1
                 x_data = x_data[:final_ind]
@@ -440,6 +445,7 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
                              linestyle=line_type, marker=marker, label=alg_name,
                              linewidth=plot_config.LINE_WIDTH, markersize=plot_config.MARKER_SIZE,
                              markevery=max(min_data_len // 8, 1))
+            print('plotting', np.shape(x_data), np.shape(y_data), min_data_len)
             if alg_name not in alg_to_line_handler:
                 alg_to_line_handler[alg_name] = curve
                 alg_to_seed_num[alg_name] = seed_num
@@ -526,12 +532,16 @@ def _make_subtable(data, x_name, y_name, at_x, plot_config_dict, iter, alg_as_ro
                 continue
             x_data = [data_alg['data'][x_name] for data_alg in data_alg_list]
             y_data = [data_alg['data'][y_name] for data_alg in data_alg_list]
+            for i in range(len(x_data)):
+                x_data[i].fillna(method='ffill', inplace=True)
+            for i in range(len(y_data)):
+                y_data[i].fillna(method='ffill', inplace=True)
             data_len = [len(item) for item in x_data]
             min_data_len = min(data_len)
             x_data = [np.array(data[:min_data_len]) for data in x_data]
             y_data = [np.array(data[:min_data_len]) for data in y_data]
             x_data = x_data[0]
-            x_data, y_data = _remove_nan(x_data, y_data)
+            # x_data, y_data = _remove_nan(x_data, y_data)
             if not str(plot_config.XMAX) == 'None':
                 final_ind = np.argmin(np.square(np.array(x_data) - float(plot_config.XMAX))) + 1
                 x_data = x_data[:final_ind]
