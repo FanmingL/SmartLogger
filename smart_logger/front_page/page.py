@@ -267,7 +267,8 @@ def plot():
                                                            'FIGURE_SERVER_MACHINE_PASSWD',
                                                            'FIGURE_SERVER_MACHINE_TARGET_PATH', 'PLOTTING_ORDER',
                                                            'LEGEND_ORDER', 'DATA_SELECT', 'USE_IGNORE_RULE',
-                                                           'TABLE_BOLD_MAX']}
+                                                           'TABLE_BOLD_MAX', 'DATA_IGNORE_PROPERTY',
+                                                           'DATA_SELECT_PROPERTY']}
     config_description = plot_config.DESCRIPTION
     for k in config:
         if k not in config_description:
@@ -470,7 +471,9 @@ def param_adjust():
     config = load_config(config_name)
     _overwrite_config(config)
     data_ignore = [] if 'DATA_IGNORE' not in config else config['DATA_IGNORE']
+    data_ignore_property = [] if 'DATA_IGNORE_PROPERTY' not in config else config['DATA_IGNORE_PROPERTY']
     data_choose = [] if 'DATA_SELECT' not in config else config['DATA_SELECT']
+    data_choose_property = [] if 'DATA_SELECT_PROPERTY' not in config else config['DATA_SELECT_PROPERTY']
     data_merge = [] if 'DATA_MERGER' not in config else config['DATA_MERGER']
     data_short_name_dict = {} if 'SHORT_NAME_FROM_CONFIG' not in config else config['SHORT_NAME_FROM_CONFIG']
     exp_data, exp_data_ignores, selected_choices, possible_config_ignore, selected_choices_ignore, alg_idxs_ignore, \
@@ -480,7 +483,9 @@ def param_adjust():
                                                                    need_select=not config['USE_IGNORE_RULE'],
                                                                    data_select=data_choose,
                                                                    data_merge=data_merge,
-                                                                   data_short_name_dict=data_short_name_dict)
+                                                                   data_short_name_dict=data_short_name_dict,
+                                                                   data_ignore_property=data_ignore_property,
+                                                                   data_select_property=data_choose_property)
     exp_data_encoded = [base64.urlsafe_b64encode(item.encode()).decode() for item in exp_data]
     exp_data_ignores_encoded = [base64.urlsafe_b64encode(item.encode()).decode() for item in exp_data_ignores]
     Logger.logger(f'selected_choices keys: {[k for k in selected_choices]}')
@@ -692,12 +697,28 @@ def add_ignore():
         if 'DATA_IGNORE' not in config:
             config['DATA_IGNORE'] = []
         if len(newly_added_ignore) > 0:
-            config['DATA_IGNORE'].append(newly_added_ignore)
+            ignore_dict = {k: newly_added_ignore[k]['value'] for k in newly_added_ignore}
+            config['DATA_IGNORE'].append(ignore_dict)
+            ignore_desc = dict()
+            for k in newly_added_ignore:
+                ignore_desc[k] = dict()
+                for k2 in newly_added_ignore[k]:
+                    if not k2 == 'value':
+                        ignore_desc[k][k2] = newly_added_ignore[k][k2]
+            config['DATA_IGNORE_PROPERTY'].append(ignore_desc)
     else:
         if 'DATA_SELECT' not in config:
             config['DATA_SELECT'] = []
         if len(newly_added_ignore) > 0:
-            config['DATA_SELECT'].append(newly_added_ignore)
+            select_dict = {k: newly_added_ignore[k]['value'] for k in newly_added_ignore}
+            config['DATA_SELECT'].append(select_dict)
+            ignore_desc = dict()
+            for k in newly_added_ignore:
+                ignore_desc[k] = dict()
+                for k2 in newly_added_ignore[k]:
+                    if not k2 == 'value':
+                        ignore_desc[k][k2] = newly_added_ignore[k][k2]
+            config['DATA_SELECT_PROPERTY'].append(ignore_desc)
     save_config(config, config_name)
     return redirect('param_adjust')
 
@@ -713,11 +734,13 @@ def del_ignore(rule_idx):
             config['DATA_IGNORE'] = []
         else:
             config['DATA_IGNORE'] = [config['DATA_IGNORE'][i] for i in range(len(config['DATA_IGNORE'])) if not str(i) == str(rule_idx)]
+            config['DATA_IGNORE_PROPERTY'] = [config['DATA_IGNORE_PROPERTY'][i] for i in range(len(config['DATA_IGNORE_PROPERTY'])) if not str(i) == str(rule_idx)]
     else:
         if 'DATA_SELECT' not in config:
             config['DATA_SELECT'] = []
         else:
             config['DATA_SELECT'] = [config['DATA_SELECT'][i] for i in range(len(config['DATA_SELECT'])) if not str(i) == str(rule_idx)]
+            config['DATA_SELECT_PROPERTY'] = [config['DATA_SELECT_PROPERTY'][i] for i in range(len(config['DATA_SELECT_PROPERTY'])) if not str(i) == str(rule_idx)]
     save_config(config, config_name)
     return redirect('/param_adjust')
 
@@ -877,11 +900,15 @@ def ignore_with_unnamed(rule_idx):
     data_ignore = [] if 'DATA_IGNORE' not in config else config['DATA_IGNORE']
     data_select = [] if 'DATA_SELECT' not in config else config['DATA_SELECT']
     data_merge = [] if 'DATA_MERGER' not in config else config['DATA_MERGER']
+    data_ignore_property = [] if 'DATA_IGNORE_PROPERTY' not in config else config['DATA_IGNORE_PROPERTY']
+    data_select_property = [] if 'DATA_SELECT_PROPERTY' not in config else config['DATA_SELECT_PROPERTY']
+
     data_short_name_dict = {} if 'SHORT_NAME_FROM_CONFIG' not in config else config['SHORT_NAME_FROM_CONFIG']
     _, _, _, _, _, _, _, _, _, _, short_name_to_ind, _ = analyze_experiment(
         need_ignore=config['USE_IGNORE_RULE'], data_ignore=data_ignore,
         need_select=not config['USE_IGNORE_RULE'], data_select=data_select,
-        data_merge=data_merge, data_short_name_dict=data_short_name_dict)
+        data_merge=data_merge, data_short_name_dict=data_short_name_dict, data_select_property=data_select_property,
+        data_ignore_property=data_ignore_property)
     rename_rule = {} if 'SHORT_NAME_FROM_CONFIG' not in config else config['SHORT_NAME_FROM_CONFIG']
     standardize_rule = standardize_merger_item(rename_rule)
     possible_short_name = sorted([k for k in short_name_to_ind if standardize_merger_item(k) not in standardize_rule])

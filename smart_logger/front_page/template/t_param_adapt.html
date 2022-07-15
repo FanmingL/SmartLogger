@@ -79,7 +79,7 @@
                         svalue = possible_config_js[i][1][selected_value];
 
                     }
-                    added_dict[selected_key] = svalue;
+                    added_dict[selected_key] = {'value': svalue, 'manual': document.getElementById('change_manual_flag_id').checked};
                     input_box.value += selected_key.toString() + "=" + svalue.toString() + ";";
                     console.log(JSON.stringify(added_dict));
                 }

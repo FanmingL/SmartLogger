@@ -332,27 +332,41 @@ def _choose_config(config_name):
         if k not in config_new['DESCRIPTION'] or not config_new['DESCRIPTION'][k] == v:
             config_new['DESCRIPTION'][k] = v
             k_set_mismatch = True
+    if not len(config_new['DATA_IGNORE_PROPERTY']) == len(config_new['DATA_IGNORE']):
+        print(f'DATA_IGNORE_PROPERTY does not valid, reinit it')
+        config_new['DATA_IGNORE_PROPERTY'] = []
+        for item in config_new['DATA_IGNORE']:
+            config_new['DATA_IGNORE_PROPERTY'].append({k: {} for k in item})
+    if not len(config_new['DATA_SELECT_PROPERTY']) == len(config_new['DATA_SELECT']):
+        print(f'DATA_SELECT_PROPERTY does not valid, reinit it')
+        config_new['DATA_SELECT_PROPERTY'] = []
+        for item in config_new['DATA_SELECT']:
+            config_new['DATA_SELECT_PROPERTY'].append({k: {} for k in item})
     if k_set_mismatch:
         save_config(config_new, config_name)
 
-def can_ignore(config, data_ignore, data_merger):
+def can_ignore(config, data_ignore, data_merger, data_ignore_property):
     if len(data_ignore) == 0:
         return False
     if config is None:
         return True
     match_ignore = False
     short_name_origin, _ = config_to_short_name(config, data_merger, {})
-    for data_ignore_item in data_ignore:
+    for data_ignore_ind, data_ignore_item in enumerate(data_ignore):
         match_ignore = True
         for k, v in data_ignore_item.items():
+            require_re_check = isinstance(v, str) and len(data_ignore_property) > data_ignore_ind \
+                               and k in data_ignore_property[data_ignore_ind] \
+                               and 'manual' in data_ignore_property[data_ignore_ind][k] \
+                               and data_ignore_property[data_ignore_ind][k]['manual']
             if k == '__SHORT_NAME__':
                 if not standardize_string(v) == standardize_string(short_name_origin):
                     match_ignore = False
                     break
-            elif k not in config or (not isinstance(v, str) and not v == config[k]):
+            elif k not in config or (not require_re_check and not v == config[k]):
                 match_ignore = False
                 break
-            elif isinstance(v, str):
+            elif require_re_check:
                 try:
                     if re.match(v, config[k]) is None:
                         match_ignore = False
@@ -368,21 +382,25 @@ def can_ignore(config, data_ignore, data_merger):
     return False
 
 
-def can_preserve(config, data_select, data_merger):
+def can_preserve(config, data_select, data_merger, data_select_property):
     if len(data_select) == 0:
         return False
     if config is None:
         return False
     match_select = False
     short_name_origin, _ = config_to_short_name(config, data_merger, {})
-    for data_select_item in data_select:
+    for data_select_ind, data_select_item in enumerate(data_select):
         match_select = True
 
         for k, v in data_select_item.items():
-            if k not in config or (not isinstance(v, str) and not v == config[k]):
+            require_re_check = isinstance(v, str) and len(data_select_property) > data_select_ind \
+                               and k in data_select_property[data_select_ind] \
+                               and 'manual' in data_select_property[data_select_ind][k] \
+                               and data_select_property[data_select_ind][k]['manual']
+            if k not in config or (not require_re_check and not v == config[k]):
                 match_select = False
                 break
-            elif isinstance(v, str):
+            elif require_re_check:
                 try:
                     if re.match(v, config[k]) is None:
                         match_select = False
@@ -396,19 +414,27 @@ def can_preserve(config, data_select, data_merger):
     return match_select
 
 
-def analyze_experiment(need_ignore=False, data_ignore=None, need_select=False, data_select=None, data_merge=None, data_short_name_dict=None):
+def analyze_experiment(need_ignore=False, data_ignore=None, need_select=False,
+                       data_select=None, data_merge=None, data_short_name_dict=None,
+                       data_ignore_property=None, data_select_property=None):
     all_folders = list_current_experiment()
     folder_ignore = []
     if need_ignore:
         if data_ignore is None:
             data_ignore = plot_config.DATA_IGNORE
+        if data_ignore_property is None:
+            data_ignore_property = plot_config.DATA_IGNORE_PROPERTY
     else:
         data_ignore = []
+        data_ignore_property = []
     if need_select:
         if data_select is None:
             data_select = plot_config.DATA_SELECT
+        if data_select_property is None:
+            data_select_property = plot_config.DATA_SELECT_PROPERTY
     else:
         data_select = []
+        data_select_property = []
     data_short_name_dict = {} if data_short_name_dict is None else data_short_name_dict
     folder_list = []
     config_list = []
@@ -427,11 +453,11 @@ def analyze_experiment(need_ignore=False, data_ignore=None, need_select=False, d
         if config is None:
             continue
         ignore_file = False
-        if need_ignore and can_ignore(config, data_ignore, data_merge):
+        if need_ignore and can_ignore(config, data_ignore, data_merge, data_ignore_property):
             folder_ignore.append(folder)
             config_list_ignore.append(config)
             ignore_file = True
-        if not ignore_file and need_select and not can_preserve(config, data_select, data_merge):
+        if not ignore_file and need_select and not can_preserve(config, data_select, data_merge, data_select_property):
             folder_ignore.append(folder)
             config_list_ignore.append(config)
             ignore_file = True

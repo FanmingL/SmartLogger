@@ -165,18 +165,22 @@ def _load_data(folder_name):
                 data_merger_feature.append(make_merger_feature(merger, param[merger]))
         match_ignore = False
         if plot_config.USE_IGNORE_RULE:
-            for data_ignore in plot_config.DATA_IGNORE:
+            for data_ignore_ind, data_ignore in enumerate(plot_config.DATA_IGNORE):
                 match_ignore = True
 
                 for k, v in data_ignore.items():
+                    require_re_check = isinstance(v, str) and len(plot_config.DATA_IGNORE_PROPERTY) > data_ignore_ind \
+                                       and k in plot_config.DATA_IGNORE_PROPERTY[data_ignore_ind] \
+                                       and 'manual' in plot_config.DATA_IGNORE_PROPERTY[data_ignore_ind][k] \
+                                       and plot_config.DATA_IGNORE_PROPERTY[data_ignore_ind][k]['manual']
                     if k == '__SHORT_NAME__':
                         if not standardize_string(v) == standardize_string(list_embedding(data_merger_feature)):
                             match_ignore = False
                             break
-                    elif k not in param or (not isinstance(v, str) and not v == param[k]):
+                    elif k not in param or (not require_re_check and not v == param[k]):
                         match_ignore = False
                         break
-                    elif isinstance(v, str):
+                    elif require_re_check:
                         try:
                             if re.match(v, param[k]) is None:
                                 match_ignore = False
@@ -189,14 +193,18 @@ def _load_data(folder_name):
                     break
         else:
             match_select = False
-            for data_select in plot_config.DATA_SELECT:
+            for data_select_ind, data_select in enumerate(plot_config.DATA_SELECT):
                 match_select = True
 
                 for k, v in data_select.items():
-                    if k not in param or (not isinstance(v, str) and not v == param[k]):
+                    require_re_check = isinstance(v, str) and len(plot_config.DATA_SELECT_PROPERTY) > data_select_ind \
+                                       and k in plot_config.DATA_SELECT_PROPERTY[data_select_ind] \
+                                       and 'manual' in plot_config.DATA_SELECT_PROPERTY[data_select_ind][k] \
+                                       and plot_config.DATA_SELECT_PROPERTY[data_select_ind][k]['manual']
+                    if k not in param or (not require_re_check and not v == param[k]):
                         match_select = False
                         break
-                    elif isinstance(v, str):
+                    elif require_re_check:
                         try:
                             if re.match(v, param[k]) is None:
                                 match_select = False

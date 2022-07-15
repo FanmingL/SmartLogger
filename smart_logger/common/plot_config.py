@@ -24,9 +24,17 @@ DATA_IGNORE = [
     {'information': "local_test"},
     {'SHORT_NAME_SUFFIX': "test_speed"},
 ]
+DATA_IGNORE_PROPERTY = [
+    {'information': {}},
+    {'information': {}},
+    {'SHORT_NAME_SUFFIX': {}},
+]
 # 数据选择规则
 DATA_SELECT = [
     {'information': "MAIN"},
+]
+DATA_SELECT_PROPERTY = [
+    {'information': {}}
 ]
 # 图例重命名规则
 SHORT_NAME_FROM_CONFIG = {
