@@ -572,13 +572,18 @@
     {% endif %}
     <form name="change_filter_rule_mode_frm" id="change_filter_rule_mode_id" action="{{url_for('change_filter_rule')}}" method="POST" style="margin: 15px">
         <input type="checkbox" name="filter_data_with_ignore" id="filter_data_with_ignore_id" value="filter_data_with_ignore_value" {% if filter_data_with_ignore %}checked="checked" {%endif%} onchange="submit_change_filter_mode()">
-        <label for="filter_data_with_ignore_id" style="font-family: monospace">是否通过过滤的方式来进行日志筛选。</label>
+        {% if filter_data_with_ignore %}
+        <label for="filter_data_with_ignore_id" style="font-family: monospace">是否用以下条件进行日志筛选（不勾选则会使用以下条件对应的日志)。</label>
+        {% else %}
+        <label for="filter_data_with_ignore_id" style="font-family: monospace">是否使用以下条件对应的日志（勾选则会使用以下条件进行日志筛选)。</label>
+        {% endif %}
     </form>
     <p style="margin: 10px">
         {% if filter_data_with_ignore %}
         {% for item_dict in data_ignore %}
         &nbsp;&nbsp;>DATA_IGNORE[{{loop.index0}}]
-        <a href="{{url_for('del_ignore', rule_idx=loop.index0)}}" style="font-family: monospace">删除</a>
+        <a href="{{url_for('del_ignore', rule_idx=loop.index0, move_to_garbage=0)}}" style="font-family: monospace">删除</a>
+        <a href="{{url_for('del_ignore', rule_idx=loop.index0, move_to_garbage=1)}}" style="font-family: monospace">放入回收站</a>
         <br/>
         {% for k, v in item_dict.items() %}
         {% if k == "__SHORT_NAME__" %}
@@ -593,7 +598,8 @@
 {% else %}
         {% for item_dict in data_choose_rule %}
         &nbsp;&nbsp;>DATA_CHOOSE[{{loop.index0}}]
-        <a href="{{url_for('del_ignore', rule_idx=loop.index0)}}" style="font-family: monospace">删除</a>
+        <a href="{{url_for('del_ignore', rule_idx=loop.index0, move_to_garbage=1)}}" style="font-family: monospace">放入回收站</a>
+        <a href="{{url_for('del_ignore', rule_idx=loop.index0, move_to_garbage=0)}}" style="font-family: monospace">删除</a>
         <br/>
         {% for k, v in item_dict.items() %}
         &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- {{k}} = {{v}};{% if loop.index0+1< (item_dict | length) %}<br/>{% endif %}
@@ -635,14 +641,44 @@
                 {% endif %}
             </select>
         <input type="checkbox" name="change_manual_flag" id="change_manual_flag_id" value="manual" onchange="change_manual()">
-        <label for="change_manual_flag_id" style="font-family: monospace">手动输入</label>
+        <label for="change_manual_flag_id" style="font-family: monospace">手动输入（支持正则表达式）</label>
                 <br/>
             </div>
             <button type="button" style="width:80px;height:30px" onclick="change_input_text()">添加规则</button>&nbsp&nbsp&nbsp
             <button type="button" style="width:60px;height:30px" onclick="clear_input_box()">清空</button>&nbsp&nbsp&nbsp
             <button type="button" style="width:60px;height:30px" onclick="add_ignore()">提交</button></div>
     </form>
-
+    <p style="margin: 10px">
+        {% if filter_data_with_ignore %}
+        {% for item_dict in data_ignore_garbage %}
+        &nbsp;&nbsp;>DATA_GARBAGE[{{loop.index0}}]
+        <a href="{{url_for('del_garbage', rule_idx=loop.index0, move_back=1)}}" style="font-family: monospace">放回</a>
+        <a href="{{url_for('del_garbage', rule_idx=loop.index0, move_back=0)}}" style="font-family: monospace">彻底删除</a>
+        <br/>
+        {% for k, v in item_dict.items() %}
+        {% if k == "__SHORT_NAME__" %}
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- {{k}} = {% if v in rename_rule_dict %} ({{(rename_rule_dict[v])}}): {% endif %}{{v}};{% if loop.index0+1< (item_dict | length) %}<br/>{% endif %}
+        {% else %}
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- {{k}} = {{v}};{% if loop.index0+1< (item_dict | length) %}<br/>{% endif %}
+        {% endif %}
+        {% endfor %}
+        <br/>
+        <br/>
+        {% endfor %}
+        {% else %}
+        {% for item_dict in data_choose_garbage %}
+        &nbsp;&nbsp;>DATA_GARBAGE[{{loop.index0}}]
+        <a href="{{url_for('del_garbage', rule_idx=loop.index0, move_back=1)}}" style="font-family: monospace">放回</a>
+        <a href="{{url_for('del_garbage', rule_idx=loop.index0, move_back=0)}}" style="font-family: monospace">彻底删除</a>
+        <br/>
+        {% for k, v in item_dict.items() %}
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- {{k}} = {{v}};{% if loop.index0+1< (item_dict | length) %}<br/>{% endif %}
+        {% endfor %}
+        <br/>
+        <br/>
+        {% endfor %}
+        {% endif %}
+    </p>
 </div>
 <div class="choose_config">
     <form name="frm_rename_config_choose_select" id="frm_rename_config_choose_select" action="{{url_for('choose_config', source='adapt')}}" method="POST">

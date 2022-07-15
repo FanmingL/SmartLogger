@@ -268,7 +268,9 @@ def plot():
                                                            'FIGURE_SERVER_MACHINE_TARGET_PATH', 'PLOTTING_ORDER',
                                                            'LEGEND_ORDER', 'DATA_SELECT', 'USE_IGNORE_RULE',
                                                            'TABLE_BOLD_MAX', 'DATA_IGNORE_PROPERTY',
-                                                           'DATA_SELECT_PROPERTY']}
+                                                           'DATA_SELECT_PROPERTY', 'DATA_IGNORE_GARBAGE',
+                                                           'DATA_SELECT_GARBAGE', 'DATA_IGNORE_PROPERTY_GARBAGE',
+                                                           'DATA_SELECT_PROPERTY_GARBAGE']}
     config_description = plot_config.DESCRIPTION
     for k in config:
         if k not in config_description:
@@ -471,8 +473,10 @@ def param_adjust():
     config = load_config(config_name)
     _overwrite_config(config)
     data_ignore = [] if 'DATA_IGNORE' not in config else config['DATA_IGNORE']
+    data_ignore_garbage = [] if 'DATA_IGNORE_GARBAGE' not in config else config['DATA_IGNORE_GARBAGE']
     data_ignore_property = [] if 'DATA_IGNORE_PROPERTY' not in config else config['DATA_IGNORE_PROPERTY']
     data_choose = [] if 'DATA_SELECT' not in config else config['DATA_SELECT']
+    data_choose_garbage = [] if 'DATA_SELECT_GARBAGE' not in config else config['DATA_SELECT_GARBAGE']
     data_choose_property = [] if 'DATA_SELECT_PROPERTY' not in config else config['DATA_SELECT_PROPERTY']
     data_merge = [] if 'DATA_MERGER' not in config else config['DATA_MERGER']
     data_short_name_dict = {} if 'SHORT_NAME_FROM_CONFIG' not in config else config['SHORT_NAME_FROM_CONFIG']
@@ -572,7 +576,9 @@ def param_adjust():
                            exists_unordered_legends_encode=exists_unordered_legends_encode,
                            filter_data_with_ignore=plot_config.USE_IGNORE_RULE,
                            data_choose_rule=data_choose,
-                           selected_config_list=selected_config_list
+                           selected_config_list=selected_config_list,
+                           data_ignore_garbage=data_ignore_garbage,
+                           data_choose_garbage=data_choose_garbage
                            )
 
 
@@ -723,27 +729,95 @@ def add_ignore():
     return redirect('param_adjust')
 
 
-@app.route("/del_ignore/<rule_idx>", methods=['GET'])
+@app.route("/del_ignore/<rule_idx>/<move_to_garbage>", methods=['GET'])
 @require_login(source_name='del_ignore', allow_guest=True)
-def del_ignore(rule_idx):
+def del_ignore(rule_idx, move_to_garbage):
+    move_to_garbage = int(move_to_garbage) == 1
     Logger.logger(f'try to rm {rule_idx} {type(rule_idx)}')
     config_name = request.cookies['used_config']
     config = load_config(config_name)
-    if 'USE_IGNORE_RULE' in config and config['USE_IGNORE_RULE']:
-        if 'DATA_IGNORE' not in config:
-            config['DATA_IGNORE'] = []
+    if move_to_garbage:
+        rule_idx = int(rule_idx)
+        if config['USE_IGNORE_RULE']:
+            item = config['DATA_IGNORE'][rule_idx]
+            item_property = config['DATA_IGNORE_PROPERTY'][rule_idx]
+            config['DATA_IGNORE'] = [config['DATA_IGNORE'][i] for i in range(len(config['DATA_IGNORE'])) if
+                                     not str(i) == str(rule_idx)]
+            config['DATA_IGNORE_PROPERTY'] = [config['DATA_IGNORE_PROPERTY'][i] for i in
+                                              range(len(config['DATA_IGNORE_PROPERTY'])) if not str(i) == str(rule_idx)]
+            config['DATA_IGNORE_GARBAGE'].append(item)
+            config['DATA_IGNORE_PROPERTY_GARBAGE'].append(item_property)
         else:
-            config['DATA_IGNORE'] = [config['DATA_IGNORE'][i] for i in range(len(config['DATA_IGNORE'])) if not str(i) == str(rule_idx)]
-            config['DATA_IGNORE_PROPERTY'] = [config['DATA_IGNORE_PROPERTY'][i] for i in range(len(config['DATA_IGNORE_PROPERTY'])) if not str(i) == str(rule_idx)]
+            item = config['DATA_SELECT'][rule_idx]
+            item_property = config['DATA_SELECT_PROPERTY'][rule_idx]
+            config['DATA_SELECT'] = [config['DATA_SELECT'][i] for i in range(len(config['DATA_SELECT'])) if
+                                     not str(i) == str(rule_idx)]
+            config['DATA_SELECT_PROPERTY'] = [config['DATA_SELECT_PROPERTY'][i] for i in
+                                              range(len(config['DATA_SELECT_PROPERTY'])) if not str(i) == str(rule_idx)]
+            config['DATA_SELECT_GARBAGE'].append(item)
+            config['DATA_SELECT_PROPERTY_GARBAGE'].append(item_property)
+
     else:
-        if 'DATA_SELECT' not in config:
-            config['DATA_SELECT'] = []
+        if 'USE_IGNORE_RULE' in config and config['USE_IGNORE_RULE']:
+            if 'DATA_IGNORE' not in config:
+                config['DATA_IGNORE'] = []
+            else:
+                config['DATA_IGNORE'] = [config['DATA_IGNORE'][i] for i in range(len(config['DATA_IGNORE'])) if not str(i) == str(rule_idx)]
+                config['DATA_IGNORE_PROPERTY'] = [config['DATA_IGNORE_PROPERTY'][i] for i in range(len(config['DATA_IGNORE_PROPERTY'])) if not str(i) == str(rule_idx)]
         else:
-            config['DATA_SELECT'] = [config['DATA_SELECT'][i] for i in range(len(config['DATA_SELECT'])) if not str(i) == str(rule_idx)]
-            config['DATA_SELECT_PROPERTY'] = [config['DATA_SELECT_PROPERTY'][i] for i in range(len(config['DATA_SELECT_PROPERTY'])) if not str(i) == str(rule_idx)]
+            if 'DATA_SELECT' not in config:
+                config['DATA_SELECT'] = []
+            else:
+                config['DATA_SELECT'] = [config['DATA_SELECT'][i] for i in range(len(config['DATA_SELECT'])) if not str(i) == str(rule_idx)]
+                config['DATA_SELECT_PROPERTY'] = [config['DATA_SELECT_PROPERTY'][i] for i in range(len(config['DATA_SELECT_PROPERTY'])) if not str(i) == str(rule_idx)]
     save_config(config, config_name)
     return redirect('/param_adjust')
 
+
+@app.route("/del_garbage/<rule_idx>/<move_back>", methods=['GET'])
+@require_login(source_name='del_ignore', allow_guest=True)
+def del_garbage(rule_idx, move_back):
+    move_back = int(move_back) == 1
+    Logger.logger(f'try to rm {rule_idx} {type(rule_idx)}')
+    config_name = request.cookies['used_config']
+    config = load_config(config_name)
+    if move_back:
+        rule_idx = int(rule_idx)
+        if config['USE_IGNORE_RULE']:
+            item = config['DATA_IGNORE_GARBAGE'][rule_idx]
+            item_property = config['DATA_IGNORE_PROPERTY_GARBAGE'][rule_idx]
+            config['DATA_IGNORE'].append(item)
+            config['DATA_IGNORE_PROPERTY'].append(item_property)
+            config['DATA_IGNORE_GARBAGE'] = [config['DATA_IGNORE_GARBAGE'][i] for i in
+                                             range(len(config['DATA_IGNORE_GARBAGE'])) if not str(i) == str(rule_idx)]
+            config['DATA_IGNORE_PROPERTY_GARBAGE'] = [config['DATA_IGNORE_PROPERTY_GARBAGE'][i] for i in
+                                                      range(len(config['DATA_IGNORE_PROPERTY_GARBAGE'])) if
+                                                      not str(i) == str(rule_idx)]
+        else:
+            item = config['DATA_SELECT_GARBAGE'][rule_idx]
+            item_property = config['DATA_SELECT_PROPERTY_GARBAGE'][rule_idx]
+            config['DATA_SELECT'].append(item)
+            config['DATA_SELECT_PROPERTY'].append(item_property)
+            config['DATA_SELECT_GARBAGE'] = [config['DATA_SELECT_GARBAGE'][i] for i in
+                                             range(len(config['DATA_SELECT_GARBAGE'])) if not str(i) == str(rule_idx)]
+            config['DATA_SELECT_PROPERTY_GARBAGE'] = [config['DATA_SELECT_PROPERTY_GARBAGE'][i] for i in
+                                                      range(len(config['DATA_SELECT_PROPERTY_GARBAGE'])) if
+                                                      not str(i) == str(rule_idx)]
+    else:
+        if 'USE_IGNORE_RULE' in config and config['USE_IGNORE_RULE']:
+            if 'DATA_IGNORE_GARBAGE' not in config:
+                config['DATA_IGNORE_GARBAGE'] = []
+            else:
+                config['DATA_IGNORE_GARBAGE'] = [config['DATA_IGNORE_GARBAGE'][i] for i in range(len(config['DATA_IGNORE_GARBAGE'])) if not str(i) == str(rule_idx)]
+                config['DATA_IGNORE_PROPERTY_GARBAGE'] = [config['DATA_IGNORE_PROPERTY_GARBAGE'][i] for i in range(len(config['DATA_IGNORE_PROPERTY_GARBAGE'])) if not str(i) == str(rule_idx)]
+        else:
+            if 'DATA_SELECT_GARBAGE' not in config:
+                config['DATA_SELECT_GARBAGE'] = []
+            else:
+                config['DATA_SELECT_GARBAGE'] = [config['DATA_SELECT_GARBAGE'][i] for i in range(len(config['DATA_SELECT_GARBAGE'])) if not str(i) == str(rule_idx)]
+                config['DATA_SELECT_PROPERTY_GARBAGE'] = [config['DATA_SELECT_PROPERTY_GARBAGE'][i] for i in range(len(config['DATA_SELECT_PROPERTY_GARBAGE'])) if not str(i) == str(rule_idx)]
+    save_config(config, config_name)
+    return redirect('/param_adjust')
 
 @app.route("/del_rename/<rule_idx>", methods=['GET'])
 @require_login(source_name='del_rename', allow_guest=True)

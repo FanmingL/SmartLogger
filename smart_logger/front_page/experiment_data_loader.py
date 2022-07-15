@@ -368,7 +368,7 @@ def can_ignore(config, data_ignore, data_merger, data_ignore_property):
                 break
             elif require_re_check:
                 try:
-                    if re.match(v, config[k]) is None:
+                    if re.search(v, config[k]) is None:
                         match_ignore = False
                         break
                 except Exception as e:
@@ -402,7 +402,7 @@ def can_preserve(config, data_select, data_merger, data_select_property):
                 break
             elif require_re_check:
                 try:
-                    if re.match(v, config[k]) is None:
+                    if re.search(v, config[k]) is None:
                         match_select = False
                         break
                 except Exception as e:

@@ -182,7 +182,7 @@ def _load_data(folder_name):
                         break
                     elif require_re_check:
                         try:
-                            if re.match(v, param[k]) is None:
+                            if re.search(v, param[k]) is None:
                                 match_ignore = False
                                 break
                         except Exception as e:
@@ -206,7 +206,7 @@ def _load_data(folder_name):
                         break
                     elif require_re_check:
                         try:
-                            if re.match(v, param[k]) is None:
+                            if re.search(v, param[k]) is None:
                                 match_select = False
                                 break
                         except Exception as e:

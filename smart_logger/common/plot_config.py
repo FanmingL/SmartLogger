@@ -36,6 +36,21 @@ DATA_SELECT = [
 DATA_SELECT_PROPERTY = [
     {'information': {}}
 ]
+# 回收站
+DATA_IGNORE_GARBAGE = [
+
+]
+
+DATA_SELECT_GARBAGE = [
+
+]
+DATA_IGNORE_PROPERTY_GARBAGE = [
+
+]
+
+DATA_SELECT_PROPERTY_GARBAGE = [
+
+]
 # 图例重命名规则
 SHORT_NAME_FROM_CONFIG = {
 }
