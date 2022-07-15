@@ -648,7 +648,17 @@
             <button type="button" style="width:60px;height:30px" onclick="clear_input_box()">清空</button>&nbsp&nbsp&nbsp
             <button type="button" style="width:60px;height:30px" onclick="add_ignore()">提交</button></div>
     </form>
+    {% if filter_data_with_ignore %}
+        {%if data_ignore_garbage | length > 0%}
+        <h3>回收站</h3>
+        {% endif %}
+    {%else%}
+        {%if data_choose_garbage | length > 0%}
+        <h3>回收站</h3>
+        {% endif %}
+    {%endif%}
     <p style="margin: 10px">
+
         {% if filter_data_with_ignore %}
         {% for item_dict in data_ignore_garbage %}
         &nbsp;&nbsp;>DATA_GARBAGE[{{loop.index0}}]

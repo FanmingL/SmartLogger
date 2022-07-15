@@ -10,6 +10,7 @@ import smart_logger.common.page_config as page_config
 from smart_logger.util_logger.logger import Logger
 from smart_logger.report.plotting import merger_to_short_name, list_embedding, standardize_string, make_merger_feature
 from pathlib import Path
+import fnmatch
 import re
 
 
@@ -368,7 +369,7 @@ def can_ignore(config, data_ignore, data_merger, data_ignore_property):
                 break
             elif require_re_check:
                 try:
-                    if re.search(v, config[k]) is None:
+                    if not fnmatch.fnmatch(config[k], v):
                         match_ignore = False
                         break
                 except Exception as e:
@@ -402,7 +403,7 @@ def can_preserve(config, data_select, data_merger, data_select_property):
                 break
             elif require_re_check:
                 try:
-                    if re.search(v, config[k]) is None:
+                    if not fnmatch.fnmatch(config[k], v):
                         match_select = False
                         break
                 except Exception as e:

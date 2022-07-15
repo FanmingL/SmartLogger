@@ -14,6 +14,7 @@ import matplotlib
 from datetime import datetime
 from concurrent.futures import ProcessPoolExecutor, as_completed, ThreadPoolExecutor
 import json
+import fnmatch
 import re
 sns.set_theme()
 
@@ -182,7 +183,7 @@ def _load_data(folder_name):
                         break
                     elif require_re_check:
                         try:
-                            if re.search(v, param[k]) is None:
+                            if not fnmatch.fnmatch(param[k], v):
                                 match_ignore = False
                                 break
                         except Exception as e:
@@ -206,7 +207,7 @@ def _load_data(folder_name):
                         break
                     elif require_re_check:
                         try:
-                            if re.search(v, param[k]) is None:
+                            if not fnmatch.fnmatch(param[k], v):
                                 match_select = False
                                 break
                         except Exception as e:
