@@ -10,7 +10,7 @@ from smart_logger.front_page.experiment_data_loader import default_config, load_
     make_config_type, analyze_experiment, delete_config_file, has_config, standardize_merger_item, get_record_data_item,\
     get_config_path
 from smart_logger.report.plotting import plot as local_plot
-from smart_logger.report.plotting import _overwrite_config
+from smart_logger.report.plotting import _overwrite_config, _str_to_short_name
 from smart_logger.report.plotting import _make_table
 import base64
 import json
@@ -270,7 +270,8 @@ def plot():
                                                            'TABLE_BOLD_MAX', 'DATA_IGNORE_PROPERTY',
                                                            'DATA_SELECT_PROPERTY', 'DATA_IGNORE_GARBAGE',
                                                            'DATA_SELECT_GARBAGE', 'DATA_IGNORE_PROPERTY_GARBAGE',
-                                                           'DATA_SELECT_PROPERTY_GARBAGE']}
+                                                           'DATA_SELECT_PROPERTY_GARBAGE',
+                                                           'SHORT_NAME_FROM_CONFIG_PROPERTY']}
     config_description = plot_config.DESCRIPTION
     for k in config:
         if k not in config_description:
@@ -293,7 +294,12 @@ def plot():
     else:
         figure_saving_path = os.path.join(page_config.FIGURE_PATH, request.cookies['user_name'], config_name)
     if os.path.exists(figure_saving_path) and os.path.isdir(figure_saving_path):
-        file_list = [item for item in os.listdir(figure_saving_path) if item.endswith('pdf') or item.endswith('png')]
+        file_list = []
+        for root, dirs, files in os.walk(figure_saving_path):
+            for file in files:
+                if file.endswith('pdf') or file.endswith('png'):
+                    full_name = os.path.join(root, file)
+                    file_list.append(os.path.relpath(full_name, figure_saving_path))
     file_list = sorted(file_list, key=lambda x: x.split('.')[-1])
     file_list_encode = [base64.urlsafe_b64encode(os.path.join(item).encode()).decode() for item in file_list]
 
@@ -480,6 +486,7 @@ def param_adjust():
     data_choose_property = [] if 'DATA_SELECT_PROPERTY' not in config else config['DATA_SELECT_PROPERTY']
     data_merge = [] if 'DATA_MERGER' not in config else config['DATA_MERGER']
     data_short_name_dict = {} if 'SHORT_NAME_FROM_CONFIG' not in config else config['SHORT_NAME_FROM_CONFIG']
+    data_short_name_property = {} if 'SHORT_NAME_FROM_CONFIG_PROPERTY' not in config else config['SHORT_NAME_FROM_CONFIG_PROPERTY']
     exp_data, exp_data_ignores, selected_choices, possible_config_ignore, selected_choices_ignore, alg_idxs_ignore, \
         folder_ignore, nick_name_ignore_list, alg_idx, possible_config, \
             short_name_to_ind, nick_name_list = analyze_experiment(need_ignore=config['USE_IGNORE_RULE'],
@@ -489,7 +496,8 @@ def param_adjust():
                                                                    data_merge=data_merge,
                                                                    data_short_name_dict=data_short_name_dict,
                                                                    data_ignore_property=data_ignore_property,
-                                                                   data_select_property=data_choose_property)
+                                                                   data_select_property=data_choose_property,
+                                                                   data_short_name_property=data_short_name_property)
     exp_data_encoded = [base64.urlsafe_b64encode(item.encode()).decode() for item in exp_data]
     exp_data_ignores_encoded = [base64.urlsafe_b64encode(item.encode()).decode() for item in exp_data_ignores]
     Logger.logger(f'selected_choices keys: {[k for k in selected_choices]}')
@@ -503,7 +511,7 @@ def param_adjust():
     possible_config_keys_list = [k for k in possible_config]
     merge_config_file = [(k, v[0], v[1]) for k, v in merge_config_file.items()]
     merge_config_file = list(sorted(sorted(sorted(merge_config_file, key=lambda x: x[0]), key=lambda x: x[1], reverse=True), key=lambda x: x[2], reverse=True))
-    selected_config_list = [(k, v) for k, v in possible_config.items()]
+    selected_config_list = [(k, v, len(v)) for k, v in possible_config.items()]
     if plot_config.USE_IGNORE_RULE:
         for k in possible_config:
             possible_config[k] = sorted(possible_config[k], key=lambda x: str(x))
@@ -520,8 +528,8 @@ def param_adjust():
     encode_possible_config_js = base64.urlsafe_b64encode(json.dumps(possible_config).encode()).decode()
     rename_rule = {} if 'SHORT_NAME_FROM_CONFIG' not in config else config['SHORT_NAME_FROM_CONFIG']
     rename_rule_dict = rename_rule
-    standardize_rule = standardize_merger_item(rename_rule)
-    possible_short_name = sorted([k for k in short_name_to_ind if standardize_merger_item(k) not in standardize_rule])
+    possible_short_name = sorted([k for k in short_name_to_ind if not _str_to_short_name(k, rename_rule,
+                                                                                     config['SHORT_NAME_FROM_CONFIG_PROPERTY'])[1]])
     rename_rule = [(k, v) for k, v in rename_rule.items()]
     rename_rule = sorted(rename_rule, key=lambda x: x[0])
     plotting_xy = [] if 'PLOTTING_XY' not in config else config['PLOTTING_XY']
@@ -978,11 +986,12 @@ def ignore_with_unnamed(rule_idx):
     data_select_property = [] if 'DATA_SELECT_PROPERTY' not in config else config['DATA_SELECT_PROPERTY']
 
     data_short_name_dict = {} if 'SHORT_NAME_FROM_CONFIG' not in config else config['SHORT_NAME_FROM_CONFIG']
+    data_short_name_property = {} if 'SHORT_NAME_FROM_CONFIG_PROPERTY' not in config else config['SHORT_NAME_FROM_CONFIG_PROPERTY']
     _, _, _, _, _, _, _, _, _, _, short_name_to_ind, _ = analyze_experiment(
         need_ignore=config['USE_IGNORE_RULE'], data_ignore=data_ignore,
         need_select=not config['USE_IGNORE_RULE'], data_select=data_select,
         data_merge=data_merge, data_short_name_dict=data_short_name_dict, data_select_property=data_select_property,
-        data_ignore_property=data_ignore_property)
+        data_ignore_property=data_ignore_property, data_short_name_property=data_short_name_property)
     rename_rule = {} if 'SHORT_NAME_FROM_CONFIG' not in config else config['SHORT_NAME_FROM_CONFIG']
     standardize_rule = standardize_merger_item(rename_rule)
     possible_short_name = sorted([k for k in short_name_to_ind if standardize_merger_item(k) not in standardize_rule])
@@ -1004,6 +1013,7 @@ def add_rename():
     rename_rule = {} if 'SHORT_NAME_FROM_CONFIG' not in config else config['SHORT_NAME_FROM_CONFIG']
     rename_rule[request.form['added_rule_rename_long']] = request.form['added_rule_rename_short']
     config['SHORT_NAME_FROM_CONFIG'] = rename_rule
+    config['SHORT_NAME_FROM_CONFIG_PROPERTY'][request.form['added_rule_rename_long']] = {'manual': 'change_mannual_rename' in request.form}
     save_config(config, config_name)
     return redirect('/param_adjust')
 

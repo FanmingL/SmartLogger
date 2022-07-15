@@ -124,19 +124,34 @@ def stat_data(data):
     #     data_error[i] = std_error
     return data_mean, data_error
 
-
-def merger_to_short_name(merger, short_name_from_config):
-    _res = list_embedding(merger)
+def _str_to_short_name(auto_named, short_name_from_config, short_name_property):
+    _res = auto_named
     _res_standard = standardize_string(_res)
 
     short_name_config = dict()
+    rename_it = False
     for k, v in short_name_from_config.items():
         short_name_config[standardize_string(k)] = v
 
     if _res_standard in short_name_config:
         _res = short_name_config[_res_standard]
-    return _res
+        rename_it = True
+    else:
+        for item in short_name_config:
+            if item in short_name_property and 'manual' in short_name_property[item] and short_name_property[item][
+                'manual']:
+                try:
+                    if fnmatch.fnmatch(_res, item) or fnmatch.fnmatch(_res_standard, item):
+                        _res = short_name_config[item]
+                        rename_it = True
+                except Exception:
+                    pass
+    return _res, rename_it
 
+def merger_to_short_name(merger, short_name_from_config, short_name_property):
+    _res = list_embedding(merger)
+    short_name, renamed = _str_to_short_name(_res, short_name_from_config, short_name_property)
+    return short_name
 
 def _load_data(folder_name):
     try:
@@ -335,7 +350,8 @@ def collect_data():
         separator = raw_data['separator']
         merger = raw_data['merger']
         figure_content = tuple(separator)
-        alg_name = merger_to_short_name(merger, plot_config.SHORT_NAME_FROM_CONFIG)
+        alg_name = merger_to_short_name(merger, plot_config.SHORT_NAME_FROM_CONFIG,
+                                        plot_config.SHORT_NAME_FROM_CONFIG_PROPERTY)
         if figure_content not in data:
             data[figure_content] = dict()
         if alg_name not in data[figure_content]:

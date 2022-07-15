@@ -54,11 +54,14 @@ DATA_SELECT_PROPERTY_GARBAGE = [
 # 图例重命名规则
 SHORT_NAME_FROM_CONFIG = {
 }
+SHORT_NAME_FROM_CONFIG_PROPERTY = {
+}
 # 数据键重命名规则
 DATA_KEY_RENAME_CONFIG = {
     'TotalInteraction': 'timestep',
     'EpRet': 'EpRetTrain',
 }
+
 # 一行子图最多多少列
 MAX_COLUMN = 3
 DESCRIPTION['MAX_COLUMN'] = '子图最大列数'

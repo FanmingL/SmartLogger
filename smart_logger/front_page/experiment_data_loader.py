@@ -295,13 +295,13 @@ def get_record_data_item(folder_name):
     return []
 
 
-def config_to_short_name(config, data_merger, short_name_from_config):
+def config_to_short_name(config, data_merger, short_name_from_config, short_name_property):
     elements = []
     for k in data_merger:
         if k in config:
             elements.append(make_merger_feature(k,  config[k]))
     short_name_origin = list_embedding(elements)
-    short_name = merger_to_short_name(elements, short_name_from_config)
+    short_name = merger_to_short_name(elements, short_name_from_config, short_name_property)
     return short_name_origin, short_name
 
 
@@ -343,6 +343,11 @@ def _choose_config(config_name):
         config_new['DATA_SELECT_PROPERTY'] = []
         for item in config_new['DATA_SELECT']:
             config_new['DATA_SELECT_PROPERTY'].append({k: {} for k in item})
+    if not len(config_new['SHORT_NAME_FROM_CONFIG_PROPERTY']) == len(config_new['SHORT_NAME_FROM_CONFIG']):
+        config_new['SHORT_NAME_FROM_CONFIG_PROPERTY'] = dict()
+        print(f'SHORT_NAME_FROM_CONFIG_PROPERTY does not valid, reinit it')
+        for k in config_new['SHORT_NAME_FROM_CONFIG']:
+            config_new['SHORT_NAME_FROM_CONFIG_PROPERTY'][k] = dict()
     if k_set_mismatch:
         save_config(config_new, config_name)
 
@@ -352,7 +357,7 @@ def can_ignore(config, data_ignore, data_merger, data_ignore_property):
     if config is None:
         return True
     match_ignore = False
-    short_name_origin, _ = config_to_short_name(config, data_merger, {})
+    short_name_origin, _ = config_to_short_name(config, data_merger, {}, {})
     for data_ignore_ind, data_ignore_item in enumerate(data_ignore):
         match_ignore = True
         for k, v in data_ignore_item.items():
@@ -389,7 +394,7 @@ def can_preserve(config, data_select, data_merger, data_select_property):
     if config is None:
         return False
     match_select = False
-    short_name_origin, _ = config_to_short_name(config, data_merger, {})
+    short_name_origin, _ = config_to_short_name(config, data_merger, {}, {})
     for data_select_ind, data_select_item in enumerate(data_select):
         match_select = True
 
@@ -417,7 +422,8 @@ def can_preserve(config, data_select, data_merger, data_select_property):
 
 def analyze_experiment(need_ignore=False, data_ignore=None, need_select=False,
                        data_select=None, data_merge=None, data_short_name_dict=None,
-                       data_ignore_property=None, data_select_property=None):
+                       data_ignore_property=None, data_select_property=None,
+                       data_short_name_property=None):
     all_folders = list_current_experiment()
     folder_ignore = []
     if need_ignore:
@@ -462,7 +468,7 @@ def analyze_experiment(need_ignore=False, data_ignore=None, need_select=False,
             folder_ignore.append(folder)
             config_list_ignore.append(config)
             ignore_file = True
-        short_name, short_name_nick = config_to_short_name(config, data_merge, data_short_name_dict)
+        short_name, short_name_nick = config_to_short_name(config, data_merge, data_short_name_dict, data_short_name_property)
         if not ignore_file:
             nick_name_list.append(short_name_nick)
             if short_name not in short_name_to_ind:
@@ -525,12 +531,3 @@ def diff_to_default(config):
             if not default_value == current_value:
                 differences.append((k, default_value, current_value))
     return default_missing_key, current_missing_key, differences
-
-def main():
-    analyze_experiment(True)
-
-
-if __name__ == '__main__':
-    Logger.init_global_logger(base_path=page_config.WEB_RAM_PATH, log_name="exp_logs")
-
-    main()

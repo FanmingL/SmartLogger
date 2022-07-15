@@ -147,6 +147,20 @@
             }
         }
 
+        function change_manual_rename(){
+            let checkbox = document.getElementById('change_mannual_rename_id');
+            let value_box = document.getElementById('rename_rule_cb');
+            if (checkbox.checked){
+                value_box.outerHTML = "<input type=\"text\" name=\"added_rule_rename_long\" id=\"rename_rule_cb\" value=\"\"/>"
+            }else{
+                value_box.outerHTML = "<select id=\"rename_rule_cb\" name=\"added_rule_rename_long\" id=\"rename_rule_cb\" style=\"width: auto\" >\n" +
+                    "                {% for short_name in possible_short_name %}\n" +
+                    "                  <option value =\"{{short_name}}\">{{short_name}}</option>\n" +
+                    "                {% endfor %}<br/>\n" +
+                    "            </select>"
+            }
+        }
+
         function submit_selection(){
             let form_rename = document.getElementById('frm_merge_selection');
             form_rename.submit();
@@ -817,7 +831,10 @@
                 {% for short_name in possible_short_name %}
                   <option value ="{{short_name}}">{{short_name}}</option>
                 {% endfor %}<br/>
-            </select><br/>
+            </select>
+            <input type="checkbox" name="change_mannual_rename" id="change_mannual_rename_id" value="manual_rename" onchange="change_manual_rename()">
+            <label for="change_mannual_rename_id" style="font-family: monospace">手动输入（支持正则表达式）</label>
+            <br/>
             <label for="rename_rule_short_cb" style="font-family: monospace">对应短名:</label> <br/>
         <input type="text" name="added_rule_rename_short" id="rename_rule_short_cb" value="" style="width: 400px;"  ><br/>
         </p>
@@ -879,9 +896,9 @@
         <p>
             <label for="rename_separator_rule_id" style="font-family: monospace">子图分隔依据:</label>
             <select id="rename_separator_rule_id" name="separator_item" onchange="submit_separator()">
-                {% for name, items in selected_config_list %}
+                {% for name, items, ll in selected_config_list %}
                 {% if name not in separators %}
-                  <option value ="{{name}}">{{name}}</option>
+                  <option value ="{{name}}">{{name}} ({{ll}})</option>
                 {% endif %}
                 {% endfor %}
             </select>
