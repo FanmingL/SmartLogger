@@ -81,7 +81,7 @@ def load_config(file_name):
 def delete_config_file(file_name):
     path_name = get_config_path(file_name)
     if os.path.exists(path_name):
-        os.system(f'rm {path_name}')
+        os.system(f'rm \"{path_name}\"')
 
 def list_current_configs():
     total_config_files = os.listdir(page_config.CONFIG_PATH)

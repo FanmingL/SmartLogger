@@ -453,8 +453,8 @@ def exp_figure():
     Logger.logger(f'cp {saving_png} {target_folder}')
     os.makedirs(os.path.dirname(target_folder), exist_ok=True)
     os.makedirs(os.path.dirname(target_folder_tmp), exist_ok=True)
-    os.system(f'cp {saving_png} {target_folder}')
-    os.system(f'cp {saving_png} {target_folder_tmp}')
+    os.system(f'cp \"{saving_png}\" \"{target_folder}\"')
+    os.system(f'cp \"{saving_png}\" \"{target_folder_tmp}\"')
     return send_from_directory(output_path, f'{plot_config.FINAL_OUTPUT_NAME}.png', as_attachment=False)
 
 
