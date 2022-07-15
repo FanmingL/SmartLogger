@@ -173,10 +173,18 @@ def _load_data(folder_name):
                         if not standardize_string(v) == standardize_string(list_embedding(data_merger_feature)):
                             match_ignore = False
                             break
-                    elif k not in param or (isinstance(v, str) and re.match(v, param[k]) is None) \
-                    or (not isinstance(v, str) and not v == param[k]):
+                    elif k not in param or (not isinstance(v, str) and not v == param[k]):
                         match_ignore = False
                         break
+                    elif isinstance(v, str):
+                        try:
+                            if re.match(v, param[k]) is None:
+                                match_ignore = False
+                                break
+                        except Exception as e:
+                            if not v == param[k]:
+                                match_ignore = False
+                                break
                 if match_ignore:
                     break
         else:
@@ -185,10 +193,18 @@ def _load_data(folder_name):
                 match_select = True
 
                 for k, v in data_select.items():
-                    if k not in param or (isinstance(v, str) and re.match(v, param[k]) is None) \
-                    or (not isinstance(v, str) and not v == param[k]):
+                    if k not in param or (not isinstance(v, str) and not v == param[k]):
                         match_select = False
                         break
+                    elif isinstance(v, str):
+                        try:
+                            if re.match(v, param[k]) is None:
+                                match_select = False
+                                break
+                        except Exception as e:
+                            if not v == param[k]:
+                                match_select = False
+                                break
                 if match_select:
                     break
             if match_select:

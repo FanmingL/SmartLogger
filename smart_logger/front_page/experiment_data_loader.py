@@ -349,11 +349,18 @@ def can_ignore(config, data_ignore, data_merger):
                 if not standardize_string(v) == standardize_string(short_name_origin):
                     match_ignore = False
                     break
-            elif k not in config \
-                    or (isinstance(v, str) and re.match(v, config[k]) is None) \
-                    or (not isinstance(v, str) and not v == config[k]):
+            elif k not in config or (not isinstance(v, str) and not v == config[k]):
                 match_ignore = False
                 break
+            elif isinstance(v, str):
+                try:
+                    if re.match(v, config[k]) is None:
+                        match_ignore = False
+                        break
+                except Exception as e:
+                    if not v == config[k]:
+                        match_ignore = False
+                        break
         if match_ignore:
             break
     if match_ignore:
@@ -372,10 +379,18 @@ def can_preserve(config, data_select, data_merger):
         match_select = True
 
         for k, v in data_select_item.items():
-            if k not in config or (isinstance(v, str) and re.match(v, config[k]) is None) \
-                    or (not isinstance(v, str) and not v == config[k]):
+            if k not in config or (not isinstance(v, str) and not v == config[k]):
                 match_select = False
                 break
+            elif isinstance(v, str):
+                try:
+                    if re.match(v, config[k]) is None:
+                        match_select = False
+                        break
+                except Exception as e:
+                    if not v == config[k]:
+                        match_select = False
+                        break
         if match_select:
             break
     return match_select
