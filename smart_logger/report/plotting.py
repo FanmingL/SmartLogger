@@ -419,12 +419,32 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
                 x_data[i].fillna(method='ffill', inplace=True)
             for i in range(len(y_data)):
                 y_data[i].fillna(method='ffill', inplace=True)
+
+            x_intevals = [(np.max(item) - np.min(item)) / max(np.shape(item)[0], 1) for item in x_data]
+            require_resample = False
+            inteval_range = (np.max(x_intevals) - np.min(x_intevals)) / 2./  np.mean(x_intevals)
+            Logger.local_log(f'inteval range: {inteval_range}')
+            if str(plot_config.REQUIRE_RESAMPLE) == 'True':
+                require_resample = True
+            elif str(plot_config.REQUIRE_RESAMPLE) == 'None':
+                if inteval_range > 0.05:
+                    require_resample = True
+
             data_len = [len(item) for item in x_data]
             min_data_len = min(data_len)
             seed_num = len(data_len)
-            x_data = [np.array(data[:min_data_len:plot_config.PLOT_FOR_EVERY]) for data in x_data]
-            y_data = [np.array(data[:min_data_len:plot_config.PLOT_FOR_EVERY]) for data in y_data]
-            x_data = x_data[0]
+            if not require_resample:
+                x_data = [np.array(data[:min_data_len:plot_config.PLOT_FOR_EVERY]) for data in x_data]
+                y_data = [np.array(data[:min_data_len:plot_config.PLOT_FOR_EVERY]) for data in y_data]
+                x_data = x_data[0]
+            else:
+                min_x = np.max([np.min(item) for item in x_data])
+                max_x = np.min([np.max(item) for item in x_data])
+                sample_num = min_data_len // plot_config.PLOT_FOR_EVERY
+                x_data_new = np.linspace(min_x, max_x, sample_num)
+                for i in range(len(y_data)):
+                    y_data[i] = np.interp(x_data_new, x_data[i], y_data[i])
+                x_data = x_data_new
             # x_data, y_data = _remove_nan(x_data, y_data)
             min_data_len = np.shape(x_data)[0]
             if not str(plot_config.XMAX) == 'None':
@@ -542,12 +562,32 @@ def _make_subtable(data, x_name, y_name, at_x, plot_config_dict, iter, alg_as_ro
                 x_data[i].fillna(method='ffill', inplace=True)
             for i in range(len(y_data)):
                 y_data[i].fillna(method='ffill', inplace=True)
-            data_len = [len(item) for item in x_data]
-            min_data_len = min(data_len) if len(data_len) > 0 else 0
+            x_intevals = [(np.max(item) - np.min(item)) / max(np.shape(item)[0], 1) for item in x_data]
+            require_resample = False
+            inteval_range = (np.max(x_intevals) - np.min(x_intevals)) / 2. / np.mean(x_intevals)
+            Logger.local_log(f'inteval range: {inteval_range}')
+            if str(plot_config.REQUIRE_RESAMPLE) == 'True':
+                require_resample = True
+            elif str(plot_config.REQUIRE_RESAMPLE) == 'None':
+                if inteval_range > 0.05:
+                    require_resample = True
 
-            x_data = [np.array(data[:min_data_len]) for data in x_data]
-            y_data = [np.array(data[:min_data_len]) for data in y_data]
-            x_data = x_data[0]
+            data_len = [len(item) for item in x_data]
+            min_data_len = min(data_len)
+            seed_num = len(data_len)
+            if not require_resample:
+                x_data = [np.array(data[:min_data_len:plot_config.PLOT_FOR_EVERY]) for data in x_data]
+                y_data = [np.array(data[:min_data_len:plot_config.PLOT_FOR_EVERY]) for data in y_data]
+                x_data = x_data[0]
+            else:
+                min_x = np.max([np.min(item) for item in x_data])
+                max_x = np.min([np.max(item) for item in x_data])
+                sample_num = min_data_len // plot_config.PLOT_FOR_EVERY
+                x_data_new = np.linspace(min_x, max_x, sample_num)
+                for i in range(len(y_data)):
+                    y_data[i] = np.interp(x_data_new, x_data[i], y_data[i])
+                x_data = x_data_new
+            min_data_len = np.shape(x_data)[0]
             # x_data, y_data = _remove_nan(x_data, y_data)
             if not str(plot_config.XMAX) == 'None':
                 final_ind = np.argmin(np.square(np.array(x_data) - float(plot_config.XMAX))) + 1

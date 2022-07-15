@@ -181,6 +181,10 @@ DESCRIPTION['OUTPUT_FILE_PREFIX'] = "储存的图像文件的前缀"
 NEED_SUP_TITLE = True
 DESCRIPTION['NEED_SUP_TITLE'] = '是否需要大标题'
 
+# 是否需要重采样
+REQUIRE_RESAMPLE = None
+DESCRIPTION['REQUIRE_RESAMPLE'] = '是否需要重采样'
+
 # 将Y轴的label固定
 FIXED_Y_LABEL = None
 DESCRIPTION['FIXED_Y_LABEL'] = '自定义Y轴label名'
