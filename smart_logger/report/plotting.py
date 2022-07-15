@@ -535,12 +535,16 @@ def _make_subtable(data, x_name, y_name, at_x, plot_config_dict, iter, alg_as_ro
                 continue
             x_data = [data_alg['data'][x_name] for data_alg in data_alg_list]
             y_data = [data_alg['data'][y_name] for data_alg in data_alg_list]
+            if len(x_data) == 0:
+                Logger.local_log(f'{x_name}-{y_name} in {sub_figure} for alg: {alg_name} is empty!!')
+                continue
             for i in range(len(x_data)):
                 x_data[i].fillna(method='ffill', inplace=True)
             for i in range(len(y_data)):
                 y_data[i].fillna(method='ffill', inplace=True)
             data_len = [len(item) for item in x_data]
-            min_data_len = min(data_len)
+            min_data_len = min(data_len) if len(data_len) > 0 else 0
+
             x_data = [np.array(data[:min_data_len]) for data in x_data]
             y_data = [np.array(data[:min_data_len]) for data in y_data]
             x_data = x_data[0]
@@ -714,8 +718,25 @@ def _to_table(data, atx, iter, privileged_col_idx=None, placeholder=None, md=Tru
     futures = []
     alg_as_row_header = False
     for x_name, y_name in plot_config.PLOTTING_XY:
+        data_it = {}
+        for k1 in data:
+            for k2 in data[k1]:
+                data_array = data[k1][k2]
+                if k1 not in data_it:
+                    data_it[k1] = {}
+                if k2 not in data_it[k1]:
+                    data_it[k1][k2] = []
+                for _data in data_array:
+                    if x_name in _data['data'] and y_name in _data['data']:
+                        data_candidate = {}
+                        for k in _data:
+                            if k == 'data':
+                                data_candidate['data'] = _data['data'][[x_name, y_name]]
+                            else:
+                                data_candidate[k] = _data[k]
+                        data_it[k1][k2].append(data_candidate)
         plot_config_dict = {k: getattr(plot_config, k) for k in plot_config.global_plot_configs()}
-        futures.append(plotting_executor.submit(_make_subtable, data, x_name, y_name, atx, plot_config_dict, iter, alg_as_row_header))
+        futures.append(plotting_executor.submit(_make_subtable, data_it, x_name, y_name, atx, plot_config_dict, iter, alg_as_row_header))
     summary_dict_buffer = dict()
     for future in as_completed(futures):
         summary_dict, x_name, y_name = future.result()
