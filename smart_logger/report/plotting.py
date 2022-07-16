@@ -451,7 +451,6 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
                 final_ind = np.argmin(np.square(np.array(x_data) - float(plot_config.XMAX))) + 1
                 x_data = x_data[:final_ind]
                 y_data = [data[:final_ind] for data in y_data]
-            min_data_len = min_data_len // plot_config.PLOT_FOR_EVERY
             y_data, y_data_error = stat_data(y_data)
             if plot_config.USE_SMOOTH:
                 y_data = smooth(y_data, radius=plot_config.SMOOTH_RADIUS)
