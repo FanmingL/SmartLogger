@@ -520,7 +520,10 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
         plt.suptitle(sup_title_name, fontsize=plot_config.FONTSIZE_SUPTITLE, y=plot_config.SUPTITLE_Y)
     saving_name = y_name
     if not plot_config.OUTPUT_FILE_PREFIX == 'None':
-        saving_name = plot_config.OUTPUT_FILE_PREFIX + saving_name
+        _saving_dir = os.path.dirname(saving_name)
+        _saving_file = os.path.basename(saving_name)
+        _saving_file = plot_config.OUTPUT_FILE_PREFIX + _saving_file
+        saving_name = os.path.join(_saving_dir, _saving_file)
     os.makedirs(plot_config.PLOT_FIGURE_SAVING_PATH, exist_ok=True)
     png_saving_path = os.path.join(plot_config.PLOT_FIGURE_SAVING_PATH, f'{saving_name}.png')
     pdf_saving_path = os.path.join(plot_config.PLOT_FIGURE_SAVING_PATH, f'{saving_name}.pdf')
