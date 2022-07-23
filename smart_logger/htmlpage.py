@@ -38,6 +38,8 @@ def main():
     page_config.WEB_RAM_PATH = f"{page_config.WORKSPAPCE}/WEB_ROM"
     # 图像绘制的配置目录
     page_config.CONFIG_PATH = f"{page_config.WEB_RAM_PATH}/configs"
+    # 图像绘制的配置目录
+    page_config.USER_DATA_PATH = f"{page_config.WEB_RAM_PATH}/users"
     # 图像绘制的保存目录
     page_config.FIGURE_PATH = f"{page_config.WEB_RAM_PATH}/figures"
     # 端口

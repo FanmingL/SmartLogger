@@ -511,7 +511,7 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
             final_names.append(name + f' ({alg_to_seed_num[name]})')
         else:
             final_names.append(name)
-    axarr[0][0].legend(handles=curves, labels=final_names, loc='center left', bbox_to_anchor=(plot_config.LEGEND_POSITION_X, plot_config.LEGEND_POSITION_Y),
+    axarr[fig_row - 1][0].legend(handles=curves, labels=final_names, loc='center left', bbox_to_anchor=(plot_config.LEGEND_POSITION_X, plot_config.LEGEND_POSITION_Y),
                        ncol=plot_config.LEGEND_COLUMN, fontsize=plot_config.FONTSIZE_LEGEND, frameon=plot_config.USE_LEGEND_FRAME)
     sup_title_name = y_name
     if plot_config.RECORD_DATE_TIME:

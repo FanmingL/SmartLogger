@@ -12,6 +12,8 @@ WORKSPAPCE = "/home/luofm/Data"
 WEB_RAM_PATH = f"{WORKSPAPCE}/WEB_ROM"
 # 图像绘制的配置目录
 CONFIG_PATH = f"{WEB_RAM_PATH}/configs"
+# 图像绘制的配置目录
+USER_DATA_PATH = f"{WEB_RAM_PATH}/users"
 # 图像绘制的保存目录
 FIGURE_PATH = f"{WEB_RAM_PATH}/figures"
 # 要将common_config的哪些配置也当成参数/配置

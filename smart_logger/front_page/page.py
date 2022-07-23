@@ -160,13 +160,22 @@ def login_post_direct():
         for item in list_current_configs():
             candidate_config.append(item)
         Logger.logger(f'found configs: {candidate_config}')
+        user_history_data_path = os.path.join(page_config.USER_DATA_PATH, f'{user_name}.json')
+
         if len(candidate_config) == 0:
             config = load_config('default_config.json')
             config_name = 'config-{}-{}-{}.json'.format(user_name,
                                                         datetime.now().strftime('%Y-%m-%d-%H-%M-%S'), generate_code(10))
             save_config(config, config_name)
         else:
-            config_name = candidate_config[-1]
+            if os.path.exists(user_history_data_path):
+                user_config_data = json.load(open(user_history_data_path, 'r'))
+                if "config" in user_config_data and user_config_data['config'] in candidate_config:
+                    config_name = user_config_data['config']
+                else:
+                    config_name = candidate_config[-1]
+            else:
+                config_name = candidate_config[-1]
             config = load_config(config_name)
             if config is None:
                 config = load_config('default_config.json')
@@ -257,8 +266,15 @@ def plot():
     config_name = request.cookies['used_config']
     config = load_config(config_name)
     _overwrite_config(config)
+    config_ordered = {k: config[k] for k in plot_config.global_plot_configs() if k in config}
+    added_key = []
+    for k in config:
+        if k not in config_ordered:
+            added_key.append(k)
+    for k in added_key:
+        config_ordered[k] = config[k]
 
-    config = {k: v for k, v in config.items() if k not in ['SHORT_NAME_FROM_CONFIG', 'DATA_IGNORE', 'DATA_MERGER',
+    config_ordered = {k: v for k, v in config_ordered.items() if k not in ['SHORT_NAME_FROM_CONFIG', 'DATA_IGNORE', 'DATA_MERGER',
                                                            'PLOTTING_XY', 'FIGURE_TO_SYNC', 'FIGURE_SEPARATION',
                                                            'DATA_KEY_RENAME_CONFIG', 'DESCRIPTION',
                                                            'LOG_DIR_BACKING_NAME', 'DATA_PATH',
@@ -272,6 +288,7 @@ def plot():
                                                            'DATA_SELECT_GARBAGE', 'DATA_IGNORE_PROPERTY_GARBAGE',
                                                            'DATA_SELECT_PROPERTY_GARBAGE',
                                                            'SHORT_NAME_FROM_CONFIG_PROPERTY']}
+    config = config_ordered
     config_description = plot_config.DESCRIPTION
     for k in config:
         if k not in config_description:
@@ -618,6 +635,15 @@ def choose_config(source):
     config_name = request.form.get('chosen_config', None)
     if config_name is not None:
         response.set_cookie('used_config', config_name, expires=outdate_config_path)
+    user_history_data_path = os.path.join(page_config.USER_DATA_PATH, f"{request.cookies['user_name']}.json")
+    if not os.path.exists(user_history_data_path):
+        print(user_history_data_path)
+        os.makedirs(os.path.dirname(user_history_data_path), exist_ok=True)
+        user_data = dict(config=config_name)
+    else:
+        user_data = json.load(open(user_history_data_path, 'r'))
+        user_data['config'] = config_name
+    json.dump(user_data, open(user_history_data_path, 'w'))
     return response
 
 @app.route("/rename_config", methods=['POST'])
