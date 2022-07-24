@@ -692,6 +692,8 @@ def delete_config():
             config_name = config_list[-1]
         outdate_config_path = datetime.now() + timedelta(hours=10)
         response.set_cookie('used_config', config_name, expires=outdate_config_path)
+        record_config_for_user(request.cookies['user_name'], config_name)
+
     return response
 
 @app.route("/reset_config", methods=['GET'])
