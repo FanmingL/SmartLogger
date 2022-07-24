@@ -102,6 +102,10 @@ DESCRIPTION['SMOOTH_RADIUS'] = '平滑半径'
 PLOT_FOR_EVERY = 1
 DESCRIPTION['PLOT_FOR_EVERY'] = '绘图数据的下采样间隔'
 
+# X轴的最大值
+XMAX = 'None'
+DESCRIPTION['XMAX'] = 'X轴的最大值'
+
 # 最大并行进程数量
 PROCESS_NUM = 5
 DESCRIPTION['PROCESS_NUM'] = '绘图最大允许进程数'
@@ -159,11 +163,6 @@ FONTSIZE_SUPTITLE = 22
 DESCRIPTION['FONTSIZE_SUPTITLE'] = '大标题字体大小'
 
 
-
-
-# X轴的最大值
-XMAX = 'None'
-DESCRIPTION['XMAX'] = 'X轴的最大值'
 
 # 线宽
 LINE_WIDTH = 2.0
