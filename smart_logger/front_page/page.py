@@ -8,7 +8,7 @@ import smart_logger.common.plot_config as plot_config
 from smart_logger.front_page.experiment_data_loader import default_config, load_config, list_current_experiment, \
     get_parameter, reformat_dict, reformat_str, legal_path, save_config, list_current_configs,\
     make_config_type, analyze_experiment, delete_config_file, has_config, standardize_merger_item, get_record_data_item,\
-    get_config_path
+    get_config_path, record_config_for_user
 from smart_logger.report.plotting import plot as local_plot
 from smart_logger.report.plotting import _overwrite_config, _str_to_short_name
 from smart_logger.report.plotting import _make_table
@@ -619,6 +619,7 @@ def merge_process():
     return redirect('param_adjust')
 
 
+
 @app.route("/choose_config/<source>", methods=['POST'])
 @require_login(source_name='choose_config', allow_guest=True)
 def choose_config(source):
@@ -635,15 +636,7 @@ def choose_config(source):
     config_name = request.form.get('chosen_config', None)
     if config_name is not None:
         response.set_cookie('used_config', config_name, expires=outdate_config_path)
-    user_history_data_path = os.path.join(page_config.USER_DATA_PATH, f"{request.cookies['user_name']}.json")
-    if not os.path.exists(user_history_data_path):
-        print(user_history_data_path)
-        os.makedirs(os.path.dirname(user_history_data_path), exist_ok=True)
-        user_data = dict(config=config_name)
-    else:
-        user_data = json.load(open(user_history_data_path, 'r'))
-        user_data['config'] = config_name
-    json.dump(user_data, open(user_history_data_path, 'w'))
+        record_config_for_user(request.cookies['user_name'], config_name)
     return response
 
 @app.route("/rename_config", methods=['POST'])
@@ -659,6 +652,7 @@ def rename_config():
         delete_config_file(config_name_legacy)
         save_config(config, config_name)
         response.set_cookie('used_config', config_name, expires=outdate_config_path)
+        record_config_for_user(request.cookies['user_name'], config_name)
     return response
 
 @app.route("/create_config", methods=['GET'])
@@ -673,6 +667,7 @@ def create_config():
     response = make_response(redirect('param_adjust'))
     outdate_config_path = datetime.now() + timedelta(hours=10)
     response.set_cookie('used_config', config_name, expires=outdate_config_path)
+    record_config_for_user(request.cookies['user_name'], config_name)
     return response
 
 
