@@ -19,6 +19,8 @@ def main():
                         help="password")
     parser.add_argument('--port', '-p', type=int, default=7005,
                         help="Server port")
+    parser.add_argument('--login_free', '-lf', action='store_true',
+                            help='Do not require login.')
     args = parser.parse_args()
     # 关键配置项1：数据目录，该目录下存有日志文件
     plot_config.DATA_PATH = os.path.abspath(args.data_path)
@@ -48,6 +50,7 @@ def main():
     page_config.USER_NAME = args.user_name
     # 密码
     page_config.PASSWD = args.password
+    page_config.REQUIRE_RELOGIN = not args.login_free
     start_page_server()
 
 

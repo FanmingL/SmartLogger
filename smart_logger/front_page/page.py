@@ -35,6 +35,37 @@ def generate_code(num=20):
     return code
 
 
+def in_cookie(key):
+    if not page_config.REQUIRE_RELOGIN:
+        cookie_dict = dict()
+        if key == 'user_name':
+            cookie_dict['user_name'] = page_config.USER_NAME
+        elif key == 'cookie_code':
+            cookie_dict['cookie_code'] = 'forever_code' if 'cookie_code' not in request.cookies else request.cookies[
+                'cookie_code']
+        elif key == 'used_config':
+            cookie_dict['used_config'] = _choose_config_init(
+                page_config.USER_NAME, check_valid=False) if 'used_config' not in request.cookies else request.cookies['used_config']
+        return key in cookie_dict
+    return key in request.cookies
+
+
+def query_cookie(key):
+    if not page_config.REQUIRE_RELOGIN:
+        cookie_dict = dict()
+        if key == 'user_name':
+            cookie_dict['user_name'] = page_config.USER_NAME
+        elif key == 'cookie_code':
+            cookie_dict['cookie_code'] = 'forever_code' if 'cookie_code' not in request.cookies else request.cookies[
+            'cookie_code']
+        elif key == 'used_config':
+            cookie_dict['used_config'] = _choose_config_init(
+            page_config.USER_NAME, check_valid=False) if 'used_config' not in request.cookies else request.cookies['used_config']
+        return cookie_dict[key]
+    res = request.cookies[key] if key in request.cookies else None
+    return res
+
+
 def require_login(source_name='', allow_guest=False):
     def func_output(func_in):
         @wraps(func_in)
@@ -61,19 +92,19 @@ def make_user_data():
     user_data = dict()
     for item in request.args:
         user_data[item] = request.args[item]
-    if 'name' not in user_data and 'user_name' in request.cookies:
-        user_data['name'] = request.cookies['user_name']
+    if 'name' not in user_data and in_cookie('user_name'):
+        user_data['name'] = query_cookie('user_name')
     return user_data
 
 
 def check_user(user_data, allow_guest=False):
     Logger.logger(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: check user {user_data}')
-    if 'user_name' in request.cookies and 'cookie_code' in request.cookies and 'used_config' in request.cookies:
-        if not has_config(request.cookies['used_config']):
-            Logger.logger(f'config file {request.cookies["used_config"]} not exists!!!')
+    if in_cookie('user_name') and in_cookie('cookie_code') and in_cookie('used_config'):
+        if not has_config(query_cookie('used_config')):
+            Logger.logger(f'config file {query_cookie("used_config")} not exists!!!')
             return False
-        _user_name = request.cookies['user_name']
-        _code = request.cookies['cookie_code']
+        _user_name = query_cookie('user_name')
+        _code = query_cookie('cookie_code')
         if 'name' not in user_data or not user_data['name'] == _user_name:
             user_data['name'] = _user_name
         return True
@@ -126,6 +157,39 @@ def logout():
     return response
 
 
+def _choose_config_init(user_name, check_valid=True):
+    candidate_config = []
+    for item in list_current_configs():
+        candidate_config.append(item)
+    Logger.logger(f'found configs: {candidate_config}')
+
+    if len(candidate_config) == 0:
+        if load_config('default_config.json') is None:
+            save_config(default_config(), 'default_config.json')
+        config = load_config('default_config.json')
+        config_name = 'config-{}-{}-{}.json'.format(user_name,
+                                                    datetime.now().strftime('%Y-%m-%d-%H-%M-%S'), generate_code(10))
+        save_config(config, config_name)
+    else:
+        user_history_data_path = os.path.join(page_config.USER_DATA_PATH, f'{user_name}.json')
+        if os.path.exists(user_history_data_path):
+            user_config_data = json.load(open(user_history_data_path, 'r'))
+            if "config" in user_config_data and user_config_data['config'] in candidate_config:
+                config_name = user_config_data['config']
+            else:
+                config_name = candidate_config[-1]
+        else:
+            config_name = candidate_config[-1]
+        if check_valid:
+            config = load_config(config_name)
+            if config is None:
+                config = load_config('default_config.json')
+                config_name = 'config-{}-{}-{}.json'.format(query_cookie('user_name'),
+                                                            datetime.now().strftime('%Y-%m-%d-%H-%M-%S'),
+                                                            generate_code(10))
+                save_config(config, config_name)
+    return config_name
+
 # 判断是否能够登录的服务
 @app.route('/login_direct', methods=['POST'])
 def login_post_direct():
@@ -138,6 +202,10 @@ def login_post_direct():
     if '.' in user_data['nm'] or '/' in user_data['nm']:
         return False
     result = user_data['nm'] == page_config.USER_NAME and user_data['passwd'] == page_config.PASSWD
+    if not page_config.REQUIRE_RELOGIN:
+        result = True
+        user_data['nm'] = page_config.USER_NAME
+        user_data['passwd'] = page_config.PASSWD
     # result = len(user_data['nm']) > 0 and len(user_data['passwd']) > 0
     user_name = user_data['nm']
 
@@ -148,41 +216,13 @@ def login_post_direct():
         else:
             target_page = 'experiment'
         Logger.logger(f'redirect to {target_page}')
-        outdate = datetime.now() + timedelta(hours=2)
+        outdate = datetime.now() + timedelta(hours=page_config.COOKIE_PERIOD)
         response = make_response(redirect(target_page))
         response.set_cookie('user_name', user_name, expires=outdate)
         code = generate_code(20)
         response.set_cookie('cookie_code', code, expires=outdate)
-        if load_config('default_config.json') is None:
-            save_config(default_config(), 'default_config.json')
-        outdate_config_path = datetime.now() + timedelta(hours=10)
-        candidate_config = []
-        for item in list_current_configs():
-            candidate_config.append(item)
-        Logger.logger(f'found configs: {candidate_config}')
-        user_history_data_path = os.path.join(page_config.USER_DATA_PATH, f'{user_name}.json')
-
-        if len(candidate_config) == 0:
-            config = load_config('default_config.json')
-            config_name = 'config-{}-{}-{}.json'.format(user_name,
-                                                        datetime.now().strftime('%Y-%m-%d-%H-%M-%S'), generate_code(10))
-            save_config(config, config_name)
-        else:
-            if os.path.exists(user_history_data_path):
-                user_config_data = json.load(open(user_history_data_path, 'r'))
-                if "config" in user_config_data and user_config_data['config'] in candidate_config:
-                    config_name = user_config_data['config']
-                else:
-                    config_name = candidate_config[-1]
-            else:
-                config_name = candidate_config[-1]
-            config = load_config(config_name)
-            if config is None:
-                config = load_config('default_config.json')
-                config_name = 'config-{}-{}-{}.json'.format(request.cookies['user_name'],
-                                                            datetime.now().strftime('%Y-%m-%d-%H-%M-%S'),
-                                                            generate_code(10))
-                save_config(config, config_name)
+        outdate_config_path = datetime.now() + timedelta(hours=page_config.COOKIE_PERIOD)
+        config_name = _choose_config_init(user_data['nm'])
         response.set_cookie('used_config', config_name, expires=outdate_config_path)
         return response
     else:
@@ -197,7 +237,7 @@ def experiment():
     # return "Hello World"
     # config = load_config('1.json')
     # return str(config)
-    config_name = request.cookies['used_config']
+    config_name = query_cookie('used_config')
     config = load_config(config_name)
     _overwrite_config(config)
     exp_folders = list_current_experiment()
@@ -263,7 +303,7 @@ def experiment_data_download(folder_name, attach):
 @app.route("/plot", methods=['GET'])
 @require_login(source_name='plot', allow_guest=True)
 def plot():
-    config_name = request.cookies['used_config']
+    config_name = query_cookie('used_config')
     config = load_config(config_name)
     _overwrite_config(config)
     config_ordered = {k: config[k] for k in plot_config.global_plot_configs() if k in config}
@@ -307,9 +347,9 @@ def plot():
         Logger.logger(f'{target_file} does not exist, leave it EMPTY.')
     file_list = []
     if config_name.endswith('.json'):
-        figure_saving_path = os.path.join(page_config.FIGURE_PATH, request.cookies['user_name'], config_name[:-5])
+        figure_saving_path = os.path.join(page_config.FIGURE_PATH, query_cookie('user_name'), config_name[:-5])
     else:
-        figure_saving_path = os.path.join(page_config.FIGURE_PATH, request.cookies['user_name'], config_name)
+        figure_saving_path = os.path.join(page_config.FIGURE_PATH, query_cookie('user_name'), config_name)
     if os.path.exists(figure_saving_path) and os.path.isdir(figure_saving_path):
         file_list = []
         for root, dirs, files in os.walk(figure_saving_path):
@@ -336,11 +376,11 @@ def plot():
 @app.route("/query_pregenerated_file/<file_name>/<attach>", methods=['GET'])
 @require_login(source_name='query_pregenerated_file', allow_guest=True)
 def query_pregenerated_file(file_name, attach):
-    config_name = request.cookies['used_config']
+    config_name = query_cookie('used_config')
     if config_name.endswith('.json'):
-        figure_saving_path = os.path.join(page_config.FIGURE_PATH, request.cookies['user_name'], config_name[:-5])
+        figure_saving_path = os.path.join(page_config.FIGURE_PATH, query_cookie('user_name'), config_name[:-5])
     else:
-        figure_saving_path = os.path.join(page_config.FIGURE_PATH, request.cookies['user_name'], config_name)
+        figure_saving_path = os.path.join(page_config.FIGURE_PATH, query_cookie('user_name'), config_name)
     figure_saving_path = os.path.abspath(figure_saving_path)
     file_name = base64.urlsafe_b64decode(file_name.encode()).decode()
 
@@ -352,7 +392,7 @@ def query_pregenerated_file(file_name, attach):
 @app.route("/table", methods=['GET'])
 @require_login(source_name='table', allow_guest=True)
 def table():
-    config_name = request.cookies['used_config']
+    config_name = query_cookie('used_config')
     config = load_config(config_name)
     config_file_list = list_current_configs()
     return render_template('t_table.html',
@@ -365,7 +405,7 @@ def table():
 @app.route("/query_table", methods=['GET'])
 @require_login(source_name='query_table', allow_guest=True)
 def query_table():
-    config_name = request.cookies['used_config']
+    config_name = query_cookie('used_config')
     config = load_config(config_name)
     _overwrite_config(config)
     result = _make_table()
@@ -375,7 +415,7 @@ def query_table():
 @app.route("/query_table_source/<use_latex>", methods=['GET'])
 @require_login(source_name='query_table_source', allow_guest=True)
 def query_table_source(use_latex):
-    config_name = request.cookies['used_config']
+    config_name = query_cookie('used_config')
     config = load_config(config_name)
     _overwrite_config(config)
     result = _make_table(True if str(use_latex) == 'True' else False)
@@ -402,7 +442,7 @@ def data_convert(data, origin_data):
 @app.route("/plot_config_update", methods=['POST'])
 @require_login(source_name='plot_config_update', allow_guest=True)
 def plot_config_update():
-    config_name = request.cookies['used_config']
+    config_name = query_cookie('used_config')
     config = load_config(config_name)
     config_type = make_config_type(config)
     for k, v in request.form.items():
@@ -450,11 +490,11 @@ def plot_config_update():
 @require_login(source_name='exp_figure', allow_guest=True)
 def exp_figure():
     start_time = time.time()
-    config_name = request.cookies['used_config']
+    config_name = query_cookie('used_config')
     if config_name.endswith('.json'):
-        output_path = os.path.join(page_config.FIGURE_PATH, request.cookies['user_name'], config_name[:-5])
+        output_path = os.path.join(page_config.FIGURE_PATH, query_cookie('user_name'), config_name[:-5])
     else:
-        output_path = os.path.join(page_config.FIGURE_PATH, request.cookies['user_name'], config_name)
+        output_path = os.path.join(page_config.FIGURE_PATH, query_cookie('user_name'), config_name)
     output_path = os.path.abspath(output_path)
     config = load_config(config_name)
     config['PLOT_FIGURE_SAVING_PATH'] = output_path
@@ -478,7 +518,7 @@ def exp_figure():
 @app.route("/lst_output_figure", methods=['GET'])
 @require_login(source_name='lst_output_figure', allow_guest=True)
 def lst_output_figure():
-    config_name = request.cookies['used_config']
+    config_name = query_cookie('used_config')
     config = load_config(config_name)
     _overwrite_config(config)
     target_file = os.path.join(page_config.WEB_RAM_PATH, page_config.TOTAL_FIGURE_FOLDER + "_tmp", f'{config_name}.png')
@@ -492,7 +532,7 @@ def lst_output_figure():
 @app.route("/param_adjust", methods=['GET'])
 @require_login(source_name='param_adjust', allow_guest=True)
 def param_adjust():
-    config_name = request.cookies['used_config']
+    config_name = query_cookie('used_config')
     config = load_config(config_name)
     _overwrite_config(config)
     data_ignore = [] if 'DATA_IGNORE' not in config else config['DATA_IGNORE']
@@ -611,7 +651,7 @@ def param_adjust():
 @app.route("/merge_process", methods=['POST'])
 @require_login(source_name='merge_process', allow_guest=True)
 def merge_process():
-    config_name = request.cookies['used_config']
+    config_name = query_cookie('used_config')
     config = load_config(config_name)
     new_merger = [k for k in request.form]
     config['DATA_MERGER'] = new_merger
@@ -632,49 +672,49 @@ def choose_config(source):
     else:
         raise NotImplementedError(f'{source} has not been implemented')
 
-    outdate_config_path = datetime.now() + timedelta(hours=10)
+    outdate_config_path = datetime.now() + timedelta(hours=page_config.COOKIE_PERIOD)
     config_name = request.form.get('chosen_config', None)
     if config_name is not None:
         response.set_cookie('used_config', config_name, expires=outdate_config_path)
-        record_config_for_user(request.cookies['user_name'], config_name)
+        record_config_for_user(query_cookie('user_name'), config_name)
     return response
 
 @app.route("/rename_config", methods=['POST'])
 @require_login(source_name='rename_config', allow_guest=True)
 def rename_config():
     response = make_response(redirect('param_adjust'))
-    config_name = request.cookies['used_config']
+    config_name = query_cookie('used_config')
     config_name_legacy = config_name
     config = load_config(config_name)
-    outdate_config_path = datetime.now() + timedelta(hours=10)
+    outdate_config_path = datetime.now() + timedelta(hours=page_config.COOKIE_PERIOD)
     config_name = request.form.get('rename', None)
     if config_name is not None and len(config_name) > 0:
         delete_config_file(config_name_legacy)
         save_config(config, config_name)
         response.set_cookie('used_config', config_name, expires=outdate_config_path)
-        record_config_for_user(request.cookies['user_name'], config_name)
+        record_config_for_user(query_cookie('user_name'), config_name)
     return response
 
 @app.route("/create_config", methods=['GET'])
 @require_login(source_name='create_config', allow_guest=True)
 def create_config():
-    config_name = request.cookies['used_config']
+    config_name = query_cookie('used_config')
     config = load_config(config_name)
-    config_name = 'config-{}-{}-{}.json'.format(request.cookies['user_name'],
+    config_name = 'config-{}-{}-{}.json'.format(query_cookie('user_name'),
                                                 datetime.now().strftime('%Y-%m-%d-%H-%M-%S'),
                                                 generate_code(10))
     save_config(config, config_name)
     response = make_response(redirect('param_adjust'))
-    outdate_config_path = datetime.now() + timedelta(hours=10)
+    outdate_config_path = datetime.now() + timedelta(hours=page_config.COOKIE_PERIOD)
     response.set_cookie('used_config', config_name, expires=outdate_config_path)
-    record_config_for_user(request.cookies['user_name'], config_name)
+    record_config_for_user(query_cookie('user_name'), config_name)
     return response
 
 
 @app.route("/delete_config", methods=['POST'])
 @require_login(source_name='delete_config', allow_guest=True)
 def delete_config():
-    config_name = request.cookies['used_config']
+    config_name = query_cookie('used_config')
     config = load_config(config_name)
     delete_file = json.loads(request.data.decode())['delete_config']
     delete_config_file(delete_file)
@@ -683,16 +723,16 @@ def delete_config():
     if delete_file == config_name:
         config_list = list_current_configs()
         if len(config_list) == 0:
-            config_name = 'config-{}-{}-{}.json'.format(request.cookies['user_name'],
+            config_name = 'config-{}-{}-{}.json'.format(query_cookie('user_name'),
                                                         datetime.now().strftime('%Y-%m-%d-%H-%M-%S'),
                                                         generate_code(10))
 
             save_config(config, config_name)
         else:
             config_name = config_list[-1]
-        outdate_config_path = datetime.now() + timedelta(hours=10)
+        outdate_config_path = datetime.now() + timedelta(hours=page_config.COOKIE_PERIOD)
         response.set_cookie('used_config', config_name, expires=outdate_config_path)
-        record_config_for_user(request.cookies['user_name'], config_name)
+        record_config_for_user(query_cookie('user_name'), config_name)
 
     return response
 
@@ -702,7 +742,7 @@ def reset_config():
     config = load_config('default_config.json')
     if config is None:
         config = default_config()
-    config_name = request.cookies['used_config']
+    config_name = query_cookie('used_config')
     save_config(config, config_name)
     return redirect('param_adjust')
 
@@ -713,7 +753,7 @@ def merge_config():
     config_target = load_config(request.form['target_config'])
     if config_target is None:
         config_target = default_config()
-    config_name = request.cookies['used_config']
+    config_name = query_cookie('used_config')
     config_current = load_config(config_name)
     for k in config_current:
         if k in config_target:
@@ -727,7 +767,7 @@ def merge_config():
 @app.route("/add_ignore", methods=['POST'])
 @require_login(source_name='add_ignore', allow_guest=True)
 def add_ignore():
-    config_name = request.cookies['used_config']
+    config_name = query_cookie('used_config')
     config = load_config(config_name)
     newly_added_ignore = json.loads(request.data.decode())
     if 'USE_IGNORE_RULE' in config and config['USE_IGNORE_RULE']:
@@ -765,7 +805,7 @@ def add_ignore():
 def del_ignore(rule_idx, move_to_garbage):
     move_to_garbage = int(move_to_garbage) == 1
     Logger.logger(f'try to rm {rule_idx} {type(rule_idx)}')
-    config_name = request.cookies['used_config']
+    config_name = query_cookie('used_config')
     config = load_config(config_name)
     if move_to_garbage:
         rule_idx = int(rule_idx)
@@ -810,7 +850,7 @@ def del_ignore(rule_idx, move_to_garbage):
 def del_garbage(rule_idx, move_back):
     move_back = int(move_back) == 1
     Logger.logger(f'try to rm {rule_idx} {type(rule_idx)}')
-    config_name = request.cookies['used_config']
+    config_name = query_cookie('used_config')
     config = load_config(config_name)
     if move_back:
         rule_idx = int(rule_idx)
@@ -854,7 +894,7 @@ def del_garbage(rule_idx, move_back):
 @require_login(source_name='del_rename', allow_guest=True)
 def del_rename(rule_idx):
     Logger.logger(f'try to rm {rule_idx} {type(rule_idx)}')
-    config_name = request.cookies['used_config']
+    config_name = query_cookie('used_config')
     config = load_config(config_name)
     rename_rule = {} if 'SHORT_NAME_FROM_CONFIG' not in config else config['SHORT_NAME_FROM_CONFIG']
     rename_rule = [(k, v) for k, v in rename_rule.items()]
@@ -870,7 +910,7 @@ def del_rename(rule_idx):
 @require_login(source_name='ignore_with_renamed', allow_guest=True)
 def ignore_with_renamed(rule_idx):
     Logger.logger(f'try to rm {rule_idx} {type(rule_idx)}')
-    config_name = request.cookies['used_config']
+    config_name = query_cookie('used_config')
     config = load_config(config_name)
     rename_rule = {} if 'SHORT_NAME_FROM_CONFIG' not in config else config['SHORT_NAME_FROM_CONFIG']
     rename_rule = [(k, v) for k, v in rename_rule.items()]
@@ -889,7 +929,7 @@ def ignore_with_renamed(rule_idx):
 @app.route("/change_plot_order/<alg_name>/<idx>/<method>", methods=['GET'])
 @require_login(source_name='change_plot_order', allow_guest=True)
 def change_plot_order(alg_name, idx, method):
-    config_name = request.cookies['used_config']
+    config_name = query_cookie('used_config')
     config = load_config(config_name)
     if 'PLOTTING_ORDER' not in config:
         config['PLOTTING_ORDER'] = []
@@ -953,7 +993,7 @@ def change_plot_order(alg_name, idx, method):
 @app.route("/change_legend_order/<alg_name>/<idx>/<method>", methods=['GET'])
 @require_login(source_name='change_legend_order', allow_guest=True)
 def change_legend_order(alg_name, idx, method):
-    config_name = request.cookies['used_config']
+    config_name = query_cookie('used_config')
     config = load_config(config_name)
     if 'LEGEND_ORDER' not in config:
         config['LEGEND_ORDER'] = []
@@ -1000,7 +1040,7 @@ def change_legend_order(alg_name, idx, method):
 @app.route("/ignore_with_unnamed/<rule_idx>", methods=['GET'])
 @require_login(source_name='ignore_with_unnamed', allow_guest=True)
 def ignore_with_unnamed(rule_idx):
-    config_name = request.cookies['used_config']
+    config_name = query_cookie('used_config')
     config = load_config(config_name)
     data_ignore = [] if 'DATA_IGNORE' not in config else config['DATA_IGNORE']
     data_select = [] if 'DATA_SELECT' not in config else config['DATA_SELECT']
@@ -1031,7 +1071,7 @@ def ignore_with_unnamed(rule_idx):
 @app.route("/add_rename", methods=['POST'])
 @require_login(source_name='add_rename', allow_guest=True)
 def add_rename():
-    config_name = request.cookies['used_config']
+    config_name = query_cookie('used_config')
     config = load_config(config_name)
     rename_rule = {} if 'SHORT_NAME_FROM_CONFIG' not in config else config['SHORT_NAME_FROM_CONFIG']
     rename_rule[request.form['added_rule_rename_long']] = request.form['added_rule_rename_short']
@@ -1044,7 +1084,7 @@ def add_rename():
 @app.route("/add_data_rename", methods=['POST'])
 @require_login(source_name='add_data_rename', allow_guest=True)
 def add_data_rename():
-    config_name = request.cookies['used_config']
+    config_name = query_cookie('used_config')
     config = load_config(config_name)
     rename_rule = {} if 'DATA_KEY_RENAME_CONFIG' not in config else config['DATA_KEY_RENAME_CONFIG']
     rename_rule[request.form['rename_data_rule']] = request.form['rename_data_new_rule']
@@ -1057,7 +1097,7 @@ def add_data_rename():
 @require_login(source_name='del_data_rename', allow_guest=True)
 def del_data_rename(rule_idx):
     Logger.logger(f'try to rm {rule_idx} {type(rule_idx)}')
-    config_name = request.cookies['used_config']
+    config_name = query_cookie('used_config')
     config = load_config(config_name)
     rename_rule = {} if 'DATA_KEY_RENAME_CONFIG' not in config else config['DATA_KEY_RENAME_CONFIG']
     rename_rule = [(k, v) for k, v in rename_rule.items()]
@@ -1072,7 +1112,7 @@ def del_data_rename(rule_idx):
 @require_login(source_name='del_xy', allow_guest=True)
 def del_xy(rule_idx):
     Logger.logger(f'try to rm {rule_idx} {type(rule_idx)}')
-    config_name = request.cookies['used_config']
+    config_name = query_cookie('used_config')
     config = load_config(config_name)
     if 'PLOTTING_XY' not in config:
         config['PLOTTING_XY'] = []
@@ -1085,7 +1125,7 @@ def del_xy(rule_idx):
 @app.route("/add_xy", methods=['POST'])
 @require_login(source_name='add_xy', allow_guest=True)
 def add_xy():
-    config_name = request.cookies['used_config']
+    config_name = query_cookie('used_config')
     config = load_config(config_name)
     xy_list = [] if 'PLOTTING_XY' not in config else config['PLOTTING_XY']
     xy_list.append([request.form['x_name'], request.form['y_name']])
@@ -1097,7 +1137,7 @@ def add_xy():
 @app.route("/change_filter_rule", methods=['POST'])
 @require_login(source_name='change_filter_rule', allow_guest=True)
 def change_filter_rule():
-    config_name = request.cookies['used_config']
+    config_name = query_cookie('used_config')
     config = load_config(config_name)
     if 'filter_data_with_ignore' in request.form:
         config['USE_IGNORE_RULE'] = True
@@ -1109,7 +1149,7 @@ def change_filter_rule():
 @app.route("/change_table_bold_rule", methods=['POST'])
 @require_login(source_name='change_table_bold_rule', allow_guest=True)
 def change_table_bold_rule():
-    config_name = request.cookies['used_config']
+    config_name = query_cookie('used_config')
     config = load_config(config_name)
     if 'table_bold_rule' in request.form:
         config['TABLE_BOLD_MAX'] = True
@@ -1123,7 +1163,7 @@ def change_table_bold_rule():
 @require_login(source_name='del_separator', allow_guest=True)
 def del_separator(rule_idx):
     Logger.logger(f'try to rm {rule_idx} {type(rule_idx)}')
-    config_name = request.cookies['used_config']
+    config_name = query_cookie('used_config')
     config = load_config(config_name)
     if 'FIGURE_SEPARATION' not in config:
         config['FIGURE_SEPARATION'] = []
@@ -1137,7 +1177,7 @@ def del_separator(rule_idx):
 @app.route("/add_separator", methods=['POST'])
 @require_login(source_name='add_separator', allow_guest=True)
 def add_separator():
-    config_name = request.cookies['used_config']
+    config_name = query_cookie('used_config')
     config = load_config(config_name)
     separators = [] if 'FIGURE_SEPARATION' not in config else config['FIGURE_SEPARATION']
     separators.append(request.form['separator_item'])
@@ -1164,6 +1204,8 @@ def start_page_server(port_num=None):
     flush_th.start()
     port_num = port_num if port_num is not None else page_config.PORT
     Logger.logger(f'copy http://{page_config.WEB_NAME}:{port_num} to the explorer')
+    if not page_config.REQUIRE_RELOGIN:
+        page_config.COOKIE_PERIOD = 1000000
     app.run(host='0', port=port_num, debug=False)
 
 
