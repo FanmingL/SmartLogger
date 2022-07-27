@@ -211,7 +211,8 @@ class ParameterTemplate:
         name = ''
         for item in self.important_configs():
             if not hasattr(self, item):
-                raise NameError(f'Parameter does not have \"{item}\"!!')
+                # raise NameError(f'Parameter does not have \"{item}\"!!')
+                continue
             value = getattr(self, item)
             if len(name) > 0:
                 name += '_'

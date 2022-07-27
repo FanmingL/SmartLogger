@@ -38,15 +38,16 @@ def generate_code(num=20):
 def in_cookie(key):
     if not page_config.REQUIRE_RELOGIN:
         cookie_dict = dict()
-        if key == 'user_name':
-            cookie_dict['user_name'] = page_config.USER_NAME
-        elif key == 'cookie_code':
-            cookie_dict['cookie_code'] = 'forever_code' if 'cookie_code' not in request.cookies else request.cookies[
-                'cookie_code']
-        elif key == 'used_config':
-            cookie_dict['used_config'] = _choose_config_init(
-                page_config.USER_NAME, check_valid=False) if 'used_config' not in request.cookies else request.cookies['used_config']
-        return key in cookie_dict
+        # if key == 'user_name':
+        #     cookie_dict['user_name'] = page_config.USER_NAME
+        # elif key == 'cookie_code':
+        #     cookie_dict['cookie_code'] = 'forever_code' if 'cookie_code' not in request.cookies else request.cookies[
+        #         'cookie_code']
+        # elif key == 'used_config':
+        #     cookie_dict['used_config'] = _choose_config_init(
+        #         page_config.USER_NAME, check_valid=False) if 'used_config' not in request.cookies else request.cookies['used_config']
+        # return key in cookie_dict
+        return key in ['user_name', 'cookie_code', 'used_config']
     return key in request.cookies
 
 
@@ -61,6 +62,8 @@ def query_cookie(key):
         elif key == 'used_config':
             cookie_dict['used_config'] = _choose_config_init(
             page_config.USER_NAME, check_valid=False) if 'used_config' not in request.cookies else request.cookies['used_config']
+            if not has_config(cookie_dict['used_config']):
+                cookie_dict['used_config'] = _choose_config_init(page_config.USER_NAME, check_valid=False)
         return cookie_dict[key]
     res = request.cookies[key] if key in request.cookies else None
     return res
