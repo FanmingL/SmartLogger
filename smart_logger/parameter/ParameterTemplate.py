@@ -95,9 +95,9 @@ class ParameterTemplate:
         parser.add_argument('--env_name', type=str, default=self.env_name, metavar='N',
                             help="name of the environment to run")
 
-        self.sac_update_interval = 1
-        parser.add_argument('--sac_update_interval', type=int, default=self.sac_update_interval, metavar='N',
-                            help="sample number per sac update.")
+        self.seed = 1
+        parser.add_argument('--seed', type=int, default=self.seed, metavar='N',
+                            help="random seed")
 
         self.policy_lr = 3e-4
         parser.add_argument('--policy_lr', type=float, default=self.policy_lr, metavar='N',
@@ -106,6 +106,10 @@ class ParameterTemplate:
         self.backing_log = False
         parser.add_argument('--backing_log', action='store_true',
                             help='whether backing up the log files to a remote machine.')
+
+        self.information = 'TEST'
+        parser.add_argument('--information', type=str, default=self.information, metavar='N',
+                            help="log file suffix")
 
         return parser.parse_args()
 
