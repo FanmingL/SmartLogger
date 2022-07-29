@@ -129,7 +129,11 @@ def _get_parameter(folder_name):
     param = dict()
     if os.path.exists(parameter_data):
         with open(parameter_data, 'r') as f:
-            param1 = json.load(f)
+            try:
+                param1 = json.load(f)
+            except Exception as e:
+                Logger.local_log(f'load param1: {parameter_data} fail')
+                param1 = dict()
         if len(param1) == 0:
             Logger.logger(f'{parameter_data} not exists')
         param.update(param1)
@@ -142,7 +146,11 @@ def _get_parameter(folder_name):
         # Logger.logger(f'{parameter_data_possible} not founded')
     if os.path.exists(running_config_data):
         with open(running_config_data, 'r') as f:
-            param2 = json.load(f)
+            try:
+                param2 = json.load(f)
+            except Exception as e:
+                Logger.local_log(f'load param2: {running_config_data} fail')
+                param2 = dict()
         if len(param2) == 0:
             Logger.logger(f'{running_config_data} not exists')
         for k in page_config.CONSIDERED_RUNNING_CONFIG:
