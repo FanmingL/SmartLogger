@@ -237,7 +237,8 @@ def _load_data(folder_name):
                 match_ignore = True
         if match_ignore:
             return None
-        data = pd.read_csv(progress_data)
+
+        data = pd.read_csv(progress_data, on_bad_lines='skip')
         if len(data.keys()) == 1:
             data = pd.read_table(progress_data)
         for k, v in plot_config.DATA_KEY_RENAME_CONFIG.items():
@@ -286,19 +287,24 @@ def _load_data_multi_thread(thread_num, path_list, task_ind_list, plot_config_di
     for k in plot_config_dict:
         setattr(plot_config, k, plot_config_dict[k])
     thread_num = min(thread_num, len(path_list))
-    thread_exe = ThreadPoolExecutor(max_workers=thread_num)
-    result_dict = dict()
     args = [path_list, task_ind_list]
-    for result_tmp in thread_exe.map(_load_data_one_thread, *args):
-        for k, v in result_tmp.items():
-            result_dict[k] = v
+    if thread_num == 1:
+        result_dict = dict()
+        for arg in zip(*args):
+            for k, v in _load_data_one_thread(*arg).items():
+                result_dict[k] = v
+    else:
+        thread_exe = ThreadPoolExecutor(max_workers=thread_num)
+        result_dict = dict()
+        for result_tmp in thread_exe.map(_load_data_one_thread, *args):
+            for k, v in result_tmp.items():
+                result_dict[k] = v
 
     return result_dict
 
 
 def _load_data_multi_process(process_num, thread_num, path_list):
     process_num = min(process_num, len(path_list))
-    process_exe = ProcessPoolExecutor(max_workers=process_num)
     result_dict = dict()
     task_ind_list = [i for i in range(len(path_list))]
     path_array = []
@@ -316,9 +322,17 @@ def _load_data_multi_process(process_num, thread_num, path_list):
     plot_config_dict = {k: getattr(plot_config, k) for k in plot_config.global_plot_configs()}
     plot_config_list = [plot_config_dict for _ in path_array]
     args = [thread_num_list, path_array, task_ind_array, plot_config_list]
-    for result_tmp in process_exe.map(_load_data_multi_thread, *args):
-        for k, v in result_tmp.items():
-            result_dict[k] = v
+    if process_num == 1:
+        for item in zip(*args):
+            result_tmp = _load_data_multi_thread(*item)
+            for k, v in result_tmp.items():
+                result_dict[k] = v
+    else:
+        process_exe = ProcessPoolExecutor(max_workers=process_num)
+        for result_tmp in process_exe.map(_load_data_multi_thread, *args):
+            for k, v in result_tmp.items():
+                result_dict[k] = v
+
     results = []
     for i in range(len(path_list)):
         if i in result_dict:
@@ -341,7 +355,7 @@ def collect_data():
         for name in files:
             if name == 'progress.csv':
                 folder_list.append(root)
-    total_raw_data = _load_data_multi_process(plot_config.PROCESS_NUM, plot_config.THREAD_NUM, folder_list)
+    total_raw_data = _load_data_multi_process(plot_config.PROCESS_NUM_LOAD_DATA, plot_config.THREAD_NUM, folder_list)
     for root, raw_data in zip(folder_list, total_raw_data):
         Logger.local_log(f'try to load data from {root}')
         if raw_data is None:
@@ -447,12 +461,35 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
                 x_data = x_data_new
             # x_data, y_data = _remove_nan(x_data, y_data)
             min_data_len = np.shape(x_data)[0]
+            for _y_ind, _y_data in enumerate(y_data):
+                if 'float' not in str(_y_data.dtype):
+                    try:
+                        y_data[_y_ind] = _y_data.astype(np.float64)
+                    except Exception as e:
+                        Logger.local_log(f'exception: {e}')
+                        try:
+                            for _y_ind2 in range(_y_data.shape[0]):
+                                if str(_y_data[_y_ind2]).count('.') > 1:
+                                    Logger.local_log('_y_data before, invalid', _y_data[_y_ind2])
+                                    _y_data[_y_ind2] = '.'.join(_y_data[_y_ind2].split('.')[:2])
+                                    Logger.local_log('_y_data after, invalid', _y_data[_y_ind2])
+
+                            y_data[_y_ind] = _y_data.astype(np.float64)
+                        except Exception as e2:
+                            Logger.local_log(_y_data)
+                            Logger.local_log(f'Failed')
+
             if not str(plot_config.XMAX) == 'None':
                 final_ind = np.argmin(np.square(np.array(x_data) - float(plot_config.XMAX))) + 1
                 x_data = x_data[:final_ind]
                 y_data = [data[:final_ind] for data in y_data]
             min_data_len = np.shape(x_data)[0]
-            y_data, y_data_error = stat_data(y_data)
+            try:
+                y_data, y_data_error = stat_data(y_data)
+            except Exception as e:
+                Logger.local_log(f'exception: {e}')
+                Logger.local_log(y_data)
+                continue
             if plot_config.USE_SMOOTH:
                 y_data = smooth(y_data, radius=plot_config.SMOOTH_RADIUS)
             Logger.local_log(f'PID:{os.getpid()}, figure: {sub_figure}, alg: {alg_name}, data_len: {data_len}, min len: {min(data_len)}, {min_data_len}')
