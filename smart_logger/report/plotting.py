@@ -480,7 +480,11 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
                             Logger.local_log(f'Failed')
 
             if not str(plot_config.XMAX) == 'None':
-                final_ind = np.argmin(np.square(np.array(x_data) - float(plot_config.XMAX))) + 1
+                # if 'Humanoid' in str(sub_figure):
+                #     xmax = float(plot_config.XMAX) * 2.0
+                # else:
+                xmax = float(plot_config.XMAX)
+                final_ind = np.argmin(np.square(np.array(x_data) - float(xmax))) + 1
                 x_data = x_data[:final_ind]
                 y_data = [data[:final_ind] for data in y_data]
             min_data_len = np.shape(x_data)[0]
@@ -532,7 +536,11 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
             ax.grid(True)
             alg_count += 1
             if plot_config.XMAX is not None and not str(plot_config.XMAX) == 'None':
-                ax.set_xlim(right=int(plot_config.XMAX))
+                # if 'Humanoid' in str(sub_figure):
+                #     xmax = float(plot_config.XMAX) * 2.0
+                # else:
+                xmax = float(plot_config.XMAX)
+                ax.set_xlim(right=int(xmax))
         if alg_count == 0:
             ax.set_title(sub_figure, fontsize=plot_config.FONTSIZE_TITLE)
 
@@ -630,7 +638,11 @@ def _make_subtable(data, x_name, y_name, at_x, plot_config_dict, iter, alg_as_ro
             min_data_len = np.shape(x_data)[0]
             # x_data, y_data = _remove_nan(x_data, y_data)
             if not str(plot_config.XMAX) == 'None':
-                final_ind = np.argmin(np.square(np.array(x_data) - float(plot_config.XMAX))) + 1
+                # if 'Humanoid' in str(sub_figure):
+                #     xmax = float(plot_config.XMAX) * 2.0
+                # else:
+                xmax = float(plot_config.XMAX)
+                final_ind = np.argmin(np.square(np.array(x_data) - float(xmax))) + 1
                 x_data = x_data[:final_ind]
                 y_data = [data[:final_ind] for data in y_data]
 

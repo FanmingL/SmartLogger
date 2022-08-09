@@ -197,11 +197,12 @@ class Logger(LoggerBase):
                 t.close()
                 ssh.close()
                 self.log(f'transfer the log to {_user}@{_ip}:{_log_path} success!!!')
-                break
+                return True
             except Exception as e:
                 import traceback
                 self.log(traceback.print_exc())
                 self.log(f'Error occur while transferring the log to {_ip}, {e}')
+                return False
 
     def debug(self, info):
         self.log(f"[ DEBUG ]: {info}")
