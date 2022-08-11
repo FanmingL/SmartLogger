@@ -273,7 +273,7 @@ tmuxp load -d run_all.json
 
 # 将结果可视化
 
-启动一个网页可视化非常简单
+我们还设计了一个前端页面，对日志数据进行展示，并绘图。启动一个网页可视化非常简单
 
 ```bash
 python -m smart_logger.htmlpage
@@ -308,4 +308,46 @@ python -m smart_logger.htmlpage -wks ~/Desktop/smart_logger_cache -lf -p 7005
 
 这样会使用在`~/Desktop/smart_logger_cache`的缓存文件（若无即创建），且通过`7005`端口就可以访问，且登录是不需要经过密码验证的（-lf指login-free，不需要密码）。
 
-在进入网页时，需要把`对比绘图`中的`绘图数据加载路径 (PLOT_LOG_PATH) `改为有效的包含有日志的绝对路径，那么就可以在网页上看到结果可视化了。
+在进入网页时，需要把`对比绘图`中的`绘图数据加载路径 (PLOT_LOG_PATH) `改为有效的包含有日志的绝对路径，那么就可以在网页上看到结果可视化了。页面中包括四部分
+
+- 实验列表，列了所有搜索到的日志，并可以直接下载这些日志的文件。
+- 绘图参数，列出了几个重要的绘图参数，用于对日志文件过滤，对算法命名。
+- 对比绘图，列出了几个绘图相关参数，并提供了一个绘图的按钮进行图像绘制。
+- 表格统计，以表格的形式展示实验结果。
+
+# 通用可视化
+
+可视化工具不要求日志数据一定要由smart_logger储存，只需要储存的数据的格式满足一些简单的要求，数据就可以被正常读取，并可视化。
+
+## 数据格式要求
+
+每一个实验的数据都要存放在一个文件夹中，当然不同的实验可以不在同一级目录，我们是通过实验数据来定位实验日志的位置的。因此我们约定每个实验都需要有以下两个文件
+
+- `progress.csv`，是一个csv的表格文件，需要保证我们如果使用`pandas`去读取这个文件不会报错，即下面的命令可以正常运行。
+
+```python
+import pandas as pd
+pd.read_csv('progress.csv')
+```
+
+这是日志文件中最重要的文件，程序会通过搜索`progress.csv`来定位日志的位置。
+这个表格的每一列都是一个训练过程的指标，列首标明了它的名称，之后的每一行代表了算法每一次迭代打印的数据。
+
+- `parameter.json`，是一个json文件，它表示的是字典，并且我们需要确保我们可以通过以下命令来读取`parameter.json`
+
+```python
+import json
+config = json.load(open('parameter.json', 'r'))
+```
+
+`parameter.json`需要保存到与`progress.csv`同级的位置，或者在`progress.csv`所在的文件夹的一个名为`config`的子文件夹中。
+`parameter.json`储存的是算法运行的配置，我们对其中储存的东西没有硬性要求，只要他表示的是字典即可。
+我们建议（没有的话程序也能运行）一个`parameter.json`中包含以下的东西
+
+1. `env_name`，实验的任务/环境名字
+2. `seed`，随机种子设置
+3. `information`，实验运行时的一些额外信息，可以是实验的目的等信息
+
+## 数据建议
+
+smart_logger是通过`parameter.json`来区分不同的日志的，若parameter.json完全一样，会被smart_logger视作同一个日志，若用户发现日志中存在这样的数据，建议手动对`parameter.json`进行一些修改，比如增加一些key。修改json文件与csv文件的代码分别在[smart_logger/scripts/modify_config.py](smart_logger/scripts/modify_config.py), [smart_logger/scripts/modify_csv.py](smart_logger/scripts/modify_csv.py)提供。
