@@ -1,21 +1,35 @@
+# 标准初始化方法
+from parameter.Parameter import Parameter
+from smart_logger import Logger
 import os
+from common_config.load_config import init_smart_logger
 
-from demo_parameter.Parameter import Parameter
-from smart_logger.util_logger.logger import Logger
+class Demo:
+    def __init__(self):
+        # 实例化参数, 此处解析输入为参数
+        self.parameter = Parameter()
+        # 实例化logger，这里，我们根据参数来调整logger的文件的保存位置
+        self.logger = Logger(log_name=self.parameter.short_name, log_signature=self.parameter.signature)
+        # 设置parameter的logger
+        self.parameter.set_logger(self.logger)
+        # 设置parameter的保存路径
+        self.parameter.set_config_path(os.path.join(self.logger.output_dir, 'config'))
+        # 保存parameter
+        self.parameter.save_config()
+
+    def run(self):
+        for _ in range(10):
+            self.logger.log_tabular('a', 2)
+            self.logger.log_tabular('b', 1)
+            self.logger.dump_tabular()
+
+            self.logger.sync_log_to_remote()
 
 
 def main():
-    parameter = Parameter()
-    logger = Logger(log_name=parameter.short_name, log_signature=parameter.signature, logger_category=parameter.suffix)
-    parameter.set_logger(logger)
-    parameter.set_config_path(os.path.join(logger.output_dir, 'config'))
-    parameter.save_config()
-    print(f'parameter: {parameter}')
-    for _ in range(10):
-        logger.log_tabular('a', 2)
-        logger.log_tabular('b', 1)
-        logger.dump_tabular()
-        logger.sync_log_to_remote()
+    init_smart_logger()
+    demo = Demo()
+    demo.run()
 
 
 if __name__ == '__main__':

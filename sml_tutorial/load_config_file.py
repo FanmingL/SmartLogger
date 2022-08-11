@@ -7,8 +7,8 @@ from smart_logger.common.serialize_config import init_config
 
 def main():
     init_config(
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), 'demo_configs', 'common_config.yaml'),
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), 'demo_configs', 'experiment_config.yaml'),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), 'common_config', 'common_config.yaml'),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), 'common_config', 'experiment_config.yaml'),
         os.path.join(os.path.dirname(os.path.abspath(__file__)), 'logfile_tmp'),
     )
     parameter = Parameter()
