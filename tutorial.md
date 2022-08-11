@@ -15,7 +15,7 @@
 就能够将每个日志单独、隔离的并行运行，同时可定期主动将日志备份至远程服务器。
 
 # 详细步骤
-根据一下步骤我们可以将`sml_tutorial`中的`common_config`, `parameter`, `main_logger_and_parameter.py`构造出来，具体可以直接以[main_logger_and_parameter.py](sml_tutorial/main_logger_and_parameter.py)作为入口查看。
+根据以下步骤我们可以将`sml_tutorial`中的`common_config`, `parameter`, `main_logger_and_parameter.py`构造出来，具体可以直接以[main_logger_and_parameter.py](sml_tutorial/main_logger_and_parameter.py)作为入口查看。
 ## 1. 复制common_config目录
 
 **将[common_config](sml_tutorial/common_config)这个文件夹复制到你的工程的根目录**。
