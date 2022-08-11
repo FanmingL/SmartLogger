@@ -217,7 +217,7 @@ success = self.logger.sync_log_to_remote(replace=False)
 
 smart_logger提供了一个脚本来并行启动多机、多进程的实验。
 
-试想，我们有一套代码，代码中有大量参数，而我们希望对不同的参数，运行有多个种子的实验，粗略估计一下，需要跑500次这套代码才能够跑完，而我们有三台机器，每台机器最多只能运行10个这样的代码，那么我们应该如何结合smart_logger来简便的并行启动实验呢。借助[smart_logger/scripts/generate_tmuxp_base.py](smart_logger/scripts/generate_tmuxp_base.py)将会很简单的实现这件事，一个例子如[sml_tutorial/generate_parallel_tasks.py](sml_tutorial/generate_parallel_tasks.py)所示。一下列出一些关键设置
+试想，我们有一套代码，代码中有大量参数，而我们希望对不同的参数进行网格搜索，且运行有多个种子的实验，粗略估计一下，需要跑500次这套代码才能够跑完，而我们有三台机器，每台机器最多只能同时运行10个这样的程序进程，那么我们应该如何结合smart_logger来简便的并行启动实验呢。借助[smart_logger/scripts/generate_tmuxp_base.py](smart_logger/scripts/generate_tmuxp_base.py)将会很简单的实现这件事，一个例子如[sml_tutorial/generate_parallel_tasks.py](sml_tutorial/generate_parallel_tasks.py)所示。一下列出一些关键设置
 
 ```python
 start_up_header = "python main.py "
