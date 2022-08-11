@@ -213,6 +213,64 @@ success = self.logger.sync_log_to_remote(replace=False)
 - `progress.csv`，由`add_tabular_data`, `log_tabular`等接口存下来的数据表
 - `signature`，日志配置的哈希值，用于唯一确定当前配置，一般没啥用
 
+# 启动并行实验
+
+smart_logger提供了一个脚本来并行启动多机、多进程的实验。
+
+试想，我们有一套代码，代码中有大量参数，而我们希望对不同的参数，运行有多个种子的实验，粗略估计一下，需要跑500次这套代码才能够跑完，而我们有三台机器，每台机器最多只能运行10个这样的代码，那么我们应该如何结合smart_logger来简便的并行启动实验呢。借助[smart_logger/scripts/generate_tmuxp_base.py](smart_logger/scripts/generate_tmuxp_base.py)将会很简单的实现这件事，一个例子如[sml_tutorial/generate_parallel_tasks.py](sml_tutorial/generate_parallel_tasks.py)所示。一下列出一些关键设置
+
+```python
+start_up_header = "python main.py "
+# 4. 基础参数
+parameters_base = dict(
+  backing_log=True,
+  seed=1
+)
+# 5. 遍历设置
+exclusive_candidates = dict(
+  env_name=['HalfCheetah-v2', 'Hopper-v2', 'Ant-v2', 'Walker2d-v2'],
+  seed=[13, 17, 23, 31],
+  policy_lr=[1e-4, 3e-4, 5e-5]
+)
+# 6. 单独设置
+aligned_candidates = dict(
+  information=['value_lr1', 'value_lr2', 'value_lr3'],
+  value_lr=[1e-3, 1e-4, 1e-5]
+)
+
+```
+
+其中包含了四种配置信息
+
+- `start_up_header`，描述每个进程的入口文件
+- `parameters_base`，所有任务共享的参数
+- `exclusive_candidates`，网格搜索候选集合，所有可能的组合的任务都会被生成
+- `aligned_candidates`，单独设置，这里每一个key对应了3个value，这三个value是对齐的，这里表示的第一种设置即information=value_lr1且value_lr=1e-3，第二种设置为information=value_lr2，且value_lr=1e-4，共有三种（与`exclusive_candidates`的网格组合不一样）。对于前面得到的所有可能的任务组合，再跟这里的三种设置遍历组合一遍，得到最终的所有任务。
+
+这里的总任务数量为4 x 4 x 3 x 3 = 144。这里通过修改三个参数来把这些所有任务构造成执行在各个机器上的命令。
+
+1. `MAX_PARALLEL = 10`，当前机器所能支持的最大并行程序的数量，若分配到这台机器的任务数如果大于`MAX_PARALLEL`, 命令将会以 `&&`接到前面的任务命令之后 
+2. `args.total_machine_num`，机器总数，任务将会尽可能均匀的分配到这些机器上
+3. `args.machine_idx`，当前机器的序号，用于在总任务中找到分配给当前机器的命令
+
+那么我们只需要运行一下
+
+```bash
+python generate_parallel_tasks.py -tn 10 -idx 2
+```
+
+就会生成一个`run_all.json`，这里面定义了这台机器需要运行的所有指令，最后通过`tmuxp`工具，将其中的指令执行起来
+
+```bash
+tmuxp load -d run_all.json
+```
+
+那么这台机器所负责的任务就会按照预设的方式运行起来。我们可以在`logfile`中看到本次运行的所有实验的日志信息。
+
+注意，运行`generate_parallel_tasks.py`时，会把所有命令都打印出来，通过打印信息，就能看到运行的命令是否符合我们的预期。
+
+
+
 # 将结果可视化
 
 启动一个网页可视化非常简单

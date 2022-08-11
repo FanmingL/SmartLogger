@@ -22,6 +22,10 @@ class Parameter(ParameterTemplate):
         parser.add_argument('--policy_lr', type=float, default=self.policy_lr, metavar='N',
                             help="learning rate of the policy.")
 
+        self.value_lr = 1e-4
+        parser.add_argument('--value_lr', type=float, default=self.value_lr, metavar='N',
+                            help="learning rate of the value function.")
+
         self.backing_log = False
         parser.add_argument('--backing_log', action='store_true',
                             help='whether backing up the log files to a remote machine.')

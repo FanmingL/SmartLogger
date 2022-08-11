@@ -5,4 +5,5 @@ IMPORTANT_CONFIGS:
 - env_name
 - policy_lr
 - seed
+- value_lr
 SHORT_NAME_SUFFIX: DEMO_FILE
