@@ -1,4 +1,4 @@
-# Smart Logger Utils
+# Smart Logger Utilities
 
 ## 简介
 
