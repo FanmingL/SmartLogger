@@ -355,7 +355,7 @@ def plot():
         figure_saving_path = os.path.join(page_config.FIGURE_PATH, query_cookie('user_name'), config_name)
     if os.path.exists(figure_saving_path) and os.path.isdir(figure_saving_path):
         file_list = []
-        for root, dirs, files in os.walk(figure_saving_path):
+        for root, dirs, files in os.walk(figure_saving_path, followlinks=True):
             for file in files:
                 if file.endswith('pdf') or file.endswith('png'):
                     full_name = os.path.join(root, file)

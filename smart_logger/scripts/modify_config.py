@@ -8,7 +8,7 @@ def main():
         'alg_name': 'ppo_transfer'
     }
     script_path = os.path.dirname(os.path.abspath(__file__))
-    for root, dir_name, file_name in os.walk(script_path):
+    for root, dir_name, file_name in os.walk(script_path, followlinks=True):
         for f_name in file_name:
             if f_name == config_name:
                 print(f'{os.path.join(root,f_name)}')

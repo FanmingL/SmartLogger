@@ -92,7 +92,7 @@ def list_current_configs():
 def list_current_experiment():
     base_path = plot_config.PLOT_LOG_PATH
     total_folders = []
-    for root, _, files in os.walk(base_path, topdown=True):
+    for root, _, files in os.walk(base_path, topdown=True, followlinks=True):
         for file in files:
             if file == 'progress.csv':
                 if os.path.exists(os.path.join(root, 'parameter.json')) or \

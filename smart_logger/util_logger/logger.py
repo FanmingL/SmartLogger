@@ -153,7 +153,7 @@ class Logger(LoggerBase):
                     remote_path = os.path.join(_log_path, self.logger_category, self.log_name)
 
                 process_dir = set()
-                for root, _, files in os.walk(local_path, topdown=True):
+                for root, _, files in os.walk(local_path, topdown=True, followlinks=True):
                     for file in files:
                         full_path_in_local = os.path.join(root, file)
                         full_path_in_remote = full_path_in_local.replace(local_path, remote_path)
@@ -174,7 +174,7 @@ class Logger(LoggerBase):
                 t = paramiko.Transport((_ip, _port))
                 t.connect(username=_user, password=_passwd)
                 sftp = paramiko.SFTPClient.from_transport(t)
-                for root, _, files in os.walk(local_path, topdown=False):
+                for root, _, files in os.walk(local_path, topdown=False, followlinks=True):
                     for file in files:
                         full_path_in_local = os.path.join(root, file)
                         full_path_in_remote = full_path_in_local.replace(local_path, remote_path)
