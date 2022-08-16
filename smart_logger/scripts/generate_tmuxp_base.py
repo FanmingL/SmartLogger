@@ -76,7 +76,8 @@ def make_cmd_array(directory, session_name, start_up_header,
                    parameters_base, environment_dict, aligned_candidates,
                    exclusive_candidates, GPUS, max_parallel_process, max_subwindow=6,
                    machine_idx=-1, total_machine=8, task_is_valid=None, split_all=False,
-                   cmd_post_process=None, sleep_before=0.0, sleep_after=0.0):
+                   cmd_post_process=None, sleep_before=0.0, sleep_after=0.0, error_stop=False):
+    cmd_sep = '&&' if error_stop else ';'
     cmd_array = []
 
     aligned_task_num = check_aligned_valid(aligned_candidates)
@@ -118,13 +119,14 @@ def make_cmd_array(directory, session_name, start_up_header,
                     cmd_once = cmd_post_process(cmd_once)
                 if cmd_ind == 0:
                     if split_all:
-                        cmd = dict(shell_command=cmd_once.split('&&'), sleep_before=sleep_before,
+                        cmd = dict(shell_command=cmd_once.split('&&') + [cmd_sep], sleep_before=sleep_before,
                                    sleep_after=sleep_after)
                     else:
                         cmd = cmd_once
                 else:
                     if split_all:
                         cmd['shell_command'] += cmd_once.split('&&')
+                        cmd['shell_command'].append(cmd_sep)
                     else:
                         if isinstance(cmd, dict):
                             cmd['shell_command'].append(cmd_once)
@@ -132,8 +134,14 @@ def make_cmd_array(directory, session_name, start_up_header,
                             cmd = dict(shell_command=[cmd_once], sleep_before=sleep_before, sleep_after=sleep_after)
         if split_all:
             for cmd_ind, cmd_item in enumerate(cmd['shell_command']):
-                if cmd_ind < len(cmd['shell_command']) - 1:
-                    cmd['shell_command'][cmd_ind] += ' && '
+                if cmd_ind < len(cmd['shell_command']) - 2:
+                    if cmd['shell_command'][cmd_ind+1] == cmd_sep:
+                        cmd['shell_command'][cmd_ind] += f'\\'
+                    elif cmd['shell_command'][cmd_ind] == cmd_sep:
+                        cmd['shell_command'][cmd_ind] = f'{cmd_sep}\\'
+                    else:
+                        cmd['shell_command'][cmd_ind] += ' && '
+            cmd['shell_command'] = cmd['shell_command'][:-1]
         cmd_list.append(cmd)
         if len(cmd_list) >= max_subwindow:
             cmd_array.append(cmd_list)
