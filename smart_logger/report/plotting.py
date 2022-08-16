@@ -351,7 +351,7 @@ def collect_data():
     """
     data = dict()
     folder_list = []
-    for root, _, files in os.walk(plot_config.PLOT_LOG_PATH, topdown=True):
+    for root, _, files in os.walk(plot_config.PLOT_LOG_PATH, topdown=True, followlinks=True):
         for name in files:
             if name == 'progress.csv':
                 folder_list.append(root)
