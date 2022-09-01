@@ -392,6 +392,70 @@ def _remove_nan(x_data, y_data_list):
         return x_data, y_data_list
 
 
+def _preprocess_date(data, alg_to_color_idx, x_name, y_name):
+    alg_data = dict()
+    figure_data = dict()
+    alg_perf = dict()
+    for sub_figure in data:
+        for alg in data[sub_figure]:
+            data_alg_list = data[sub_figure][alg]
+            if alg_to_color_idx is not None and alg not in alg_to_color_idx:
+                continue
+            have_y_name = True
+            for item in data_alg_list:
+                if y_name not in item['data']:
+                    have_y_name = False
+            if not have_y_name:
+                continue
+            if len(data_alg_list) == 0:
+                continue
+            x_data = [np.array(data_alg['data'][x_name]) for data_alg in data_alg_list]
+            y_data = [np.array(data_alg['data'][y_name]) for data_alg in data_alg_list]
+            y_list = [y_data_item[-1] for y_data_item in y_data]
+            for x_ind, x_item in enumerate(x_data):
+                if not str(plot_config.XMAX) == 'None':
+                    xmax = float(plot_config.XMAX)
+                    final_ind = np.argmin(np.square(np.array(x_item) - float(xmax))) + 1
+                    y_list[x_ind] = y_data[x_ind][final_ind-1]
+            if len(y_list) == 0:
+                continue
+            y_mean = np.mean(y_list)
+            if sub_figure not in figure_data:
+                figure_data[sub_figure] = dict()
+            figure_data[sub_figure][alg] = y_mean
+    for sub_figure in figure_data:
+
+        sort_perf = sorted(figure_data[sub_figure].items(), key=lambda x:x[1], reverse=True)
+        perf_list = [item[1] for item in sort_perf]
+        perf_max = np.max(perf_list)
+        perf_min = np.min(perf_list)
+        for ind, (alg, perf) in enumerate(sort_perf):
+            if alg not in alg_data:
+                alg_data[alg] = dict()
+            alg_data[alg][sub_figure] = (perf - perf_min) / (perf_max - perf_min + 1e-10)
+    for alg in alg_data:
+        perfs = [alg_data[alg][k] for k in alg_data[alg]]
+        alg_perf[alg] = 1.1 if len(perfs) == 0 else np.mean(perfs)
+
+    if plot_config.MIN_RELATIVE_PERFORMANCE > 0.0:
+        alg_perf_reserved = dict()
+        _reserved_alg_list = []
+        for alg in alg_data:
+            perfs = [alg_data[alg][k] for k in alg_data[alg]]
+            if len(perfs) > 0:
+                for p in perfs:
+                    if p < plot_config.MIN_RELATIVE_PERFORMANCE:
+                        break
+                else:
+                    _reserved_alg_list.append(alg)
+        alg_perf_reserved = {k: alg_perf[k] for k in _reserved_alg_list}
+    else:
+        alg_perf_reserved = alg_perf
+    sort_alg_list = sorted(alg_perf_reserved.items(), key=lambda x:x[1], reverse=True)
+    Logger.local_log(f'alg perf: {sort_alg_list}')
+    sort_alg_list = [item[0] for item in sort_alg_list]
+    return sort_alg_list, alg_perf_reserved
+
 def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_name, y_name, plot_config_dict):
     Logger.local_log(f'PID: {os.getpid()} started!!')
     for k in plot_config_dict:
@@ -403,6 +467,10 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
     alg_to_seed_num = dict()
     f, axarr = plt.subplots(fig_row, fig_column, sharex=False, squeeze=False, figsize=figsize)
     plt.subplots_adjust(wspace=plot_config.SUBPLOT_WSPACE, hspace=plot_config.SUBPLOT_HSPACE)
+    if plot_config.MIN_RELATIVE_PERFORMANCE > 0.0 or plot_config.SORT_BY_PERFORMANCE_ORDER:
+        averaged_sort_alg_list, valid_alg_dict = _preprocess_date(data, alg_to_color_idx, x_name, y_name)
+    else:
+        averaged_sort_alg_list, valid_alg_dict = None, None
     for sub_figure in sub_figure_content:
         _col = fig_ind % fig_column
         _row = fig_ind // fig_column
@@ -414,6 +482,8 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
         for alg_name in algs:
             data_alg_list = data[sub_figure][alg_name]
             if alg_name not in alg_to_color_idx:
+                continue
+            if valid_alg_dict is not None and alg_name not in valid_alg_dict:
                 continue
             have_y_name = True
             for item in data_alg_list:
@@ -506,7 +576,7 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
                              linestyle=line_type, marker=marker, label=alg_name,
                              linewidth=plot_config.LINE_WIDTH, markersize=plot_config.MARKER_SIZE,
                              markevery=max(min_data_len // 8, 1))
-            print('plotting', np.shape(x_data), np.shape(y_data), min_data_len)
+            Logger.local_log('plotting', np.shape(x_data), np.shape(y_data), min_data_len)
             if alg_name not in alg_to_line_handler:
                 alg_to_line_handler[alg_name] = curve
                 alg_to_seed_num[alg_name] = seed_num
@@ -542,7 +612,10 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
                 xmax = float(plot_config.XMAX)
                 ax.set_xlim(right=int(xmax))
         if alg_count == 0:
-            ax.set_title(sub_figure, fontsize=plot_config.FONTSIZE_TITLE)
+            title_name = title_tuple_to_str(sub_figure)
+            if not plot_config.TITLE_SUFFIX == 'None':
+                title_name = f'{title_name}{plot_config.TITLE_SUFFIX}'
+            ax.set_title(title_name, fontsize=plot_config.FONTSIZE_TITLE)
 
         fig_ind += 1
     names = [k for k in alg_to_line_handler]
@@ -550,6 +623,17 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
         ordered_names = [k for k in plot_config.LEGEND_ORDER if k in names]
         remain_names = [k for k in names if k not in ordered_names]
         names = ordered_names + remain_names
+    if plot_config.SORT_BY_PERFORMANCE_ORDER:
+        _names = []
+        for name in averaged_sort_alg_list:
+            if name in names:
+                _names.append(name)
+            else:
+                Logger.local_log(f'{name} in averagedd order not in current curves')
+        for name in names:
+            if name not in _names:
+                _names.append(name)
+        names = _names
     curves = [alg_to_line_handler[k] for k in names]
     final_names = []
     for ind, name in enumerate(names):
@@ -588,11 +672,17 @@ def _make_subtable(data, x_name, y_name, at_x, plot_config_dict, iter, alg_as_ro
     sub_figure_content = sorted(sub_figure_content)
     fig_ind = 0
     summary_dict = dict()
+    if plot_config.MIN_RELATIVE_PERFORMANCE > 0.0 or plot_config.SORT_BY_PERFORMANCE_ORDER:
+        averaged_sort_alg_list, valid_alg_dict = _preprocess_date(data, None, x_name, y_name)
+    else:
+        averaged_sort_alg_list, valid_alg_dict = None, None
     for sub_figure in sub_figure_content:
         algs, _, _ = sort_algs(data[sub_figure])
         for alg_name in algs:
             data_alg_list = data[sub_figure][alg_name]
             have_y_name = True
+            if valid_alg_dict is not None and alg_name not in valid_alg_dict:
+                continue
             for item in data_alg_list:
                 if y_name not in item['data']:
                     have_y_name = False

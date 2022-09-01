@@ -111,7 +111,7 @@ class Logger(LoggerBase):
         code_path = os.path.join(self.output_dir, 'codes')
         os.makedirs(code_path, exist_ok=True)
         for item in things:
-            system(f'cp -r {item} {code_path}', lambda x: self.log(f'code backing up: {x}'))
+            system(f'cp -r \"{item}\" \"{code_path}\"', lambda x: self.log(f'code backing up: {x}'))
         try:
             if os.path.exists(code_path + '.tar'):
                 system(f'rm {code_path + ".tar"}', lambda x: self.log(x))

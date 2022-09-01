@@ -18,6 +18,11 @@
             button.innerHTML = "更新图片";
         }
 
+        function error_figure(){
+             var button = document.getElementById('figure_button')
+            button.innerHTML = "重新加载";
+        }
+
         function scroll_to_history_element(element, name){
             var totop = 0;
             if (localStorage.hasOwnProperty(name)){
@@ -280,7 +285,7 @@
     </form>
 </div>
 <div class="right_image">
-		<img id="ret_image" src="{{initial_figure_url}}" alt="plotting" {% if initial_figure_url == "#" %} style="display:none;" {% endif %} onload="finish_figure()"><br/>
+		<img id="ret_image" src="{{initial_figure_url}}" alt="plotting" {% if initial_figure_url == "#" %} style="display:none;" {% endif %} onload="finish_figure()"  onerror="error_figure()"><br/>
 	</div>
 <div class="file_list" id="file_list_div_id">
     <b>
