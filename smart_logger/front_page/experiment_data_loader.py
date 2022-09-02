@@ -1,5 +1,6 @@
 import sys
 import os
+import time
 
 import pandas as pd
 
@@ -9,6 +10,7 @@ import json
 import smart_logger.common.page_config as page_config
 from smart_logger.util_logger.logger import Logger
 from smart_logger.report.plotting import merger_to_short_name, list_embedding, standardize_string, make_merger_feature
+from concurrent.futures import ProcessPoolExecutor, as_completed, ThreadPoolExecutor
 from pathlib import Path
 import fnmatch
 import re
@@ -169,6 +171,77 @@ def _get_parameter(folder_name):
     # Logger.logger(f'important params: {important_configs_dict}')
     return param, important_configs_dict
 
+"""multithread + multiprocess"""
+def _load_data_one_thread(folder_name, task_ind):
+    result = {task_ind: None}
+    try:
+        _result = _get_parameter(folder_name)
+        result[task_ind] = _result
+    except Exception as e:
+        import traceback
+        Logger.local_log(f'[WARNING] unexpected Exception!!!! {e}')
+        traceback.print_exc()
+    return result
+
+
+def _load_data_multi_thread(thread_num, path_list, task_ind_list, plot_config_dict):
+    for k in plot_config_dict:
+        setattr(plot_config, k, plot_config_dict[k])
+    thread_num = min(thread_num, len(path_list))
+    args = [path_list, task_ind_list]
+    if thread_num == 1:
+        result_dict = dict()
+        for arg in zip(*args):
+            for k, v in _load_data_one_thread(*arg).items():
+                result_dict[k] = v
+    else:
+        thread_exe = ThreadPoolExecutor(max_workers=thread_num)
+        result_dict = dict()
+        for result_tmp in thread_exe.map(_load_data_one_thread, *args):
+            for k, v in result_tmp.items():
+                result_dict[k] = v
+
+    return result_dict
+
+
+def _load_data_multi_process(process_num, thread_num, path_list):
+    process_num = min(process_num, len(path_list))
+    result_dict = dict()
+    task_ind_list = [i for i in range(len(path_list))]
+    path_array = []
+    task_ind_array = []
+    tasks_num_per_thread = len(path_list) // process_num
+    start_ind = 0
+    for i in range(process_num - 1):
+        path_array.append(path_list[start_ind:start_ind+tasks_num_per_thread])
+        task_ind_array.append(task_ind_list[start_ind:start_ind+tasks_num_per_thread])
+        start_ind = start_ind + tasks_num_per_thread
+    if start_ind < len(path_list):
+        path_array.append(path_list[start_ind:])
+        task_ind_array.append(task_ind_list[start_ind:])
+    thread_num_list = [thread_num for _ in path_array]
+    plot_config_dict = {k: getattr(plot_config, k) for k in plot_config.global_plot_configs()}
+    plot_config_list = [plot_config_dict for _ in path_array]
+    args = [thread_num_list, path_array, task_ind_array, plot_config_list]
+    if process_num == 1:
+        for item in zip(*args):
+            result_tmp = _load_data_multi_thread(*item)
+            for k, v in result_tmp.items():
+                result_dict[k] = v
+    else:
+        process_exe = ProcessPoolExecutor(max_workers=process_num)
+        for result_tmp in process_exe.map(_load_data_multi_thread, *args):
+            for k, v in result_tmp.items():
+                result_dict[k] = v
+
+    results = []
+    for i in range(len(path_list)):
+        if i in result_dict:
+            results.append(result_dict[i])
+        else:
+            results.append(None)
+    return results
+"""end_multithread + end_multiprocess"""
 
 def get_parameter(folder_name):
     param, important_configs_dict = _get_parameter(folder_name)
@@ -432,7 +505,10 @@ def analyze_experiment(need_ignore=False, data_ignore=None, need_select=False,
                        data_select=None, data_merge=None, data_short_name_dict=None,
                        data_ignore_property=None, data_select_property=None,
                        data_short_name_property=None):
+    Logger.local_log(f'start listing experiment...')
+    start_time = time.time()
     all_folders = list_current_experiment()
+    Logger.local_log(f'finish listing experiment, cost {time.time() - start_time}')
     folder_ignore = []
     if need_ignore:
         if data_ignore is None:
@@ -463,8 +539,13 @@ def analyze_experiment(need_ignore=False, data_ignore=None, need_select=False,
     config_list_ignore = []
     short_name_to_ind = dict()
     short_name_to_ind_ignore = dict()
-    for folder in all_folders:
-        config, important_config = _get_parameter(folder)
+    Logger.local_log(f'start loading all configs...')
+    start_time = time.time()
+    all_folders_data = _load_data_multi_process(1, 50, all_folders)
+    Logger.local_log(f'finish loading configs, cost {time.time() - start_time}')
+    start_time = time.time()
+    for folder_ind, (config, important_config) in enumerate(all_folders_data):
+        folder = all_folders[folder_ind]
         if config is None:
             continue
         ignore_file = False

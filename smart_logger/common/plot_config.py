@@ -106,6 +106,10 @@ DESCRIPTION['PLOT_FOR_EVERY'] = '绘图数据的下采样间隔'
 XMAX = 'None'
 DESCRIPTION['XMAX'] = 'X轴的最大值'
 
+# 最少允许的有效数据点个数
+MINIMUM_DATA_POINT_NUM = 'None'
+DESCRIPTION['MINIMUM_DATA_POINT_NUM'] = '最少允许的有效数据点个数'
+
 # 最大并行进程数量
 PROCESS_NUM = 5
 DESCRIPTION['PROCESS_NUM'] = '绘图最大允许进程数'

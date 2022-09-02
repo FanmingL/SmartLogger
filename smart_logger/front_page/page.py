@@ -547,6 +547,8 @@ def param_adjust():
     data_merge = [] if 'DATA_MERGER' not in config else config['DATA_MERGER']
     data_short_name_dict = {} if 'SHORT_NAME_FROM_CONFIG' not in config else config['SHORT_NAME_FROM_CONFIG']
     data_short_name_property = {} if 'SHORT_NAME_FROM_CONFIG_PROPERTY' not in config else config['SHORT_NAME_FROM_CONFIG_PROPERTY']
+    Logger.local_log(f'start analyze_experiment')
+    start_time = time.time()
     exp_data, exp_data_ignores, selected_choices, possible_config_ignore, selected_choices_ignore, alg_idxs_ignore, \
         folder_ignore, nick_name_ignore_list, alg_idx, possible_config, \
             short_name_to_ind, nick_name_list = analyze_experiment(need_ignore=config['USE_IGNORE_RULE'],
@@ -558,6 +560,8 @@ def param_adjust():
                                                                    data_ignore_property=data_ignore_property,
                                                                    data_select_property=data_choose_property,
                                                                    data_short_name_property=data_short_name_property)
+    Logger.local_log(f'finish analyze_experiment {time.time() - start_time}')
+
     exp_data_encoded = [base64.urlsafe_b64encode(item.encode()).decode() for item in exp_data]
     exp_data_ignores_encoded = [base64.urlsafe_b64encode(item.encode()).decode() for item in exp_data_ignores]
     Logger.logger(f'selected_choices keys: {[k for k in selected_choices]}')
@@ -583,7 +587,7 @@ def param_adjust():
 
     possible_config = list(sorted(sorted(possible_config, key=lambda x: x[0]), key=lambda x: len(x[1]), reverse=True))
     selected_config_list = list(sorted(sorted(selected_config_list, key=lambda x: x[0]), key=lambda x: len(x[1]), reverse=True))
-    Logger.local_log('possible config', possible_config)
+    # Logger.local_log('possible config', possible_config)
     # Logger.logger(f'possible config json: {json.dumps(possible_config)}')
     encode_possible_config_js = base64.urlsafe_b64encode(json.dumps(possible_config).encode()).decode()
     rename_rule = {} if 'SHORT_NAME_FROM_CONFIG' not in config else config['SHORT_NAME_FROM_CONFIG']
@@ -750,6 +754,14 @@ def reset_config():
     return redirect('param_adjust')
 
 
+def _generate_grid_analyze_result(config_name):
+    config = load_config(config_name)
+    all_data_merger = config['DATA_MERGER'] if 'DATA_MERGER' in config else []
+    for merger in all_data_merger:
+        config['DATA_MERGER'] = [merger]
+        save_config(config, f'{config_name}_gs_{merger}')
+
+
 @app.route("/merge_config", methods=['POST'])
 @require_login(source_name='merge_config', allow_guest=True)
 def merge_config():
@@ -766,6 +778,15 @@ def merge_config():
             config_current[k] = config_target[k]
     save_config(config_current, config_name)
     return redirect('param_adjust')
+
+
+@app.route("/grid_config_generate", methods=['GET'])
+@require_login(source_name='grid_config_generate', allow_guest=True)
+def grid_config_generate():
+    config_name = query_cookie('used_config')
+    _generate_grid_analyze_result(config_name)
+    return redirect('param_adjust')
+
 
 @app.route("/add_ignore", methods=['POST'])
 @require_login(source_name='add_ignore', allow_guest=True)

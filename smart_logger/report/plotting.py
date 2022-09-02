@@ -245,6 +245,9 @@ def _load_data(folder_name):
             if k in data and v not in data:
                 data[v] = data[k]
         Logger.local_log(f'[ {len(data)} ] data rows for {folder_name}: {len(data)}')
+        if not plot_config.MINIMUM_DATA_POINT_NUM == 'None' and float(plot_config.MINIMUM_DATA_POINT_NUM) > len(data):
+            Logger.local_log(f'{folder_name} is too short, skip it!!!')
+            return None
         data_str = data.select_dtypes(include=['object'])
         if len(list(data_str.keys())) > 0:
             Logger.local_log(f'invalid keys (not numerical value): {list(data_str.keys())}')

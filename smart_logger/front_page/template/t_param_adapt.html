@@ -114,6 +114,26 @@
             httpRequest.open('GET', "{{url_for('create_config')}}", false);
             httpRequest.send();
         }
+        function create_grid_config(){
+            var r=confirm("将会生成一批配置文件，是否继续?");
+            if (r)
+            {
+                let httpRequest = new XMLHttpRequest();
+                httpRequest.onreadystatechange = function () {
+              if (httpRequest.readyState === 4 && httpRequest.status === 200) {
+                  console.log('success!')
+                  location.href="{{url_for('param_adjust')}}";
+              }
+              };
+            httpRequest.open('GET', "{{url_for('grid_config_generate')}}", false);
+            httpRequest.send();
+            }
+            else
+            {
+              console.log('exists..');
+            }
+
+        }
         function delete_config(){
             let httpRequest = new XMLHttpRequest();
             let config_selection = document.getElementById("choose_config_cb");
@@ -374,6 +394,13 @@
                         font-family:monospace;
             position: absolute;
             left: 40%;
+            top: 10%;
+        }
+
+        .grid_config {
+                        font-family:monospace;
+            position: absolute;
+            left: 55%;
             top: 10%;
         }
         .rename_config {
@@ -716,6 +743,7 @@
             </select>
             <button type="button" style="width:80px;height:30px" onclick="create_config()">新建配置</button>
             <button type="button" style="width:80px;height:30px" onclick="delete_config()">删除配置</button>
+            <button type="button" style="width:100px;height:30px" onclick="create_grid_config()">分析配置生成</button>
         </p>
 
         </div>
