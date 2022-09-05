@@ -5,7 +5,9 @@ BACKUP_IGNORE_KEY:
 - logfile
 - logfile_bk
 - baselines
-BACKUP_IGNORE_TAIL: []
+BACKUP_IGNORE_TAIL:
+- .jpg
+- .tar
 BASE_PATH: null
 LOG_DIR_BACKING_NAME: RAMRLLog
 LOG_FOLDER_NAME: logfile

@@ -111,7 +111,19 @@ class Logger(LoggerBase):
         code_path = os.path.join(self.output_dir, 'codes')
         os.makedirs(code_path, exist_ok=True)
         for item in things:
-            system(f'cp -r \"{item}\" \"{code_path}\"', lambda x: self.log(f'code backing up: {x}'))
+            if os.system('which rsync > /dev/null'):
+                system(f'cp -r \"{item}\" \"{code_path}\"', lambda x: self.log(f'code backing up: {x}'))
+            else:
+                ignore_str = ''
+                for ignore_head in common_config.BACKUP_IGNORE_HEAD:
+                    ignore_str += f' --exclude \"{ignore_head}*\" '
+                for ignore_key in common_config.BACKUP_IGNORE_KEY:
+                    ignore_str += f' --exclude \"*{ignore_key}*\" '
+                for ignore_tail in common_config.BACKUP_IGNORE_TAIL:
+                    ignore_str += f' --exclude \"*{ignore_tail}\" '
+                if system(f'rsync -razm {ignore_str} \"{item}\" \"{code_path}\"', lambda x: self.log(f'code backing up: {x}')):
+                    self.log(f'error occurs when rsync, use cp instead!')
+                    system(f'cp -r \"{item}\" \"{code_path}\"', lambda x: self.log(f'code backing up: {x}'))
         try:
             if os.path.exists(code_path + '.tar'):
                 system(f'rm {code_path + ".tar"}', lambda x: self.log(x))
@@ -125,84 +137,86 @@ class Logger(LoggerBase):
         finally:
             system(f'rm -rf {code_path}', lambda x: self.log(f'post-backing up: {x}'))
 
-    def sync_log_to_remote(self, replace=False):
+    def sync_log_to_remote(self, replace=False, trial_num=1):
         import paramiko
-        for target_machine_ind in range(len(common_config.MAIN_MACHINE_IP)):
-            _ip, _port = map(lambda x: x[target_machine_ind], [
-                common_config.MAIN_MACHINE_IP, common_config.MAIN_MACHINE_PORT,
-            ])
-            _user, _passwd, _log_path = common_config.MAIN_MACHINE_USER, \
-                                            common_config.MAIN_MACHINE_PASSWD, \
-                                                common_config.MAIN_MACHINE_LOG_PATH
-            while _log_path.endswith('/'):
-                _log_path = _log_path[:-1]
-            while self.output_dir.endswith('/'):
-                self.output_dir = self.output_dir[:-1]
-            try:
-                ssh = paramiko.SSHClient()
-                ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-                ssh.connect(hostname=_ip, port=_port, username=_user,
-                            password=_passwd, timeout=5)
-                self.log(f'ssh {_user}@{_ip} "mkdir -p {_log_path}"')
-                _, stdout, _ = ssh.exec_command(f'mkdir -p {_log_path}')
+        for _ in range(trial_num):
+            for target_machine_ind in range(len(common_config.MAIN_MACHINE_IP)):
+                _ip, _port = map(lambda x: x[target_machine_ind], [
+                    common_config.MAIN_MACHINE_IP, common_config.MAIN_MACHINE_PORT,
+                ])
+                _user, _passwd, _log_path = common_config.MAIN_MACHINE_USER, \
+                                                common_config.MAIN_MACHINE_PASSWD, \
+                                                    common_config.MAIN_MACHINE_LOG_PATH
+                while _log_path.endswith('/'):
+                    _log_path = _log_path[:-1]
+                while self.output_dir.endswith('/'):
+                    self.output_dir = self.output_dir[:-1]
+                try:
+                    ssh = paramiko.SSHClient()
+                    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                    ssh.connect(hostname=_ip, port=_port, username=_user,
+                                password=_passwd, timeout=5)
+                    self.log(f'ssh {_user}@{_ip} "mkdir -p {_log_path}"')
+                    _, stdout, _ = ssh.exec_command(f'mkdir -p {_log_path}')
 
-                local_path = self.output_dir
-                if self.logger_category is None:
-                    remote_path = os.path.join(_log_path, self.log_name)
-                else:
-                    remote_path = os.path.join(_log_path, self.logger_category, self.log_name)
+                    local_path = self.output_dir
+                    if self.logger_category is None:
+                        remote_path = os.path.join(_log_path, self.log_name)
+                    else:
+                        remote_path = os.path.join(_log_path, self.logger_category, self.log_name)
 
-                process_dir = set()
-                for root, _, files in os.walk(local_path, topdown=True, followlinks=True):
-                    for file in files:
-                        full_path_in_local = os.path.join(root, file)
-                        full_path_in_remote = full_path_in_local.replace(local_path, remote_path)
-                        full_path_remote_dir = os.path.dirname(full_path_in_remote)
-                        if full_path_remote_dir not in process_dir:
-                            full_path_remote_dir_normal = full_path_remote_dir.replace(' ', '\ ')
-                            full_path_remote_dir_normal = full_path_remote_dir_normal.replace('&', '\&')
-                            if replace:
-                                rm_cmd = f'rm -rf {full_path_remote_dir_normal} && mkdir -p {full_path_remote_dir_normal}'
-                                _, stdout, _ = ssh.exec_command(rm_cmd)
-                                self.log(f"ssh {_user}@{_ip} {rm_cmd}")
-                            else:
-                                mkdir_cmd = f'mkdir -p {full_path_remote_dir_normal}'
-                                _, stdout, _ = ssh.exec_command(mkdir_cmd)
-                                self.log(mkdir_cmd)
-                            process_dir.add(full_path_remote_dir)
+                    process_dir = set()
+                    for root, _, files in os.walk(local_path, topdown=True, followlinks=True):
+                        for file in files:
+                            full_path_in_local = os.path.join(root, file)
+                            full_path_in_remote = full_path_in_local.replace(local_path, remote_path)
+                            full_path_remote_dir = os.path.dirname(full_path_in_remote)
+                            if full_path_remote_dir not in process_dir:
+                                full_path_remote_dir_normal = full_path_remote_dir.replace(' ', '\ ')
+                                full_path_remote_dir_normal = full_path_remote_dir_normal.replace('&', '\&')
+                                if replace:
+                                    rm_cmd = f'rm -rf {full_path_remote_dir_normal} && mkdir -p {full_path_remote_dir_normal}'
+                                    _, stdout, _ = ssh.exec_command(rm_cmd)
+                                    self.log(f"ssh {_user}@{_ip} {rm_cmd}")
+                                else:
+                                    mkdir_cmd = f'mkdir -p {full_path_remote_dir_normal}'
+                                    _, stdout, _ = ssh.exec_command(mkdir_cmd)
+                                    self.log(mkdir_cmd)
+                                process_dir.add(full_path_remote_dir)
 
-                t = paramiko.Transport((_ip, _port))
-                t.connect(username=_user, password=_passwd)
-                sftp = paramiko.SFTPClient.from_transport(t)
-                for root, _, files in os.walk(local_path, topdown=False, followlinks=True):
-                    for file in files:
-                        full_path_in_local = os.path.join(root, file)
-                        full_path_in_remote = full_path_in_local.replace(local_path, remote_path)
-                        self.log(f'sync local: {full_path_in_local} to '
-                                 f'{_user}@{_ip}:{full_path_in_remote}')
-                        full_path_in_remote_no_process = full_path_in_remote
-                        full_path_in_remote = full_path_in_remote.replace(' ', '\ ')
-                        full_path_in_remote = full_path_in_remote.replace('&', '\&')
+                    t = paramiko.Transport((_ip, _port))
+                    t.connect(username=_user, password=_passwd)
+                    sftp = paramiko.SFTPClient.from_transport(t)
+                    for root, _, files in os.walk(local_path, topdown=False, followlinks=True):
+                        for file in files:
+                            full_path_in_local = os.path.join(root, file)
+                            full_path_in_remote = full_path_in_local.replace(local_path, remote_path)
+                            self.log(f'sync local: {full_path_in_local} to '
+                                     f'{_user}@{_ip}:{full_path_in_remote}')
+                            full_path_in_remote_no_process = full_path_in_remote
+                            full_path_in_remote = full_path_in_remote.replace(' ', '\ ')
+                            full_path_in_remote = full_path_in_remote.replace('&', '\&')
 
-                        for _ in range(10):
-                            try:
-                                sftp.put(full_path_in_local, full_path_in_remote_no_process, confirm=False)
-                                break
-                            except FileNotFoundError as e:
-                                full_path_remote_dir = os.path.dirname(full_path_in_remote)
-                                self.log(f'file {full_path_remote_dir} not found!!')
-                                mkdir_cmd = f'mkdir -p {full_path_remote_dir}'
-                                _, stdout, _ = ssh.exec_command(mkdir_cmd)
-                                self.log(mkdir_cmd)
-                t.close()
-                ssh.close()
-                self.log(f'transfer the log to {_user}@{_ip}:{_log_path} success!!!')
-                return True
-            except Exception as e:
-                import traceback
-                self.log(traceback.print_exc())
-                self.log(f'Error occur while transferring the log to {_ip}, {e}')
-                return False
+                            for _ in range(10):
+                                try:
+                                    sftp.put(full_path_in_local, full_path_in_remote_no_process, confirm=False)
+                                    break
+                                except FileNotFoundError as e:
+                                    full_path_remote_dir = os.path.dirname(full_path_in_remote)
+                                    self.log(f'file {full_path_remote_dir} not found!!')
+                                    mkdir_cmd = f'mkdir -p {full_path_remote_dir}'
+                                    _, stdout, _ = ssh.exec_command(mkdir_cmd)
+                                    self.log(mkdir_cmd)
+                    t.close()
+                    ssh.close()
+                    self.log(f'transfer the log to {_user}@{_ip}:{_log_path} success!!!')
+                    return True
+                except Exception as e:
+                    import traceback
+                    self.log(traceback.print_exc())
+                    self.log(f'Error occur while transferring the log to {_ip}, {e}')
+                    continue
+        return False
 
     def debug(self, info):
         self.log(f"[ DEBUG ]: {info}")
