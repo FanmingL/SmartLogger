@@ -583,6 +583,7 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
             if alg_name not in alg_to_line_handler:
                 alg_to_line_handler[alg_name] = curve
                 alg_to_seed_num[alg_name] = seed_num
+            alg_to_seed_num[alg_name] = min(seed_num, alg_to_seed_num[alg_name])
             if len(data_len) > 1:
                 ax.fill_between(x_data, y_data - y_data_error, y_data + y_data_error, color=line_color,
                                 alpha=plot_config.SHADING_ALPHA)
