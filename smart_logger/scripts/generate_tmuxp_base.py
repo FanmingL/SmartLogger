@@ -86,6 +86,7 @@ def make_cmd_array(directory, session_name, start_up_header,
     else:
         random_gen = None
     cmd_sep = '&&' if error_stop else ';'
+    sub_cmd_sep = ' && ' # ';\\'
     cmd_array = []
 
     aligned_task_num = check_aligned_valid(aligned_candidates)
@@ -155,7 +156,7 @@ def make_cmd_array(directory, session_name, start_up_header,
                             cmd = dict(shell_command=[cmd_once], sleep_before=sleep_before, sleep_after=sleep_after)
         if split_all:
             if not isinstance(cmd, dict):
-                cmd = dict(shell_command=[' echo \' task finished!!! \' '], sleep_before=sleep_before, sleep_after=sleep_after)
+                cmd = dict(shell_command=[' echo \' task finished!!! \' ', cmd_sep], sleep_before=sleep_before, sleep_after=sleep_after)
             else:
                 cmd['shell_command'].append(' echo \' task finished!!! \' ')
                 cmd['shell_command'].append(cmd_sep)
@@ -172,7 +173,8 @@ def make_cmd_array(directory, session_name, start_up_header,
                     elif cmd['shell_command'][cmd_ind] == cmd_sep:
                         cmd['shell_command'][cmd_ind] = f'{cmd_sep}\\'
                     else:
-                        cmd['shell_command'][cmd_ind] += ' && '
+                        # cmd['shell_command'][cmd_ind] += ' ;\\'
+                        cmd['shell_command'][cmd_ind] += sub_cmd_sep
             cmd['shell_command'] = cmd['shell_command'][:-1]
         cmd_list.append(cmd)
         if len(cmd_list) >= max_subwindow:

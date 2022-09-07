@@ -66,7 +66,7 @@ def main():
                         help="Server port")
     args = parser.parse_args()
     cmd_array, session_name = get_cmd_array(args.total_machine_num, args.machine_idx)
-    generate_tmuxp_file(session_name, cmd_array, use_json=True)
+    generate_tmuxp_file(session_name, cmd_array, use_json=False)
 
 
 if __name__ == '__main__':

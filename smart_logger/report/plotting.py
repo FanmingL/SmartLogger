@@ -468,6 +468,7 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
     fig_ind = 0
     alg_to_line_handler = dict()
     alg_to_seed_num = dict()
+    alg_to_seed_num_max = dict()
     f, axarr = plt.subplots(fig_row, fig_column, sharex=False, squeeze=False, figsize=figsize)
     plt.subplots_adjust(wspace=plot_config.SUBPLOT_WSPACE, hspace=plot_config.SUBPLOT_HSPACE)
     if plot_config.MIN_RELATIVE_PERFORMANCE > 0.0 or plot_config.SORT_BY_PERFORMANCE_ORDER:
@@ -583,7 +584,10 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
             if alg_name not in alg_to_line_handler:
                 alg_to_line_handler[alg_name] = curve
                 alg_to_seed_num[alg_name] = seed_num
+                alg_to_seed_num_max[alg_name] = seed_num
             alg_to_seed_num[alg_name] = min(seed_num, alg_to_seed_num[alg_name])
+            alg_to_seed_num_max[alg_name] = max(seed_num, alg_to_seed_num_max[alg_name])
+
             if len(data_len) > 1:
                 ax.fill_between(x_data, y_data - y_data_error, y_data + y_data_error, color=line_color,
                                 alpha=plot_config.SHADING_ALPHA)
@@ -642,7 +646,10 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
     final_names = []
     for ind, name in enumerate(names):
         if str(plot_config.SHOW_SEED_NUM) == 'True':
-            final_names.append(name + f' ({alg_to_seed_num[name]})')
+            if alg_to_seed_num[name] == alg_to_seed_num_max[name]:
+                final_names.append(name + f' ({alg_to_seed_num[name]})')
+            else:
+                final_names.append(name + f' ({alg_to_seed_num[name]}-{alg_to_seed_num_max[name]})')
         else:
             final_names.append(name)
     axarr[fig_row - 1][0].legend(handles=curves, labels=final_names, loc='center left', bbox_to_anchor=(plot_config.LEGEND_POSITION_X, plot_config.LEGEND_POSITION_Y),
