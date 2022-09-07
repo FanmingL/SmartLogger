@@ -17,7 +17,7 @@ MACHINE_NUM = 8
 MACHINE_IDX = -1
 
 
-def make_cmd(environment_dict: dict, directory: str, start_up_header: str, parameter_dict: dict):
+def make_cmd(environment_dict: dict, directory: str, start_up_header: str, parameter_dict: dict, task_ind: int=-1, total_task_num: int=-1):
     cmd = ""
     for ind, (k, v) in enumerate(environment_dict.items()):
         if ind == 0:
@@ -25,6 +25,8 @@ def make_cmd(environment_dict: dict, directory: str, start_up_header: str, param
         else:
             cmd += f" export {k}={v} && "
     cmd += f" cd {directory} && "
+    if total_task_num > 0 and task_ind >= 0:
+        cmd += f" echo \'******************task ind: {task_ind + 1}/{total_task_num} ************************\' && "
     cmd += f" {start_up_header} "
     for k, v in parameter_dict.items():
         if v is None:
@@ -113,23 +115,33 @@ def make_cmd_array(directory, session_name, start_up_header,
                                                                                  tasks_per_machine * (machine_idx + 1))]
     cmd_num_per_pane = int(math.ceil(len(final_tasks_list) / max_parallel_process))
     total_pane_num = min(max_parallel_process, len(final_tasks_list))
+    task_ind_list = []
     for pane_ind in range(total_pane_num):
         cmd = ''
         for cmd_ind in range(cmd_num_per_pane):
+            # task_ind = cmd_ind + pane_ind * cmd_num_per_pane
             task_ind = pane_ind + cmd_ind * total_pane_num
+            if ((cmd_num_per_pane - 1) * total_pane_num + pane_ind + 1 ) <= len(final_tasks_list):
+                total_pane_task_num = cmd_num_per_pane
+            else:
+                total_pane_task_num = cmd_num_per_pane - 1
             if task_ind < len(final_tasks_list):
                 task = final_tasks_list[task_ind]
+                task_ind_list.append(task_ind)
                 parameters = copy.deepcopy(parameters_base)
                 parameters.update(task)
                 if 'CUDA_VISIBLE_DEVICES' in environment_dict and len(GPUS) > 0:
                     environment_dict['CUDA_VISIBLE_DEVICES'] = str(GPUS[task_ind % len(GPUS)])
-                cmd_once = make_cmd(environment_dict, directory, start_up_header, parameters)
+                cmd_once = make_cmd(environment_dict, directory, start_up_header, parameters, cmd_ind, total_pane_task_num)
                 if cmd_post_process is not None:
                     cmd_once = cmd_post_process(cmd_once)
                 if cmd_ind == 0:
                     if split_all:
-                        cmd = dict(shell_command=cmd_once.split('&&') + [cmd_sep], sleep_before=sleep_before,
-                                   sleep_after=sleep_after)
+                        cmd = dict(shell_command=cmd_once.split('&&') + [cmd_sep])
+                        if sleep_after > 0:
+                            cmd['sleep_after'] = sleep_after
+                        if sleep_before > 0:
+                            cmd['sleep_before'] = sleep_before
                     else:
                         cmd = cmd_once
                 else:
@@ -141,9 +153,17 @@ def make_cmd_array(directory, session_name, start_up_header,
                             cmd['shell_command'].append(cmd_once)
                         else:
                             cmd = dict(shell_command=[cmd_once], sleep_before=sleep_before, sleep_after=sleep_after)
-        cmd['shell_command'].append(' echo \' task finished!!! \' ')
-        cmd['shell_command'].append(cmd_sep)
-
+        if split_all:
+            if not isinstance(cmd, dict):
+                cmd = dict(shell_command=[' echo \' task finished!!! \' '], sleep_before=sleep_before, sleep_after=sleep_after)
+            else:
+                cmd['shell_command'].append(' echo \' task finished!!! \' ')
+                cmd['shell_command'].append(cmd_sep)
+        else:
+            if isinstance(cmd, dict):
+                cmd['shell_command'].append(' echo \' task finished!!! \' ')
+            else:
+                cmd = dict(shell_command=[' echo \' task finished!!! \' '], sleep_before=sleep_before, sleep_after=sleep_after)
         if split_all:
             for cmd_ind, cmd_item in enumerate(cmd['shell_command']):
                 if cmd_ind < len(cmd['shell_command']) - 2:
@@ -167,7 +187,8 @@ def make_cmd_array(directory, session_name, start_up_header,
     session_name = session_name.replace('.', '_')
     print('*'*70)
     print(f'Machine num: {1 if machine_idx < 0 else machine_idx}/{1 if machine_idx < 0 else total_machine}, '
-          f'Task num: {len(final_tasks_list)}/{total_task_num}, pane num: {total_pane_num}, task per pane: {cmd_num_per_pane}')
+          f'Task num: {len(final_tasks_list)}/{total_task_num}, pane num: {total_pane_num}, task per pane: {cmd_num_per_pane}\n'
+          f'Task ind: {sorted(task_ind_list)}, task ind len: {len(task_ind_list)}')
     print('*'*70)
     return cmd_array, session_name
 
