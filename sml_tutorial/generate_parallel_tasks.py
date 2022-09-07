@@ -51,9 +51,9 @@ def get_cmd_array(total_machine=8, machine_idx=0):
         machine_idx, total_machine, task_is_valid, split_all=True, sleep_before=0.0, sleep_after=0.0
     )
 
-    for win_ind, win_cmds_list in enumerate(cmd_array):
-        for pane_ind, pand_cmd in enumerate(win_cmds_list):
-            print(f'win: {win_ind}, pane: {pane_ind}: {pand_cmd}')
+    # for win_ind, win_cmds_list in enumerate(cmd_array):
+    #     for pane_ind, pand_cmd in enumerate(win_cmds_list):
+    #         print(f'win: {win_ind}, pane: {pane_ind}: {pand_cmd}')
     return cmd_array, session_name
 
 

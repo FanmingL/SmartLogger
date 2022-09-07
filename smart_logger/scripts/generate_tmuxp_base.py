@@ -4,6 +4,7 @@ import json
 import yaml
 import os
 import math
+import random
 # 生成run_all.yaml，以并行启动程序
 # 用tmuxp load run_all.yaml来一键启动程序
 # 可以不用改，主要影响窗体结构
@@ -76,7 +77,12 @@ def make_cmd_array(directory, session_name, start_up_header,
                    parameters_base, environment_dict, aligned_candidates,
                    exclusive_candidates, GPUS, max_parallel_process, max_subwindow=6,
                    machine_idx=-1, total_machine=8, task_is_valid=None, split_all=False,
-                   cmd_post_process=None, sleep_before=0.0, sleep_after=0.0, error_stop=False):
+                   cmd_post_process=None, sleep_before=0.0, sleep_after=0.0, error_stop=False, rnd_seed=42):
+    if rnd_seed is not None:
+        random_gen = random.Random()
+        random_gen.seed(rnd_seed)
+    else:
+        random_gen = None
     cmd_sep = '&&' if error_stop else ';'
     cmd_array = []
 
@@ -97,7 +103,10 @@ def make_cmd_array(directory, session_name, start_up_header,
             final_tasks_list.append(task)
     if task_is_valid is not None:
         final_tasks_list = [task for task in final_tasks_list if task_is_valid(task)]
+    if random_gen is not None:
+        random_gen.shuffle(final_tasks_list)
     cmd_list = []
+    total_task_num = len(final_tasks_list)
     if not machine_idx == -1:
         tasks_per_machine = math.ceil(len(final_tasks_list) / total_machine)
         final_tasks_list = final_tasks_list[tasks_per_machine * machine_idx: min(len(final_tasks_list),
@@ -132,6 +141,9 @@ def make_cmd_array(directory, session_name, start_up_header,
                             cmd['shell_command'].append(cmd_once)
                         else:
                             cmd = dict(shell_command=[cmd_once], sleep_before=sleep_before, sleep_after=sleep_after)
+        cmd['shell_command'].append(' echo \' task finished!!! \' ')
+        cmd['shell_command'].append(cmd_sep)
+
         if split_all:
             for cmd_ind, cmd_item in enumerate(cmd['shell_command']):
                 if cmd_ind < len(cmd['shell_command']) - 2:
@@ -153,6 +165,10 @@ def make_cmd_array(directory, session_name, start_up_header,
     else:
         session_name += aligned_candidates['information']
     session_name = session_name.replace('.', '_')
+    print('*'*70)
+    print(f'Machine num: {1 if machine_idx < 0 else machine_idx}/{1 if machine_idx < 0 else total_machine}, '
+          f'Task num: {len(final_tasks_list)}/{total_task_num}, pane num: {total_pane_num}, task per pane: {cmd_num_per_pane}')
+    print('*'*70)
     return cmd_array, session_name
 
 def get_cmd_array(max_subwindows, max_parallel_process, machine_idx, total_machine):

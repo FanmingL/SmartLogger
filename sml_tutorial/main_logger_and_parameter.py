@@ -3,6 +3,8 @@ from parameter.Parameter import Parameter
 from smart_logger import Logger
 import os
 from common_config.load_config import init_smart_logger
+import random
+
 
 class Demo:
     def __init__(self):
@@ -19,6 +21,9 @@ class Demo:
 
     def run(self):
         for _ in range(10):
+            # 随机报错
+            if random.random() < 0.05:
+                raise Exception("Randomized exception!!")
             self.logger.log_tabular('a', 2)
             self.logger.log_tabular('b', 1)
             self.logger.dump_tabular()
