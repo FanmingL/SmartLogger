@@ -759,8 +759,8 @@ def _generate_grid_analyze_result(config_name):
     all_data_merger = config['DATA_MERGER'] if 'DATA_MERGER' in config else []
     for merger in all_data_merger:
         config['DATA_MERGER'] = [merger]
+        config['REPORT_PCA_EVAL'] = True
         save_config(config, f'{config_name}_gs_{merger}')
-
 
 @app.route("/merge_config", methods=['POST'])
 @require_login(source_name='merge_config', allow_guest=True)

@@ -122,7 +122,7 @@ def stat_data(data):
     #     std_error = std / np.sqrt(len(data_list))
     #     data_mean[i] = mean_val
     #     data_error[i] = std_error
-    return data_mean, data_error
+    return data_mean, data_error, data_std
 
 def _str_to_short_name(auto_named, short_name_from_config, short_name_property):
     _res = auto_named
@@ -459,6 +459,30 @@ def _preprocess_date(data, alg_to_color_idx, x_name, y_name):
     sort_alg_list = [item[0] for item in sort_alg_list]
     return sort_alg_list, alg_perf_reserved
 
+def alg_discriminative_evaluation(alg_corresponding_mean_std):
+    mean_list = []
+    std_list = []
+    sumation = 0
+    sum_seed_num = 0
+    for alg_name, (alg_mean, alg_std, alg_seed_num) in alg_corresponding_mean_std.items():
+        if alg_seed_num <= 1:
+            continue
+        sumation += alg_mean * alg_seed_num
+        sum_seed_num += alg_seed_num
+    if sum_seed_num == 0:
+        sum_seed_num = 1e-8
+    total_mean = sumation / sum_seed_num
+    intra_var = 0
+    inter_var = 0
+    for alg_name, (alg_mean, alg_std, alg_seed_num) in alg_corresponding_mean_std.items():
+        if alg_seed_num <= 1:
+            continue
+        intra_var += alg_seed_num * np.square(alg_mean - total_mean)
+        inter_var += np.square(alg_std) * alg_seed_num
+    inter_var = inter_var / sum_seed_num
+    intra_var = intra_var / sum_seed_num
+    return 1.0 - inter_var / (intra_var + inter_var + 1e-8)
+
 def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_name, y_name, plot_config_dict):
     Logger.local_log(f'PID: {os.getpid()} started!!')
     for k in plot_config_dict:
@@ -475,6 +499,7 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
         averaged_sort_alg_list, valid_alg_dict = _preprocess_date(data, alg_to_color_idx, x_name, y_name)
     else:
         averaged_sort_alg_list, valid_alg_dict = None, None
+    fig_to_pca_evaluation = dict()
     for sub_figure in sub_figure_content:
         _col = fig_ind % fig_column
         _row = fig_ind // fig_column
@@ -483,6 +508,7 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
         algs, _, _ = sort_algs(data[sub_figure])
         if plot_config.PRIMARY_ALG in algs:
             algs = [plot_config.PRIMARY_ALG] + [a for a in algs if not a == plot_config.PRIMARY_ALG]
+        alg_corresponding_mean_std = dict()
         for alg_name in algs:
             data_alg_list = data[sub_figure][alg_name]
             if alg_name not in alg_to_color_idx:
@@ -563,7 +589,7 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
                 y_data = [data[:final_ind] for data in y_data]
             min_data_len = np.shape(x_data)[0]
             try:
-                y_data, y_data_error = stat_data(y_data)
+                y_data, y_data_error, y_data_std = stat_data(y_data)
             except Exception as e:
                 Logger.local_log(f'exception: {e}')
                 Logger.local_log(y_data)
@@ -587,7 +613,6 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
                 alg_to_seed_num_max[alg_name] = seed_num
             alg_to_seed_num[alg_name] = min(seed_num, alg_to_seed_num[alg_name])
             alg_to_seed_num_max[alg_name] = max(seed_num, alg_to_seed_num_max[alg_name])
-
             if len(data_len) > 1:
                 ax.fill_between(x_data, y_data - y_data_error, y_data + y_data_error, color=line_color,
                                 alpha=plot_config.SHADING_ALPHA)
@@ -610,15 +635,26 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
             title_name = title_tuple_to_str(sub_figure)
             if not plot_config.TITLE_SUFFIX == 'None':
                 title_name = f'{title_name}{plot_config.TITLE_SUFFIX}'
+            alg_corresponding_mean_std[alg_name] = (y_data[-1], y_data_std[-1], seed_num)
+            alg_count += 1
+            if plot_config.REPORT_PCA_EVAL:
+                pca_eval = alg_discriminative_evaluation(alg_corresponding_mean_std)
+                fig_to_pca_evaluation[sub_figure] = pca_eval
+                if pca_eval >= 1e-3:
+                    pca_eval = format(pca_eval, '.3g')
+                else:
+                    pca_eval = format(pca_eval, '.3e')
+                title_name = f'{title_name}-EVAL{pca_eval}'
             ax.set_title(title_name, fontsize=plot_config.FONTSIZE_TITLE)
             ax.grid(True)
-            alg_count += 1
+
             if plot_config.XMAX is not None and not str(plot_config.XMAX) == 'None':
                 # if 'Humanoid' in str(sub_figure):
                 #     xmax = float(plot_config.XMAX) * 2.0
                 # else:
                 xmax = float(plot_config.XMAX)
                 ax.set_xlim(right=int(xmax))
+
         if alg_count == 0:
             title_name = title_tuple_to_str(sub_figure)
             if not plot_config.TITLE_SUFFIX == 'None':
@@ -657,6 +693,15 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
     sup_title_name = y_name
     if plot_config.RECORD_DATE_TIME:
         sup_title_name += ': {}'.format(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+    if plot_config.REPORT_PCA_EVAL:
+        fig_pca_eval = [fig_to_pca_evaluation[k] for k in fig_to_pca_evaluation]
+        if len(fig_pca_eval) > 0:
+            fig_pca_eval = np.mean(fig_pca_eval)
+            if fig_pca_eval >= 1e-3:
+                fig_pca_eval = format(fig_pca_eval, '.3g')
+            else:
+                fig_pca_eval = format(fig_pca_eval, '.3e')
+            sup_title_name += f' EVAL: {fig_pca_eval}'
     if plot_config.NEED_SUP_TITLE:
         plt.suptitle(sup_title_name, fontsize=plot_config.FONTSIZE_SUPTITLE, y=plot_config.SUPTITLE_Y)
     saving_name = y_name
@@ -747,7 +792,7 @@ def _make_subtable(data, x_name, y_name, at_x, plot_config_dict, iter, alg_as_ro
                 x_data = x_data[:final_ind]
                 y_data = [data[:final_ind] for data in y_data]
 
-            y_data, y_data_error = stat_data(y_data)
+            y_data, y_data_error, y_data_std = stat_data(y_data)
             y_data_error = np.array(y_data_error)
             if plot_config.USE_SMOOTH:
                 y_data = smooth(y_data, radius=plot_config.SMOOTH_RADIUS)
