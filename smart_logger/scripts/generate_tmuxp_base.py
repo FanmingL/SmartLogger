@@ -156,15 +156,15 @@ def make_cmd_array(directory, session_name, start_up_header,
                             cmd = dict(shell_command=[cmd_once], sleep_before=sleep_before, sleep_after=sleep_after)
         if split_all:
             if not isinstance(cmd, dict):
-                cmd = dict(shell_command=[' echo \' task finished!!! \' ', cmd_sep], sleep_before=sleep_before, sleep_after=sleep_after)
+                cmd = dict(shell_command=[' echo \' task finished!!! \' && date ', cmd_sep], sleep_before=sleep_before, sleep_after=sleep_after)
             else:
-                cmd['shell_command'].append(' echo \' task finished!!! \' ')
+                cmd['shell_command'].append(' echo \' task finished!!! \' && date ')
                 cmd['shell_command'].append(cmd_sep)
         else:
             if isinstance(cmd, dict):
-                cmd['shell_command'].append(' echo \' task finished!!! \' ')
+                cmd['shell_command'].append(' echo \' task finished!!! \' && date ')
             else:
-                cmd = dict(shell_command=[' echo \' task finished!!! \' '], sleep_before=sleep_before, sleep_after=sleep_after)
+                cmd = dict(shell_command=[' echo \' task finished!!! \' && date '], sleep_before=sleep_before, sleep_after=sleep_after)
         if split_all:
             for cmd_ind, cmd_item in enumerate(cmd['shell_command']):
                 if cmd_ind < len(cmd['shell_command']) - 2:

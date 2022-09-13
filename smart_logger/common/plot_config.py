@@ -250,9 +250,6 @@ DESCRIPTION['USE_IGNORE_RULE'] = '是否使用过滤规则'
 TABLE_BOLD_MAX = True
 DESCRIPTION['TABLE_BOLD_MAX'] = '表格是否加粗最高值'
 
-# 重点算法
-PRIMARY_ALG = 'None'
-DESCRIPTION['PRIMARY_ALG'] = '重点算法, 即图例排第一的算法名'
 # 配置结束
 
 def get_global_plot_configs(things):
