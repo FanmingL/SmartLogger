@@ -26,7 +26,7 @@ def get_config_path(config_name, user_name=None):
 def config_post_process(config):
     if config is None:
         return config
-    if page_config.PLOTTING_SAVING_PATH_KEY in config:
+    if config is not None and page_config.PLOTTING_SAVING_PATH_KEY in config:
         config[page_config.PLOTTING_SAVING_PATH_KEY] = page_config.FIGURE_PATH
     return config
 
@@ -87,7 +87,8 @@ def delete_config_file(file_name):
 
 def list_current_configs():
     total_config_files = os.listdir(page_config.CONFIG_PATH)
-    total_config_files = [item for item in total_config_files if not item == 'default_config.json']
+    total_config_files = [item for item in total_config_files if not item == 'default_config.json' and
+                          os.path.isfile(os.path.join(page_config.CONFIG_PATH, item))]
     return sorted(total_config_files)
 
 

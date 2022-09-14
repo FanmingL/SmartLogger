@@ -695,6 +695,7 @@ def rename_config():
     config = load_config(config_name)
     outdate_config_path = datetime.now() + timedelta(hours=page_config.COOKIE_PERIOD)
     config_name = request.form.get('rename', None)
+    config_name = config_name.replace('/', '-')
     if config_name is not None and len(config_name) > 0:
         delete_config_file(config_name_legacy)
         save_config(config, config_name)
@@ -760,7 +761,8 @@ def _generate_grid_analyze_result(config_name):
     for merger in all_data_merger:
         config['DATA_MERGER'] = [merger]
         config['REPORT_PCA_EVAL'] = True
-        save_config(config, f'{config_name}_gs_{merger}')
+        merger_formal = merger.replace('/', '-')
+        save_config(config, f'{config_name}_gs_{merger_formal}')
 
 @app.route("/merge_config", methods=['POST'])
 @require_login(source_name='merge_config', allow_guest=True)
