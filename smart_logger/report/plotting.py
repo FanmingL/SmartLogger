@@ -304,6 +304,7 @@ def _load_data_multi_thread(thread_num, path_list, task_ind_list, plot_config_di
 
 def _load_data_multi_process(process_num, thread_num, path_list):
     process_num = min(process_num, len(path_list))
+    process_num = max(1, process_num)
     result_dict = dict()
     task_ind_list = [i for i in range(len(path_list))]
     path_array = []
