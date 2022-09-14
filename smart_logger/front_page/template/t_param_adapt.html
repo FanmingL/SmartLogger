@@ -135,7 +135,11 @@
 
         }
         function delete_config(){
-            let httpRequest = new XMLHttpRequest();
+
+            var r=confirm("删除该配置文件?");
+            if (r)
+            {
+                let httpRequest = new XMLHttpRequest();
             let config_selection = document.getElementById("choose_config_cb");
             let selected_config = config_selection.options[config_selection.selectedIndex].value;
           httpRequest.onreadystatechange = function () {
@@ -147,6 +151,12 @@
             httpRequest.open('POST', "{{url_for('delete_config')}}", false);
             var data_to_send = {'delete_config': selected_config}
             httpRequest.send(JSON.stringify(data_to_send));
+            }
+            else
+            {
+              console.log('exists..');
+            }
+
         }
 
 
