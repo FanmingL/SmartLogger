@@ -4,6 +4,7 @@ from smart_logger import Logger
 import os
 from common_config.load_config import init_smart_logger
 import random
+from smart_logger import logger_from_param
 
 
 class Demo:
@@ -18,6 +19,8 @@ class Demo:
         self.parameter.set_config_path(os.path.join(self.logger.output_dir, 'config'))
         # 保存parameter
         self.parameter.save_config()
+        # 以上的命令可以通过直接执行以下命令得到，可以少记很多代码
+        # self.logger, self.parameter = logger_from_param(Parameter())
 
     def run(self):
         for _ in range(10):

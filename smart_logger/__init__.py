@@ -9,3 +9,4 @@ from smart_logger.common.experiment_config import get_customized_value
 import smart_logger.common.common_config as common_config
 import smart_logger.common.experiment_config as experiment_config
 from smart_logger.version import __version__
+from smart_logger.scripts.logger_from_param import logger_from_param
