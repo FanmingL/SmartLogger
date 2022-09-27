@@ -224,6 +224,9 @@ class ParameterTemplate:
                 name += value
             elif isinstance(value, bool) and value:
                 name += item
+            elif isinstance(value, list):
+                value_str = [str(item) for item in value]
+                name += '_'.join(value_str)
             else:
                 name += f'{item}_{value}'
         if hasattr(self, 'information') and not getattr(self, 'information') == 'None':

@@ -13,12 +13,15 @@ def main():
             if f_name == config_name:
                 print(f'{os.path.join(root,f_name)}')
                 full_path = os.path.join(root, f_name)
-                config = json.load(open(full_path, 'r'))
-                for k, v in modifies.items():
-                    if k in config:
-                        config[k] = v
-                with open(full_path, 'w') as f:
-                    json.dump(config, f)
+                try:
+                    config = json.load(open(full_path, 'r'))
+                    for k, v in modifies.items():
+                        if k in config:
+                            config[k] = v
+                    with open(full_path, 'w') as f:
+                        json.dump(config, f)
+                except Exception as e:
+                    print(f'reading {root}, {dir_name}')
     pass
 
 
