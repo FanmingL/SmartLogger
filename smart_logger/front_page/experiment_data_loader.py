@@ -363,7 +363,7 @@ def make_config_type(config: dict):
 def get_record_data_item(folder_name):
     full_folder = os.path.join(plot_config.PLOT_LOG_PATH, folder_name)
     if 'progress.csv' not in os.listdir(full_folder):
-        return []
+        return [], 0
     data_path = os.path.join(full_folder, 'progress.csv')
     try:
         data = pd.read_csv(data_path)
@@ -372,10 +372,10 @@ def get_record_data_item(folder_name):
             data = pd.read_table(data_path)
             value_list = list(data.keys())
 
-        return value_list
+        return value_list, len(data)
     except Exception as e:
         Logger.logger(f'read csv from {data_path} failed, because {e}')
-    return []
+    return [], 0
 
 
 def config_to_short_name(config, data_merger, short_name_from_config, short_name_property):

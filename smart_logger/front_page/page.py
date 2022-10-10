@@ -264,7 +264,7 @@ def obtain_experiment_parameter(folder_name):
     dtree_desc = reformat_str(dtree)
     param_desc = reformat_dict(param)
     important_configs = reformat_dict(important_configs)
-    recorded_data = get_record_data_item(folder_name)
+    recorded_data, data_length = get_record_data_item(folder_name)
 
     return render_template('t_parameter_display.html',
                            experiment_description=param_desc,
@@ -274,7 +274,8 @@ def obtain_experiment_parameter(folder_name):
                            filenames=name,
                            important_configs=important_configs,
                            filesize=filesize,
-                           recorded_data=recorded_data)
+                           recorded_data=recorded_data,
+                           data_length=data_length)
 
 
 @app.route("/experiment_data_download/<folder_name>/<attach>", methods=['GET'])
