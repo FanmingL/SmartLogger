@@ -271,7 +271,7 @@ def obtain_experiment_parameter(folder_name):
     important_configs = reformat_dict(important_configs)
     recorded_data, data_length, csv_data_df = get_record_data_item(folder_name)
     if csv_data_df is not None:
-        html_code = csv_data_df.to_html(classes='data', header=True, show_dimensions=False, max_rows=5000);
+        html_code = csv_data_df.to_html(classes='data', header=True, show_dimensions=False, max_rows=1000);
         html_code = '\n'.join(html_code.split('\n')[1:])
 
         html_code = '<table border="1" align="center" frame="hsides" rules="rows" table-layout="fixed">\n' + html_code
