@@ -49,6 +49,43 @@
         div li a:hover {
             background-color: #fff;
         }
+
+        th, td {
+          text-align: center;
+          padding: 10px;
+        }
+
+        tr:nth-child(even) {background-color: #f2f2f2;}
+        table{
+            margin-left: 3%;
+            margin-right: 3%;
+            margin-top: 1%;
+            margin-bottom: 3%;
+            border-collapse: collapse;
+          /*width: 95%;*/
+            font-family: monospace;
+        }
+        table{
+            max-height:800px;
+            overflow-y:auto;
+            display:block;
+             width: 100%;
+        }
+
+        td:first-child, th:first-child {
+            position:sticky;
+            left:0; /* 首行永远固定在左侧 */
+            z-index:1;
+            background-color:rgba(248, 227, 210, 1.0);
+        }
+        thead tr th {
+         position:sticky;
+         top:0;
+            background-color:rgba(248, 227, 210, 1.0);
+                        z-index:2;
+
+        }
+
     </style>
 </head>
 
@@ -70,7 +107,7 @@
 <h3>{{name}}详情</h3>
 <div class="main_images">
     <b>
-        目录树. log.txt, full_description.txt和progress.csv分别为日志, 参数设定和训练数据表.
+        目录树.
     </b>
     <p style="line-height: 18px; font-family: monospace">
 
@@ -84,7 +121,7 @@
         <br/>
         {% endfor %}</p>
     <b>
-        日志数据点个数: {{data_length}}
+        日志数据点个数: {{data_length}}. 数据：<a href="#data_table">跳转至数据表</a>.
     </b><br/>
     <b>
         重要参数.
@@ -108,7 +145,20 @@
         {% for desc in recorded_data %}
         >{{loop.index0+1}}. {{desc}} <br/>
         {% endfor %}</p>
+    <b>
+        数据表:
+    </b>
+    <div id="data_table" style="overflow-x: auto;overflow-y:auto;margin: 3px; padding-top: 2px; ">
+    {% if show_table %}
+    {% for table in tables %}
+            {{ table|safe }}
+    {% endfor %}
+    {% endif %}
+    </div>
 </div>
+
+
+
 </body>
 
 </html>

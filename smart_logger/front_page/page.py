@@ -248,23 +248,40 @@ def experiment():
     return render_template('t_experiment.html', exp_folder_list=exp_folders, exp_folders_code=exp_folders_code)
 
 
+def csv_to_html(dataframe):
+    pass
+
 @app.route("/experiment_parameter/<folder_name>", methods=['GET'])
 @require_login(source_name='experiment_parameter', allow_guest=True)
 def obtain_experiment_parameter(folder_name):
     folder_name = base64.urlsafe_b64decode(folder_name.encode()).decode()
     # return "Hello World"
     param, dtree, full_path, name, filesize, important_configs = get_parameter(folder_name)
-    for i in range(len(full_path)):
-        if full_path[i] is not None:
-            full_path[i] = base64.urlsafe_b64encode(os.path.join(os.path.dirname(folder_name), full_path[i]).encode()).decode()
-        else:
-            full_path[i] = 'None'
     if param is None:
-        return render_template('404.html')
+        return redirect('/experiment')
+    if full_path is not None:
+        for i in range(len(full_path)):
+            if full_path[i] is not None:
+                full_path[i] = base64.urlsafe_b64encode(os.path.join(os.path.dirname(folder_name), full_path[i]).encode()).decode()
+            else:
+                full_path[i] = 'None'
+
     dtree_desc = reformat_str(dtree)
     param_desc = reformat_dict(param)
     important_configs = reformat_dict(important_configs)
-    recorded_data, data_length = get_record_data_item(folder_name)
+    recorded_data, data_length, csv_data_df = get_record_data_item(folder_name)
+    if csv_data_df is not None:
+        html_code = csv_data_df.to_html(classes='data', header=True, show_dimensions=False, max_rows=5000);
+        html_code = '\n'.join(html_code.split('\n')[1:])
+
+        html_code = '<table border="1" align="center" frame="hsides" rules="rows" table-layout="fixed">\n' + html_code
+        html_code = f'<p> {csv_data_df.shape[0]} rows × {csv_data_df.shape[1]} columns  </p>' + html_code
+        tables = [html_code]
+        show_table=True
+
+    else:
+        tables = []
+        show_table = False
 
     return render_template('t_parameter_display.html',
                            experiment_description=param_desc,
@@ -275,7 +292,9 @@ def obtain_experiment_parameter(folder_name):
                            important_configs=important_configs,
                            filesize=filesize,
                            recorded_data=recorded_data,
-                           data_length=data_length)
+                           data_length=data_length,
+                           tables=tables,
+                           show_table=show_table)
 
 
 @app.route("/experiment_data_download/<folder_name>/<attach>", methods=['GET'])
