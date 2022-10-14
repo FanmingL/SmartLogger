@@ -361,16 +361,17 @@ def experiment_zip_and_download(folder_name):
                 pass
         os.makedirs(z_folder, exist_ok=True)
         try:
-            archive_data = shutil.make_archive(file_name, 'zip', base_dir=os.path.basename(file_name), root_dir=os.path.dirname(file_name))
-            z_file_name = os.path.join(z_folder, f'{base_name}.zip')
-            z_command = f'mv \'{archive_data}\' \'{z_file_name}\''
-            Logger.local_log(z_command)
-            os.system(z_command)
+            z_file_name = os.path.join(z_folder, f'{base_name}')
+            archive_data = shutil.make_archive(z_file_name, 'zip', base_dir=os.path.basename(file_name), root_dir=os.path.dirname(file_name))
+            Logger.logger(f'zip file to {archive_data}')
+            z_file_name = archive_data
         except Exception as e:
+            z_file_name = os.path.join(z_folder, f'{base_name}.zip')
             Logger.logger(f'fail to archive {file_name}')
         if os.path.exists(z_file_name):
             return send_from_directory(os.path.dirname(z_file_name), os.path.basename(z_file_name), as_attachment=True)
         else:
+            Logger.logger(f'file {z_file_name} not exists')
             return render_template('404.html')
     else:
         return render_template('404.html')
