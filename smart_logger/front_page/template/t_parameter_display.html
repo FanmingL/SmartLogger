@@ -110,7 +110,7 @@
         日志数据点个数: {{data_length}}. 数据：<a href="#data_table">跳转至数据表</a>.
     </b><br/>
     <b>
-        目录树. <a href="{{url_for('experiment_zip_and_download', folder_name=folder_name_encoded)}}">打包下载</a>
+        目录树, {{total_filesize}}. <a href="{{url_for('experiment_zip_and_download', folder_name=folder_name_encoded)}}">打包下载</a>
     </b>
     <p style="line-height: 18px; font-family: monospace">
 
@@ -135,7 +135,6 @@
         {% endfor %}
         {% endif %}
     </p>
-    <br/>
     <b>
         参数.
     </b>

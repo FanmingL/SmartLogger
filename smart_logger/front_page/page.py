@@ -252,6 +252,16 @@ def experiment():
 def csv_to_html(dataframe):
     pass
 
+def rfilesize(filesize_byte):
+    if filesize_byte < 1024:
+        return f'{fsize}B'
+    elif filesize_byte < 1024 * 1024:
+        return f'{round(filesize_byte / 1024, 3)}KB'
+    elif filesize_byte < 1024 * 1024 * 1024:
+        return f'{round(filesize_byte / 1024 / 1024, 3)}MB'
+    else:
+        return f'{round(filesize_byte / 1024 / 1024 / 1024, 3)}GB'
+
 @app.route("/experiment_parameter/<folder_name>", methods=['GET'])
 @require_login(source_name='experiment_parameter', allow_guest=True)
 def obtain_experiment_parameter(folder_name):
@@ -267,7 +277,8 @@ def obtain_experiment_parameter(folder_name):
                 full_path[i] = base64.urlsafe_b64encode(os.path.join(os.path.dirname(folder_name), full_path[i]).encode()).decode()
             else:
                 full_path[i] = 'None'
-
+    total_filesize = sum(filesize_bytes)
+    total_filesize = rfilesize(total_filesize)
     dtree_desc = reformat_str(dtree)
     param_desc = reformat_dict(param)
     important_configs = reformat_dict(important_configs)
@@ -296,6 +307,7 @@ def obtain_experiment_parameter(folder_name):
                            recorded_data=recorded_data,
                            folder_name_encoded=folder_name_encoded,
                            data_length=data_length,
+                           total_filesize=total_filesize,
                            tables=tables,
                            show_table=show_table)
 
