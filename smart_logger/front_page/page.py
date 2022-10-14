@@ -21,6 +21,7 @@ import sys
 from datetime import datetime, timedelta
 from functools import wraps
 import math
+import shutil
 import threading
 
 
@@ -254,9 +255,10 @@ def csv_to_html(dataframe):
 @app.route("/experiment_parameter/<folder_name>", methods=['GET'])
 @require_login(source_name='experiment_parameter', allow_guest=True)
 def obtain_experiment_parameter(folder_name):
+    folder_name_encoded = folder_name
     folder_name = base64.urlsafe_b64decode(folder_name.encode()).decode()
     # return "Hello World"
-    param, dtree, full_path, name, filesize, important_configs = get_parameter(folder_name)
+    param, dtree, full_path, name, filesize, filesize_bytes, important_configs = get_parameter(folder_name)
     if param is None:
         return redirect('/experiment')
     if full_path is not None:
@@ -292,6 +294,7 @@ def obtain_experiment_parameter(folder_name):
                            important_configs=important_configs,
                            filesize=filesize,
                            recorded_data=recorded_data,
+                           folder_name_encoded=folder_name_encoded,
                            data_length=data_length,
                            tables=tables,
                            show_table=show_table)
@@ -322,6 +325,55 @@ def experiment_data_download(folder_name, attach):
         Logger.logger(f'file {file_name} does not exist')
         return render_template('404.html')
 
+
+@app.route("/experiment_zip_and_download/<folder_name>", methods=['GET'])
+@require_login(source_name='experiment_zip_and_download', allow_guest=True)
+def experiment_zip_and_download(folder_name):
+    # return "Hello World"
+    folder_name = base64.urlsafe_b64decode(folder_name.encode()).decode()
+    _, _, _, _, _, filesize_bytes, _ = get_parameter(folder_name)
+    if filesize_bytes is None:
+        Logger.logger(f'{folder_name} not found')
+        return render_template('404.html')
+    filesize_bytes = sum(filesize_bytes)
+    Logger.logger(f'filesize: {filesize_bytes / 1024 / 1024 / 1024} GB.')
+    if filesize_bytes > 1024 * 1024 * 1024:
+        Logger.logger(f'{folder_name} filesize is {filesize_bytes / 1024 / 1024 / 1024} GB, which is too large.')
+        return render_template('404.html')
+    file_name = os.path.join(plot_config.PLOT_LOG_PATH, folder_name)
+    if os.path.exists(file_name):
+        Logger.logger(f'file {file_name} exists')
+        base_name = os.path.basename(file_name)
+        now = datetime.now()
+        now_str = now.strftime('%Y-%m-%d')
+        z_folder_base = os.path.join(page_config.WEB_RAM_PATH, 'zip_files')
+        os.makedirs(z_folder_base, exist_ok=True)
+        z_folder = os.path.join(page_config.WEB_RAM_PATH, 'zip_files', now_str)
+        for item in os.listdir(z_folder_base):
+            try:
+                if '-' in item and os.path.isdir(os.path.join(z_folder_base, item)):
+                    date = datetime.strptime(item, '%Y-%m-%d')
+                    if (now - date).days >= 2:
+                        _cmd = f'rm -rf \'{os.path.join(z_folder_base, item)}\''
+                        Logger.logger(_cmd)
+                        os.system(_cmd)
+            except Exception as e:
+                pass
+        os.makedirs(z_folder, exist_ok=True)
+        try:
+            archive_data = shutil.make_archive(file_name, 'zip', base_dir=os.path.basename(file_name), root_dir=os.path.dirname(file_name))
+            z_file_name = os.path.join(z_folder, f'{base_name}.zip')
+            z_command = f'mv \'{archive_data}\' \'{z_file_name}\''
+            Logger.local_log(z_command)
+            os.system(z_command)
+        except Exception as e:
+            Logger.logger(f'fail to archive {file_name}')
+        if os.path.exists(z_file_name):
+            return send_from_directory(os.path.dirname(z_file_name), os.path.basename(z_file_name), as_attachment=True)
+        else:
+            return render_template('404.html')
+    else:
+        return render_template('404.html')
 
 @app.route("/plot", methods=['GET'])
 @require_login(source_name='plot', allow_guest=True)

@@ -248,9 +248,9 @@ def _load_data_multi_process(process_num, thread_num, path_list):
 def get_parameter(folder_name):
     param, important_configs_dict = _get_parameter(folder_name)
     if param is None:
-        return None, None, None, None, None, None
-    dtree, full_path, name, filesize = generate_path_tree(folder_name)
-    return param, dtree, full_path, name, filesize, important_configs_dict
+        return None, None, None, None, None, None, None
+    dtree, full_path, name, filesize, filesize_bytes = generate_path_tree(folder_name)
+    return param, dtree, full_path, name, filesize, filesize_bytes, important_configs_dict
 
 
 def reformat_str(data):
@@ -276,6 +276,7 @@ class DirectionTree(object):
         self.full_path = []
         self.name = []
         self.filesize = []
+        self.filesize_bytes = []
 
     @staticmethod
     def getfile_size(filename):
@@ -289,6 +290,11 @@ class DirectionTree(object):
         else:
             return f'{round(fsize / 1024 / 1024 / 1024, 2)}GB'
 
+    @staticmethod
+    def getfile_size_numeric(filename):
+        fsize = os.path.getsize(filename)
+        return fsize
+
     def generate_tree(self, n=0):
         if self.pathname.is_file():
             # file is able to downloads
@@ -296,10 +302,12 @@ class DirectionTree(object):
             self.full_path += [str(self.pathname.relative_to(os.path.dirname(self.root_name)))]
             self.name.append(str(self.pathname.name))
             self.filesize.append(DirectionTree.getfile_size(str(self.pathname)))
+            self.filesize_bytes.append(DirectionTree.getfile_size_numeric(str(self.pathname)))
         elif self.pathname.is_dir():
             self.full_path += [None]
             self.name.append(str(self.pathname.name))
             self.filesize.append(0)
+            self.filesize_bytes.append(0)
             prefix = '    |' * n + '-' * 4
             if n == 0:
                 prefix = ''
@@ -316,9 +324,10 @@ def generate_path_tree(folder):
     full_folder = os.path.join(base_path, folder)
     dtree = DirectionTree(full_folder)
     dtree.generate_tree()
+
     # Logger.logger(dtree.tree)
     # Logger.logger(dtree.full_path)
-    return dtree.tree, dtree.full_path, dtree.name, dtree.filesize
+    return dtree.tree, dtree.full_path, dtree.name, dtree.filesize, dtree.filesize_bytes
 
 
 def legal_path(p: str):
