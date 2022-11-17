@@ -589,7 +589,14 @@ def analyze_experiment(need_ignore=False, data_ignore=None, need_select=False,
                     _possible_config[k] = set()
                 if isinstance(v, list):
                     v = tuple(v)
-                _possible_config[k].add(v)
+                elif isinstance(v, dict):
+                    v = str(v)
+                try:
+                    _possible_config[k].add(v)
+                except Exception as e:
+                    import traceback
+                    print(f'error: {e}')
+                    traceback.print_exc()
         _selected_choices = dict()
         for k in _possible_config:
             _possible_config[k] = list(_possible_config[k])
