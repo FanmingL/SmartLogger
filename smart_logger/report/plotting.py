@@ -92,9 +92,23 @@ def sort_algs(exist_algs, color_ind=None, alg_to_color_idx=None):
                 algs.append(_alg)
         for ind, item in enumerate(plot_config.PLOTTING_ORDER):
             if item in exist_algs and item not in alg_to_color_idx:
-                color_ind = ind
-                alg_to_color_idx[item] = color_ind
-                color_ind += 1
+                exchange_k = None
+                for k, v in alg_to_color_idx.items():
+                    if v == ind:
+                        exchange_k = k
+                        break
+                if exchange_k is not None:
+                    # 需要把之前的id替换掉，之前的id顺延一个位置
+                    alg_to_color_idx[exchange_k] = color_ind
+                    color_ind += 1
+                    # 替换为之前的id
+                    alg_to_color_idx[k] = ind
+                else:
+                    # ind没有被之前的算法选到，没被占坑
+                    alg_to_color_idx[item] = ind
+                    # 如果ind恰好就是现在的坑位，或者ind在现在坑位的后面，之后的坑位id应该顺延
+                    if color_ind <= ind:
+                        color_ind = ind + 1
     else:
         algs = sorted(algs)
 
@@ -846,25 +860,23 @@ def _plotting(data):
     alg_to_color_idx = dict()
     used_color = set()
     color_ind = 0
-    alg_set = set()
-    for x_name, y_name in plot_config.PLOTTING_XY:
-        for sub_figure in sub_figure_content:
-            for alg in data[sub_figure]:
-                alg_set.add(alg)
-    algs, color_ind, alg_to_color_idx = sort_algs(alg_set, color_ind, alg_to_color_idx)
     for x_name, y_name in plot_config.PLOTTING_XY:
         for sub_figure in sub_figure_content:
             algs, color_ind, alg_to_color_idx = sort_algs(data[sub_figure], color_ind, alg_to_color_idx)
             for alg_name in algs:
                 data_alg_list = data[sub_figure][alg_name]
-                have_y_name = True
+                have_y_name = False
                 for item in data_alg_list:
-                    if y_name not in item['data']:
-                        have_y_name = False
+                    if y_name in item['data'] and x_name in item['data']:
+                        have_y_name = True
                 if not have_y_name:
-                    if y_name in data_alg_list[0]['data']:
-                        Logger.local_log(f'path need to be check, alg_name: {alg_name}, {[item["folder_name"] for item in data_alg_list]}')
+                    Logger.local_log(
+                        f'path need to be check, alg_name: {alg_name}, {[item["folder_name"] for item in data_alg_list]}')
                     continue
+                # if not have_y_name:
+                #     if y_name in data_alg_list[0]['data']:
+                #         Logger.local_log(f'path need to be check, alg_name: {alg_name}, {[item["folder_name"] for item in data_alg_list]}')
+                #     continue
                 if alg_name not in alg_to_color_idx:
                     alg_idx = color_ind
                     color_ind += 1
