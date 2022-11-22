@@ -552,7 +552,12 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
                 sample_num = min_data_len // plot_config.PLOT_FOR_EVERY
                 x_data_new = np.linspace(min_x, max_x, sample_num)
                 for i in range(len(y_data)):
-                    y_data[i] = np.interp(x_data_new, x_data[i], y_data[i])
+                    try:
+                        y_data[i] = np.interp(x_data_new, x_data[i], y_data[i])
+                    except Exception as e:
+                        import traceback
+                        traceback.print_exc()
+                        y_data[i] = np.zeros_like(x_data_new)
                 x_data = x_data_new
             # x_data, y_data = _remove_nan(x_data, y_data)
             min_data_len = np.shape(x_data)[0]
@@ -774,7 +779,12 @@ def _make_subtable(data, x_name, y_name, at_x, plot_config_dict, iter, alg_as_ro
                 sample_num = min_data_len // plot_config.PLOT_FOR_EVERY
                 x_data_new = np.linspace(min_x, max_x, sample_num)
                 for i in range(len(y_data)):
-                    y_data[i] = np.interp(x_data_new, x_data[i], y_data[i])
+                    try:
+                        y_data[i] = np.interp(x_data_new, x_data[i], y_data[i])
+                    except Exception as e:
+                        import traceback
+                        traceback.print_exc()
+                        y_data[i] = np.zeros_like(x_data_new)
                 x_data = x_data_new
             min_data_len = np.shape(x_data)[0]
             # x_data, y_data = _remove_nan(x_data, y_data)
