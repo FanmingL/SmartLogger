@@ -846,6 +846,12 @@ def _plotting(data):
     alg_to_color_idx = dict()
     used_color = set()
     color_ind = 0
+    alg_set = set()
+    for x_name, y_name in plot_config.PLOTTING_XY:
+        for sub_figure in sub_figure_content:
+            for alg in data[sub_figure]:
+                alg_set.add(alg)
+    algs, color_ind, alg_to_color_idx = sort_algs(alg_set, color_ind, alg_to_color_idx)
     for x_name, y_name in plot_config.PLOTTING_XY:
         for sub_figure in sub_figure_content:
             algs, color_ind, alg_to_color_idx = sort_algs(data[sub_figure], color_ind, alg_to_color_idx)
