@@ -7,6 +7,7 @@ import os
 import os.path as osp
 from smart_logger.common import common_config
 from smart_logger.common.common_config import system
+from datetime import datetime
 color2num = dict(
     gray=30,
     red=31,
@@ -45,10 +46,8 @@ class LoggerBase:
         self.tb = None
         os.makedirs(self.output_dir, exist_ok=True)
         output_file_name = osp.join(self.output_dir, output_fname)
+        self.csv_output_file_name = output_file_name
         self.output_fname = output_fname
-        self.output_file = open(output_file_name, 'w')
-        atexit.register(self.output_file.close)
-        self.log("Logging data to %s" % self.output_file.name, color='green')
         self.first_row = True
         self.log_headers = []
         self.log_headers_set = set()
@@ -60,6 +59,16 @@ class LoggerBase:
         self.tb_x = None
         self.first_row_changed = False
         self.step = 0
+
+    def init_csv(self):
+        output_file_name = self.csv_output_file_name
+        # if os.path.exists(output_file_name):
+        #     bk_file_name = output_file_name[:-4]
+        #     bk_file_name = f'{bk_file_name}_{datetime.now().strftime("%m_%d_%H_%M_%S")}.csv'
+        #     system(f"mv \"{output_file_name}\" \"{bk_file_name}\"")
+        self.output_file = open(output_file_name, 'w')
+        atexit.register(self.output_file.close)
+        self.log("Logging data to %s" % self.output_file.name, color='green')
 
     def init_tb(self):
         if osp.exists(self.output_tb_dir):

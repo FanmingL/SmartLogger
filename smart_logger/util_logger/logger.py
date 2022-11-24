@@ -22,9 +22,11 @@ class Logger(LoggerBase):
         else:
             self.output_dir = os.path.join(base_path, common_config.LOG_FOLDER_NAME, log_name)
         os.makedirs(self.output_dir, exist_ok=True)
+        bk_log_file = False
         if log_to_file:
             if os.path.exists(os.path.join(self.output_dir, 'log.txt')):
-                system(f'mv {os.path.join(self.output_dir, "log.txt")} {os.path.join(self.output_dir, "log_back.txt")}')
+                system(f'mv \"{os.path.join(self.output_dir, "log.txt")}\" \"{os.path.join(self.output_dir, "log_back.txt")}\"')
+                bk_log_file = True
             self.log_file = open(os.path.join(self.output_dir, 'log.txt'), 'w')
             atexit.register(self.log_file.close)
         else:
@@ -32,7 +34,8 @@ class Logger(LoggerBase):
         super(Logger, self).__init__(self.output_dir, log_file=self.log_file)
         self.current_data = {}
         self.logged_data = set()
-        self.make_log_backup(log_signature, force_backup)
+        self.make_log_backup(log_signature, force_backup, has_bk_logtxt=bk_log_file)
+        self.init_csv()
         self.init_tb()
         self.backup_code()
         self.tb_header_dict = {}
@@ -62,12 +65,12 @@ class Logger(LoggerBase):
             result[k + suffix] = v
         return result
 
-    def make_log_backup(self, log_signature, force_backup):
+    def make_log_backup(self, log_signature, force_backup, has_bk_logtxt):
         if not os.path.exists(self.output_dir):
             self.log(f'directory {self.output_dir} does not exist, create it...')
         else:
             signature_file = os.path.join(self.output_dir, 'signature.txt')
-            if log_signature is None:
+            if log_signature is None and not force_backup:
                 self.log(f'log_signature is None, file will be overwriten anyway...')
             elif not os.path.exists(signature_file):
                 self.log(f'signature file does not exist, file will be overwriten anyway...')
@@ -75,19 +78,28 @@ class Logger(LoggerBase):
                     f.write(log_signature)
             else:
                 self.log(f'directory {self.output_dir} exists, checking identity...')
-
-                with open(signature_file, 'r') as f:
-                    sig = f.read()
-                if sig == log_signature and not force_backup:
+                sig = None
+                try:
+                    with open(signature_file, 'r') as f:
+                        sig = f.read()
+                except Exception as e:
+                    self.log(f'{signature_file} read fail!!!')
+                if log_signature is not None and sig == log_signature and not force_backup:
                     self.log(f'config is completely same, file will be overwrited anyway...')
                 else:
                     self.log(f'config is not same, file will backup first...')
                     backup_dir = os.path.join(common_config.get_base_path(), common_config.LOG_FOLDER_NAME_BK,
                                               f"backup_{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}")
                     os.makedirs(backup_dir, exist_ok=True)
-                    system(f"cp -r {self.output_dir} {backup_dir}", lambda x: self.log(x))
-                    with open(signature_file, 'w') as f:
-                        f.write(log_signature)
+                    system(f"cp -r \"{self.output_dir}\" \"{backup_dir}\"", lambda x: self.log(x))
+                    if has_bk_logtxt:
+                        logbk_file = os.path.join(backup_dir, os.path.basename(self.output_dir), 'log_back.txt')
+                        lognew_file = os.path.join(backup_dir, os.path.basename(self.output_dir), 'log.txt')
+                        if os.path.exists(logbk_file):
+                            system(f'mv \"{logbk_file}\" \"{lognew_file}\"', lambda x: self.log(x))
+                    if log_signature is not None:
+                        with open(signature_file, 'w') as f:
+                            f.write(log_signature)
 
     def backup_code(self):
         base_path = common_config.get_base_path()
@@ -282,7 +294,7 @@ class Logger(LoggerBase):
 
 
 if __name__ == '__main__':
-    logger = Logger(log_name='log2')
+    logger = Logger(log_name='log2', force_backup=True)
     logger.log(122, '22', color='red', bold=False)
     data = {'a': 10, 'b': 11, 'c': 13}
     for i in range(100):
@@ -290,7 +302,7 @@ if __name__ == '__main__':
             for k in data:
                 data[k] += 1
             logger.add_tabular_data(**data)
-        logger.sync_log_to_remote()
+        # logger.sync_log_to_remote()
         logger.log_tabular('a')
         logger.dump_tabular()
         time.sleep(1)
