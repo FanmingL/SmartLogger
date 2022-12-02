@@ -643,12 +643,17 @@ def diff_to_default(config):
 
 def record_config_for_user(user, config_name):
     user_history_data_path = os.path.join(page_config.USER_DATA_PATH, f"{user}.json")
-    if not os.path.exists(user_history_data_path):
+    have_user_history_data = os.path.exists(user_history_data_path)
+    if have_user_history_data:
+        try:
+            user_data = json.load(open(user_history_data_path, 'r'))
+            user_data['config'] = config_name
+        except Exception as e:
+            have_user_history_data = False
+    if not have_user_history_data:
         print(user_history_data_path)
         os.makedirs(os.path.dirname(user_history_data_path), exist_ok=True)
         user_data = dict(config=config_name)
-    else:
-        user_data = json.load(open(user_history_data_path, 'r'))
-        user_data['config'] = config_name
+
     json.dump(user_data, open(user_history_data_path, 'w'))
 
