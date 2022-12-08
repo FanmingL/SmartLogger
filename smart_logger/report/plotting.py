@@ -991,7 +991,8 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
             if str(plot_config.BAR_MARK_MAXIMUM) == 'True':
                 if sub_figure in sub_figure_max_alg_name and alg_name == sub_figure_max_alg_name[sub_figure][0]:
                     y_bottom, y_top = ax.get_ylim()
-                    ax.plot(x_cord, y_data_item * 1.1, color=line_color, marker='*',
+                    sign = np.sign(y_data_item)
+                    ax.plot(x_cord, sign * min((np.abs(y_data_item) + y_error_item) * 1.06, np.abs(y_data_item) * 1.3), color=line_color, marker='*',
                             markersize=plot_config.MARKER_SIZE * 2.0)
                     ax.plot(np.linspace(_col - 0.5 + 0.25 * plot_config.BAR_INTERVAL ,
                                        _col + (1 - plot_config.BAR_INTERVAL) - 0.5 + 0.75 * plot_config.BAR_INTERVAL, 100),
