@@ -83,6 +83,9 @@ DESCRIPTION['FIGURE_SERVER_MACHINE_PASSWD'] = '远程服务器的登录密码'
 FIGURE_SERVER_MACHINE_TARGET_PATH = f"/var/data/"
 DESCRIPTION['FIGURE_SERVER_MACHINE_TARGET_PATH'] = '将日志文件发到远程服务器的哪一个路径下'
 
+PLOT_MODE = 'CURVE'
+DESCRIPTION['PLOT_MODE'] = '绘图模型 (CURVE, BAR)'
+
 # 一行子图最多多少列
 MAX_COLUMN = 3
 DESCRIPTION['MAX_COLUMN'] = '子图最大列数 (1, 2, ...)'
@@ -209,6 +212,19 @@ DESCRIPTION['FIXED_Y_LABEL'] = '自定义Y轴label名 (None, xxx, ...)'
 TITLE_NAME_IDX = None
 DESCRIPTION['TITLE_NAME_IDX'] = '标题根据什么进行定义 (None, -1, 0, ...)'
 
+# 标题命名方法
+BAR_TICK_NAME_IDX = None
+DESCRIPTION['BAR_TICK_NAME_IDX'] = '直方图刻度根据什么进行定义 (None, -1, 0, ...)'
+
+BAR_INTERVAL = 0.3
+DESCRIPTION['BAR_INTERVAL'] = '直方图不同区域的间隔 (0.0, 0.1, 0.2, ...)'
+
+BAR_NORMALIZE_VALUE = True
+DESCRIPTION['BAR_NORMALIZE_VALUE'] = '直方图值归一化 (True, False)'
+
+BAR_SORT_X = False
+DESCRIPTION['BAR_SORT_X'] = '直方图排序 (True, False)'
+
 TITLE_SUFFIX = "None"
 DESCRIPTION['TITLE_SUFFIX'] = '标题尾缀 (None, xxx, ...)'
 
@@ -249,6 +265,7 @@ DESCRIPTION['USE_IGNORE_RULE'] = '是否使用过滤规则'
 
 TABLE_BOLD_MAX = True
 DESCRIPTION['TABLE_BOLD_MAX'] = '表格是否加粗最高值'
+
 
 # 配置结束
 

@@ -10,6 +10,7 @@ from smart_logger.front_page.experiment_data_loader import default_config, load_
     make_config_type, analyze_experiment, delete_config_file, has_config, standardize_merger_item, get_record_data_item,\
     get_config_path, record_config_for_user
 from smart_logger.report.plotting import plot as local_plot
+from smart_logger.report.plotting import bar as local_bar
 from smart_logger.report.plotting import _overwrite_config, _str_to_short_name
 from smart_logger.report.plotting import _make_table
 import base64
@@ -423,8 +424,12 @@ def plot():
             config_description[k] = 'None'
     config_type = make_config_type(config)
     config_file_list = list_current_configs()
-    target_file = os.path.join(page_config.WEB_RAM_PATH, page_config.TOTAL_FIGURE_FOLDER + "_tmp",
-                               f'{config_name}.png')
+    if plot_config.PLOT_MODE.lower() == 'curve':
+        target_file = os.path.join(page_config.WEB_RAM_PATH, page_config.TOTAL_FIGURE_FOLDER + "_tmp",
+                                   f'{config_name}.png')
+    else:
+        target_file = os.path.join(page_config.WEB_RAM_PATH, page_config.TOTAL_FIGURE_FOLDER + "_tmp",
+                                   f'bar_{config_name}.png')
     initial_figure_url = '#'
     if os.path.exists(target_file):
         Logger.logger(f'{target_file} exists, return it first')
@@ -589,18 +594,29 @@ def exp_figure():
     save_config(config, config_name)
     config_path = get_config_path(config_name)
     Logger.logger(f'plot figure according to {config_path}, figure save to {output_path}')
-    local_plot(config_path)
-    saving_png = f'{os.path.join(output_path, plot_config.FINAL_OUTPUT_NAME)}.png'
-    Logger.logger(f'return figure {saving_png}, drawing cost {time.time() - start_time}')
-    target_folder = os.path.join(page_config.WEB_RAM_PATH, page_config.TOTAL_FIGURE_FOLDER, f'{plot_config.FINAL_OUTPUT_NAME}.png')
-    target_folder_tmp = os.path.join(page_config.WEB_RAM_PATH, page_config.TOTAL_FIGURE_FOLDER + "_tmp", f'{config_name}.png')
+    plot_mode = config['PLOT_MODE'].lower()
+    plot_curve = plot_mode == 'curve'
+    if plot_curve:
+        local_plot(config_path)
+    else:
+        local_bar(config_path)
+    final_output_name = plot_config.FINAL_OUTPUT_NAME
+    target_file_name = f'{config_name}.png'
 
-    Logger.logger(f'cp {saving_png} {target_folder}')
+    if not plot_curve:
+        final_output_name = f'bar_{final_output_name}'
+        target_file_name = f'bar_{target_file_name}'
+    saving_png = f'{os.path.join(output_path, final_output_name)}.png'
+    Logger.logger(f'return figure {saving_png}, drawing cost {time.time() - start_time}')
+    target_folder = os.path.join(page_config.WEB_RAM_PATH, page_config.TOTAL_FIGURE_FOLDER, f'{final_output_name}.png')
+    target_folder_tmp = os.path.join(page_config.WEB_RAM_PATH, page_config.TOTAL_FIGURE_FOLDER + "_tmp", target_file_name)
+
+    Logger.logger(f'cp \"{saving_png}\" \"{target_folder}\"')
     os.makedirs(os.path.dirname(target_folder), exist_ok=True)
     os.makedirs(os.path.dirname(target_folder_tmp), exist_ok=True)
     os.system(f'cp \"{saving_png}\" \"{target_folder}\"')
     os.system(f'cp \"{saving_png}\" \"{target_folder_tmp}\"')
-    return send_from_directory(output_path, f'{plot_config.FINAL_OUTPUT_NAME}.png', as_attachment=False)
+    return send_from_directory(output_path, f'{final_output_name}.png', as_attachment=False)
 
 
 @app.route("/lst_output_figure", methods=['GET'])
@@ -609,7 +625,11 @@ def lst_output_figure():
     config_name = query_cookie('used_config')
     config = load_config(config_name)
     _overwrite_config(config)
-    target_file = os.path.join(page_config.WEB_RAM_PATH, page_config.TOTAL_FIGURE_FOLDER + "_tmp", f'{config_name}.png')
+    if config['PLOT_MODE'].lower() == 'curve':
+        target_file = os.path.join(page_config.WEB_RAM_PATH, page_config.TOTAL_FIGURE_FOLDER + "_tmp", f'{config_name}.png')
+    else:
+        target_file = os.path.join(page_config.WEB_RAM_PATH, page_config.TOTAL_FIGURE_FOLDER + "_tmp", f'bar_{config_name}.png')
+
     target_file = os.path.abspath(target_file)
     target_dir = os.path.dirname(target_file)
     file_name = os.path.basename(target_file)
