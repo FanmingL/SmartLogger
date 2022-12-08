@@ -931,12 +931,20 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
             else:
                 x_cord = _col + line_idx * (1 - plot_config.BAR_INTERVAL - bwidth) / (len(alg_to_ind_in_subfig) - 1) - 0.5 + 0.5 * plot_config.BAR_INTERVAL + bwidth * 0.5
             error_params=dict(capsize=4)#设置误差标记参数
-            if str(plot_config.BAR_NORMALIZE_VALUE) == 'True' and sub_figure in sub_figure_min_value and sub_figure_max_value[sub_figure] > sub_figure_min_value[sub_figure]:
-                curve, = ax.bar(x_cord, (y_data[-1] - sub_figure_min_value[sub_figure]) / (sub_figure_max_value[sub_figure] - sub_figure_min_value[sub_figure]),
-                        bwidth, yerr=y_data_error[-1] / (sub_figure_max_value[sub_figure] - sub_figure_min_value[sub_figure]), color=line_color,
-                                error_kw=error_params, hatch=hatch,
-                                edgecolor='black', linewidth=1.0
-                                )
+            if str(plot_config.BAR_NORMALIZE_VALUE) == 'True' and sub_figure in sub_figure_min_value :
+                if sub_figure_max_value[sub_figure] > sub_figure_min_value[sub_figure]:
+                    curve, = ax.bar(x_cord, (y_data[-1] - sub_figure_min_value[sub_figure]) / (sub_figure_max_value[sub_figure] - sub_figure_min_value[sub_figure]) * (1 - plot_config.BAR_NORMALIZE_MINIMUM_VALUE) + plot_config.BAR_NORMALIZE_MINIMUM_VALUE,
+                            bwidth, yerr=y_data_error[-1] / (sub_figure_max_value[sub_figure] - sub_figure_min_value[sub_figure]) * (1 - plot_config.BAR_NORMALIZE_MINIMUM_VALUE), color=line_color,
+                                    error_kw=error_params, hatch=hatch,
+                                    edgecolor='black', linewidth=1.0
+                                    )
+                else:
+                    curve, = ax.bar(x_cord, 1.0,
+                                    bwidth, yerr=0.0,
+                                    color=line_color,
+                                    error_kw=error_params, hatch=hatch,
+                                    edgecolor='black', linewidth=1.0
+                                    )
             else:
                 curve, = ax.bar(x_cord, y_data[-1], bwidth, yerr=y_data_error[-1], color=line_color, error_kw=error_params, hatch=hatch,
                                 edgecolor='black', linewidth=1.0

@@ -216,11 +216,14 @@ DESCRIPTION['TITLE_NAME_IDX'] = '标题根据什么进行定义 (None, -1, 0, ..
 BAR_TICK_NAME_IDX = None
 DESCRIPTION['BAR_TICK_NAME_IDX'] = '直方图刻度根据什么进行定义 (None, -1, 0, ...)'
 
-BAR_INTERVAL = 0.3
+BAR_INTERVAL = 0.18
 DESCRIPTION['BAR_INTERVAL'] = '直方图不同区域的间隔 (0.0, 0.1, 0.2, ...)'
 
 BAR_NORMALIZE_VALUE = True
 DESCRIPTION['BAR_NORMALIZE_VALUE'] = '直方图值归一化 (True, False)'
+
+BAR_NORMALIZE_MINIMUM_VALUE = -1.0
+DESCRIPTION['BAR_NORMALIZE_MINIMUM_VALUE'] = '直方图值归一化最小值 (-0.0, -0.5, -1.0, ...)'
 
 BAR_SORT_X = False
 DESCRIPTION['BAR_SORT_X'] = '直方图排序 (True, False)'
