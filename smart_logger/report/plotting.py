@@ -851,6 +851,15 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
     used_ind = []
     sub_figure_min_value, sub_figure_max_value = {}, {}
     sub_figure_list_value = {}
+    sub_figure_max_alg_name = {}
+    if not str(plot_config.BAR_MAXIMUM_EXCLUDE) == 'None':
+        exclude_str = str(plot_config.BAR_MAXIMUM_EXCLUDE)
+        if ',' in exclude_str:
+            exclude_str = [item.strip() for item in exclude_str.split(',') if len(item) > 0]
+        else:
+            exclude_str = [exclude_str]
+    else:
+        exclude_str = []
     for sub_figure in sub_figure_content:
         algs, _, _ = sort_algs(data[sub_figure])
         for alg_name in algs:
@@ -864,20 +873,27 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
             alg_to_ind_in_subfig[alg_name] = alg_to_color_idx[alg_name][-1]
             if alg_to_color_idx[alg_name][-1] not in used_ind:
                 used_ind.append(alg_to_color_idx[alg_name][-1])
-            if str(plot_config.BAR_NORMALIZE_VALUE) == 'True' or str(plot_config.BAR_SORT_X) == 'True':
+            if str(plot_config.BAR_NORMALIZE_VALUE) == 'True' or str(plot_config.BAR_SORT_X) == 'True' or str(plot_config.BAR_MARK_MAXIMUM) == 'True':
                 x_data, y_data, y_data_error, y_data_std, seed_num, min_data_len = _bar_data_process(x_name, y_name, sub_figure, alg_name, data_alg_list)
                 if sub_figure not in sub_figure_min_value:
                     sub_figure_min_value[sub_figure] = y_data[-1]
                     if plot_config.YMIN is not None and not str(plot_config.YMIN) == 'None':
                         sub_figure_min_value[sub_figure] = max(float(plot_config.YMIN), sub_figure_min_value[sub_figure])
                     sub_figure_max_value[sub_figure] = y_data[-1]
+                    if alg_name not in exclude_str:
+                        sub_figure_max_alg_name[sub_figure] = (alg_name, y_data[-1])
                     sub_figure_list_value[sub_figure] = [(alg_name, y_data[-1])]
                 else:
                     sub_figure_min_value[sub_figure] = min(y_data[-1], sub_figure_min_value[sub_figure])
                     if plot_config.YMIN is not None and not str(plot_config.YMIN) == 'None':
                         sub_figure_min_value[sub_figure] = max(float(plot_config.YMIN), sub_figure_min_value[sub_figure])
-                    sub_figure_max_value[sub_figure] = max(y_data[-1], sub_figure_max_value[sub_figure])
+                    if y_data[-1] > sub_figure_max_value[sub_figure]:
+                        sub_figure_max_value[sub_figure] = y_data[-1]
+                    if sub_figure not in sub_figure_max_value or y_data[-1] > sub_figure_max_alg_name[sub_figure][1]:
+                        if alg_name not in exclude_str:
+                            sub_figure_max_alg_name[sub_figure] = (alg_name, y_data[-1])
                     sub_figure_list_value[sub_figure].append((alg_name, y_data[-1]))
+
     for k in sub_figure_list_value:
         sub_figure_list_value[k] = sorted(sub_figure_list_value[k], key=lambda x: x[-1], reverse=True)
     used_ind = sorted(used_ind)
@@ -936,7 +952,8 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
                 x_cord = _col
             else:
                 x_cord = _col + line_idx * (1 - plot_config.BAR_INTERVAL - bwidth) / (len(alg_to_ind_in_subfig) - 1) - 0.5 + 0.5 * plot_config.BAR_INTERVAL + bwidth * 0.5
-            error_params=dict(capsize=4)#设置误差标记参数
+            error_params=dict(capsize=4)    # 设置误差标记参数
+
             if str(plot_config.BAR_NORMALIZE_VALUE) == 'True' and sub_figure in sub_figure_min_value :
                 y_data_item = y_data[-1]
                 y_error_item = y_data_error[-1]
@@ -958,7 +975,7 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
                 curve, = ax.bar(x_cord, y_data_item,
                                 bwidth, yerr=y_error_item, color=line_color,
                                 error_kw=error_params, hatch=hatch,
-                                edgecolor='black', linewidth=1.0
+                                edgecolor='black', linewidth=1.0, zorder=2.5
                                 )
 
             else:
@@ -969,8 +986,21 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
                         y_data_item = float(plot_config.YMIN)
                         y_error_item = 0.0
                 curve, = ax.bar(x_cord, y_data_item, bwidth, yerr=y_error_item, color=line_color, error_kw=error_params, hatch=hatch,
-                                edgecolor='black', linewidth=1.0
+                                edgecolor='black', linewidth=1.0, zorder=2.5
                                 )
+            if str(plot_config.BAR_MARK_MAXIMUM) == 'True':
+                if sub_figure in sub_figure_max_alg_name and alg_name == sub_figure_max_alg_name[sub_figure][0]:
+                    y_bottom, y_top = ax.get_ylim()
+                    ax.plot(x_cord, y_data_item * 1.1, color=line_color, marker='*',
+                            markersize=plot_config.MARKER_SIZE * 2.0)
+                    ax.plot(np.linspace(_col - 0.5 + 0.25 * plot_config.BAR_INTERVAL ,
+                                       _col + (1 - plot_config.BAR_INTERVAL) - 0.5 + 0.75 * plot_config.BAR_INTERVAL, 100),
+                            y_data_item * np.ones(100, ), color='black', alpha=0.8, linestyle='-.', linewidth=1.0, zorder=2.6)
+                    ax.plot(_col - 0.5 + 0.25 * plot_config.BAR_INTERVAL, y_data_item, color='black', alpha=1.0, marker='4',
+                            markersize=plot_config.MARKER_SIZE * 2.0)
+                    ax.plot(_col + (1 - plot_config.BAR_INTERVAL) - 0.5 + 0.75 * plot_config.BAR_INTERVAL, y_data_item, color='black', alpha=1.0,
+                            marker='3',
+                            markersize=plot_config.MARKER_SIZE * 2.0)
 
             Logger.local_log('plotting', np.shape(x_data), np.shape(y_data), min_data_len)
             if alg_name not in alg_to_line_handler:

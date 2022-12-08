@@ -226,6 +226,14 @@ DESCRIPTION['BAR_INTERVAL'] = '直方图不同区域的间隔 (0.0, 0.1, 0.2, ..
 BAR_NORMALIZE_VALUE = True
 DESCRIPTION['BAR_NORMALIZE_VALUE'] = '直方图值归一化 (True, False)'
 
+BAR_MARK_MAXIMUM = False
+DESCRIPTION['BAR_MARK_MAXIMUM'] = '标星最大值 (True, False)'
+
+BAR_MAXIMUM_EXCLUDE = None
+DESCRIPTION['BAR_MAXIMUM_EXCLUDE'] = '统计最大值时排除某算法 (None, baseline, ...)'
+
+
+
 BAR_NORMALIZE_MINIMUM_VALUE = -1.0
 DESCRIPTION['BAR_NORMALIZE_MINIMUM_VALUE'] = '直方图值归一化最小值 (-0.0, -0.5, -1.0, ...)'
 
