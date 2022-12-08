@@ -109,6 +109,10 @@ DESCRIPTION['PLOT_FOR_EVERY'] = '绘图数据的下采样间隔 (1, 2, ...)'
 XMAX = 'None'
 DESCRIPTION['XMAX'] = 'X轴的最大值 (None, 1, 2, ...)'
 
+# Y轴最小值的最大值
+YMIN = 'None'
+DESCRIPTION['YMIN'] = 'Y轴的最小值 (None, 1, 2, ...)'
+
 # 最少允许的有效数据点个数
 MINIMUM_DATA_POINT_NUM = 'None'
 DESCRIPTION['MINIMUM_DATA_POINT_NUM'] = '最少允许的有效数据点个数 (None, 0, 1, ...)'

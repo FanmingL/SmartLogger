@@ -681,7 +681,9 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
                 # else:
                 xmax = float(plot_config.XMAX)
                 ax.set_xlim(right=int(xmax))
-
+            if plot_config.YMIN is not None and not str(plot_config.YMIN) == 'None':
+                ymin = float(plot_config.YMIN)
+                ax.set_ylim(bottom=ymin)
         if alg_count == 0:
             title_name = title_tuple_to_str(sub_figure)
             if not plot_config.TITLE_SUFFIX == 'None':
@@ -866,10 +868,14 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
                 x_data, y_data, y_data_error, y_data_std, seed_num, min_data_len = _bar_data_process(x_name, y_name, sub_figure, alg_name, data_alg_list)
                 if sub_figure not in sub_figure_min_value:
                     sub_figure_min_value[sub_figure] = y_data[-1]
+                    if plot_config.YMIN is not None and not str(plot_config.YMIN) == 'None':
+                        sub_figure_min_value[sub_figure] = max(float(plot_config.YMIN), sub_figure_min_value[sub_figure])
                     sub_figure_max_value[sub_figure] = y_data[-1]
                     sub_figure_list_value[sub_figure] = [(alg_name, y_data[-1])]
                 else:
                     sub_figure_min_value[sub_figure] = min(y_data[-1], sub_figure_min_value[sub_figure])
+                    if plot_config.YMIN is not None and not str(plot_config.YMIN) == 'None':
+                        sub_figure_min_value[sub_figure] = max(float(plot_config.YMIN), sub_figure_min_value[sub_figure])
                     sub_figure_max_value[sub_figure] = max(y_data[-1], sub_figure_max_value[sub_figure])
                     sub_figure_list_value[sub_figure].append((alg_name, y_data[-1]))
     for k in sub_figure_list_value:
@@ -932,21 +938,37 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
                 x_cord = _col + line_idx * (1 - plot_config.BAR_INTERVAL - bwidth) / (len(alg_to_ind_in_subfig) - 1) - 0.5 + 0.5 * plot_config.BAR_INTERVAL + bwidth * 0.5
             error_params=dict(capsize=4)#设置误差标记参数
             if str(plot_config.BAR_NORMALIZE_VALUE) == 'True' and sub_figure in sub_figure_min_value :
-                if sub_figure_max_value[sub_figure] > sub_figure_min_value[sub_figure]:
-                    curve, = ax.bar(x_cord, (y_data[-1] - sub_figure_min_value[sub_figure]) / (sub_figure_max_value[sub_figure] - sub_figure_min_value[sub_figure]) * (1 - plot_config.BAR_NORMALIZE_MINIMUM_VALUE) + plot_config.BAR_NORMALIZE_MINIMUM_VALUE,
-                            bwidth, yerr=y_data_error[-1] / (sub_figure_max_value[sub_figure] - sub_figure_min_value[sub_figure]) * (1 - plot_config.BAR_NORMALIZE_MINIMUM_VALUE), color=line_color,
-                                    error_kw=error_params, hatch=hatch,
-                                    edgecolor='black', linewidth=1.0
-                                    )
+                y_data_item = y_data[-1]
+                y_error_item = y_data_error[-1]
+                if not str(plot_config.YMIN) == 'None':
+                    if y_data_item < float(plot_config.YMIN):
+                        y_data_item = float(plot_config.YMIN)
+                        y_error_item = 0.0
+                if sub_figure_max_value[sub_figure] <= sub_figure_min_value[sub_figure]:
+                    y_data_item = 1.0
+                    y_error_item = 0.0
+
                 else:
-                    curve, = ax.bar(x_cord, 1.0,
-                                    bwidth, yerr=0.0,
-                                    color=line_color,
-                                    error_kw=error_params, hatch=hatch,
-                                    edgecolor='black', linewidth=1.0
-                                    )
+                    y_data_item = ( y_data_item - sub_figure_min_value[sub_figure]) / (
+                            sub_figure_max_value[sub_figure] - sub_figure_min_value[sub_figure]) * (
+                                            1 - plot_config.BAR_NORMALIZE_MINIMUM_VALUE) + plot_config.BAR_NORMALIZE_MINIMUM_VALUE
+                    y_error_item = y_error_item / (
+                                sub_figure_max_value[sub_figure] - sub_figure_min_value[sub_figure]) * (
+                                                         1 - plot_config.BAR_NORMALIZE_MINIMUM_VALUE)
+                curve, = ax.bar(x_cord, y_data_item,
+                                bwidth, yerr=y_error_item, color=line_color,
+                                error_kw=error_params, hatch=hatch,
+                                edgecolor='black', linewidth=1.0
+                                )
+
             else:
-                curve, = ax.bar(x_cord, y_data[-1], bwidth, yerr=y_data_error[-1], color=line_color, error_kw=error_params, hatch=hatch,
+                y_data_item = y_data[-1]
+                y_error_item = y_data_error[-1]
+                if not str(plot_config.YMIN) == 'None':
+                    if y_data_item < float(plot_config.YMIN):
+                        y_data_item = float(plot_config.YMIN)
+                        y_error_item = 0.0
+                curve, = ax.bar(x_cord, y_data_item, bwidth, yerr=y_error_item, color=line_color, error_kw=error_params, hatch=hatch,
                                 edgecolor='black', linewidth=1.0
                                 )
 
@@ -991,7 +1013,13 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
                 title_name = f'{title_name}-EVAL{pca_eval}'
             ax.set_title(title_name, fontsize=plot_config.FONTSIZE_TITLE)
             ax.grid(True)
-
+        if plot_config.YMIN is not None and not str(plot_config.YMIN) == 'None' and not str(plot_config.BAR_NORMALIZE_VALUE) == 'True':
+            ymin = float(plot_config.YMIN)
+            # if str(plot_config.BAR_NORMALIZE_VALUE) == 'True':
+            #     ymin = plot_config.BAR_NORMALIZE_MINIMUM_VALUE
+            y_min_cur, y_max_cur = ax.set_ylim()
+            if y_min_cur < ymin:
+                ax.set_ylim(bottom=ymin)
             # if plot_config.XMAX is not None and not str(plot_config.XMAX) == 'None':
             #     # if 'Humanoid' in str(sub_figure):
             #     #     xmax = float(plot_config.XMAX) * 2.0
