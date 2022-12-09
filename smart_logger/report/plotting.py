@@ -68,6 +68,8 @@ def make_merger_feature(k, v):
 def list_embedding(str_list):
     return '+'.join(sorted([str(item) for item in str_list]))
 
+def separate_string(s):
+    return s.split('+')
 
 def standardize_string(s):
     return list_embedding(s.split('+'))
@@ -512,7 +514,8 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
     for k in plot_config_dict:
         setattr(plot_config, k, plot_config_dict[k])
     sub_figure_content = [k for k in data]
-    sub_figure_content = sorted(sub_figure_content)
+    # sub_figure_content = sorted(sub_figure_content)
+    sub_figure_content = _sub_figure_sorted(sub_figure_content)
     fig_ind = 0
     alg_to_line_handler = dict()
     alg_to_seed_num = dict()
@@ -835,7 +838,9 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
     for k in plot_config_dict:
         setattr(plot_config, k, plot_config_dict[k])
     sub_figure_content = [k for k in data]
-    sub_figure_content = sorted(sub_figure_content)
+    # sub_figure_content = sorted(sub_figure_content)
+    sub_figure_content = _sub_figure_sorted(sub_figure_content)
+
     fig_ind = 0
     alg_to_line_handler = dict()
     alg_to_seed_num = dict()
@@ -1128,7 +1133,8 @@ def _make_subtable(data, x_name, y_name, at_x, plot_config_dict, iter, alg_as_ro
     for k in plot_config_dict:
         setattr(plot_config, k, plot_config_dict[k])
     sub_figure_content = [k for k in data]
-    sub_figure_content = sorted(sub_figure_content)
+    # sub_figure_content = sorted(sub_figure_content)
+    sub_figure_content = _sub_figure_sorted(sub_figure_content)
     fig_ind = 0
     summary_dict = dict()
     if plot_config.MIN_RELATIVE_PERFORMANCE > 0.0 or plot_config.SORT_BY_PERFORMANCE_ORDER:
@@ -1338,6 +1344,21 @@ def _plotting(data):
     merge_png.save(total_png_output_path, "PNG")
     Logger.local_log(f'saved png to file://{total_png_output_path} cost: {time.time() - start_merge_time}')
 
+
+def key_func(sub_figure):
+    ret = []
+    for item in sub_figure:
+        if isinstance(item, str):
+            ret.append(f'{chr(len(separate_string(item)) + 96)}{item}')
+        else:
+            ret.append(item)
+    return tuple(ret)
+
+def _sub_figure_sorted(sub_figure_content: list):
+    if len(sub_figure_content) > 0 and isinstance(sub_figure_content[0], tuple):
+        return sorted(sub_figure_content, key=key_func)
+    return sorted(sub_figure_content, key=lambda x: x[0])
+    pass
 
 def _bar_plotting(data):
     sub_figure_content = [k for k in data]
