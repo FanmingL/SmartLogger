@@ -1007,7 +1007,10 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
                     ax.plot(_col + (1 - plot_config.BAR_INTERVAL) - 0.5 + 0.75 * plot_config.BAR_INTERVAL, y_data_item, color='black', alpha=1.0,
                             marker='3',
                             markersize=plot_config.MARKER_SIZE * 2.0)
-
+            if str(plot_config.SHOW_BAR_SEED_NUM) == 'True':
+                sign = np.sign(y_data_item)
+                ax.text(x_cord, sign * min((np.abs(y_data_item) + y_error_item) * 1.12, np.abs(y_data_item) * 1.5), f'{seed_num}',
+                        horizontalalignment='center', verticalalignment='center', fontsize=plot_config.FONTSIZE_YTICK)
             Logger.local_log('plotting', np.shape(x_data), np.shape(y_data), min_data_len)
             if alg_name not in alg_to_line_handler:
                 alg_to_line_handler[alg_name] = curve

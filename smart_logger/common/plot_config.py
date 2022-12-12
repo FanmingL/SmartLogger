@@ -265,6 +265,10 @@ DESCRIPTION['X_AXIS_SCI_FORM'] = '横坐标科学计数法 (True, False)'
 SHOW_SEED_NUM = False
 DESCRIPTION['SHOW_SEED_NUM'] = '是否在图例中体现种子个数 (True, False)'
 
+# 是否在条形图中体现种子个数
+SHOW_BAR_SEED_NUM = True
+DESCRIPTION['SHOW_BAR_SEED_NUM'] = '是否在条形图中体现种子个数 (True, False)'
+
 # 是否使用图例边框
 USE_LEGEND_FRAME = True
 DESCRIPTION['USE_LEGEND_FRAME'] = '是否使用图例边框 (True, False)'
