@@ -919,7 +919,10 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
         algs, _, _ = sort_algs(data[sub_figure])
         alg_corresponding_mean_std = dict()
         if str(plot_config.BAR_SORT_X) == 'True':
-            alg_to_ind_in_subfig = {sub_figure_list_value[sub_figure][i][0]: i for i in range(len(sub_figure_list_value[sub_figure]))}
+            if sub_figure in sub_figure_list_value:
+                alg_to_ind_in_subfig = {sub_figure_list_value[sub_figure][i][0]: i for i in range(len(sub_figure_list_value[sub_figure]))}
+            else:
+                alg_to_ind_in_subfig = {}
         for alg_name in algs:
             data_alg_list = data[sub_figure][alg_name]
             if alg_name not in alg_to_color_idx:
@@ -947,7 +950,7 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
             marker = line_style[marker_idx][2]
             hatch = line_style[marker_idx][3]
 
-            line_idx = alg_to_ind_in_subfig[alg_name]
+            line_idx = alg_to_ind_in_subfig[alg_name] if alg_name in alg_to_ind_in_subfig else color_idx
             # curve, = ax.plot(x_data, y_data, color=line_color,
             #                  linestyle=line_type, marker=marker, label=alg_name,
             #                  linewidth=plot_config.LINE_WIDTH, markersize=plot_config.MARKER_SIZE,
@@ -1253,6 +1256,18 @@ def _plotting(data):
     figsize = (plot_config.SUBFIGURE_WIDTH * fig_column, plot_config.SUBFIGURE_HEIGHT * fig_row)
     Logger.local_log(f'making figure {fig_row} row {fig_column} col, size: {figsize}')
     random.seed(1)
+    style_num = len(line_style)
+    additional_randomized_style = dict()
+    current_style_set = set()
+    for line_style_idx in range(len(line_style)):
+        current_style_set.add((line_style_idx, line_style_idx, line_style_idx))
+    for i in range(300):
+        cand_item = (
+            random.randint(0, style_num - 1), random.randint(0, style_num - 1),
+            random.randint(0, style_num - 1))
+        if cand_item not in current_style_set:
+            additional_randomized_style[style_num+len(additional_randomized_style)] = cand_item
+            current_style_set.add(cand_item)
     total_f = []
     total_png = []
     alg_to_color_idx = dict()
@@ -1280,18 +1295,30 @@ def _plotting(data):
                     color_ind += 1
                     alg_to_color_idx[alg_name] = alg_idx
                 if not isinstance(alg_to_color_idx[alg_name], tuple):
-                    style_num = len(line_style)
                     if alg_to_color_idx[alg_name] < style_num:
                         alg_idx = alg_to_color_idx[alg_name]
                         alg_to_color_idx[alg_name] = (alg_idx, alg_idx, alg_idx)
                     else:
-                        for _ in range(100):
+                        if alg_to_color_idx[alg_name] in additional_randomized_style:
+                            candidate = additional_randomized_style[alg_to_color_idx[alg_name]]
+                            Logger.local_log(f'{alg_name} use pre-generated style {candidate}')
+                        else:
                             candidate = (
                                 random.randint(0, style_num - 1), random.randint(0, style_num - 1),
                                 random.randint(0, style_num - 1))
+                            Logger.local_log(f'{alg_name} use randomized style {candidate}')
+
+                        if candidate in used_color:
+                            for _ in range(100):
+                                candidate = (
+                                    random.randint(0, style_num - 1), random.randint(0, style_num - 1),
+                                    random.randint(0, style_num - 1))
+                                alg_to_color_idx[alg_name] = candidate
+                                if candidate not in used_color:
+                                    break
+                        else:
                             alg_to_color_idx[alg_name] = candidate
-                            if candidate not in used_color:
-                                break
+
                     used_color.add(alg_to_color_idx[alg_name])
     plotting_executor = ProcessPoolExecutor(max_workers=plot_config.PROCESS_NUM)
     futures = []
