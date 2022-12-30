@@ -1276,6 +1276,8 @@ def _plotting(data):
     for x_name, y_name in plot_config.PLOTTING_XY:
         for sub_figure in sub_figure_content:
             algs, color_ind, alg_to_color_idx = sort_algs(data[sub_figure], color_ind, alg_to_color_idx)
+        for sub_figure in sub_figure_content:
+            algs, color_ind, alg_to_color_idx = sort_algs(data[sub_figure], color_ind, alg_to_color_idx)
             for alg_name in algs:
                 data_alg_list = data[sub_figure][alg_name]
                 have_y_name = False
@@ -1405,8 +1407,22 @@ def _bar_plotting(data):
     total_png = []
     alg_to_color_idx = dict()
     used_color = set()
+    additional_randomized_style = dict()
+    current_style_set = set()
+    style_num = len(line_style)
+    for line_style_idx in range(len(line_style)):
+        current_style_set.add((line_style_idx, line_style_idx, line_style_idx))
+    for i in range(300):
+        cand_item = (
+            random.randint(0, style_num - 1), random.randint(0, style_num - 1),
+            random.randint(0, style_num - 1))
+        if cand_item not in current_style_set:
+            additional_randomized_style[style_num + len(additional_randomized_style)] = cand_item
+            current_style_set.add(cand_item)
     color_ind = 0
     for x_name, y_name in plot_config.PLOTTING_XY:
+        for sub_figure in sub_figure_content:
+            algs, color_ind, alg_to_color_idx = sort_algs(data[sub_figure], color_ind, alg_to_color_idx)
         for sub_figure in sub_figure_content:
             algs, color_ind, alg_to_color_idx = sort_algs(data[sub_figure], color_ind, alg_to_color_idx)
             for alg_name in algs:
@@ -1428,18 +1444,26 @@ def _bar_plotting(data):
                     color_ind += 1
                     alg_to_color_idx[alg_name] = alg_idx
                 if not isinstance(alg_to_color_idx[alg_name], tuple):
-                    style_num = len(line_style)
                     alg_idx = alg_to_color_idx[alg_name]
                     if alg_to_color_idx[alg_name] < style_num:
                         alg_to_color_idx[alg_name] = (alg_idx, alg_idx, alg_idx, alg_idx)
                     else:
-                        for _ in range(100):
+                        if alg_to_color_idx[alg_name] in additional_randomized_style:
+                            candidate = additional_randomized_style[alg_to_color_idx[alg_name]]
+                        else:
                             candidate = (
                                 random.randint(0, style_num - 1), random.randint(0, style_num - 1),
                                 random.randint(0, style_num - 1))
+                        if candidate in used_color:
+                            for _ in range(100):
+                                candidate = (
+                                    random.randint(0, style_num - 1), random.randint(0, style_num - 1),
+                                    random.randint(0, style_num - 1))
+                                alg_to_color_idx[alg_name] = candidate
+                                if candidate not in used_color:
+                                    break
+                        else:
                             alg_to_color_idx[alg_name] = candidate
-                            if candidate not in used_color:
-                                break
                         alg_to_color_idx[alg_name] = (alg_to_color_idx[alg_name][0], alg_to_color_idx[alg_name][1], alg_to_color_idx[alg_name][2], alg_idx)
                     used_color.add((alg_to_color_idx[alg_name][0], alg_to_color_idx[alg_name][1], alg_to_color_idx[alg_name][2]))
     plotting_executor = ProcessPoolExecutor(max_workers=plot_config.PROCESS_NUM)
