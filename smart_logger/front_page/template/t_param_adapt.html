@@ -173,7 +173,14 @@
                     "                {% endfor %}\n" +
                     "                {% endif %}\n" +
                     "            </select>";
-                set_option();
+                try {
+                   set_option();
+                } catch (e) {
+                    console.log('error', e)
+                }
+                finally {
+
+                }
             }
         }
 
@@ -247,7 +254,13 @@
       });
 
         function www_onload(){
-            set_option();
+            try {
+                set_option();
+            } catch (e) {
+                console.log('error', e)
+            }  finally {
+
+            }
             scroll_to_history();
             document.getElementById('filter_box_id').addEventListener('scroll', (event) => {
             localStorage.setItem("scroll_top_filter", getScrollTopElement(document.getElementById('filter_box_id')));
