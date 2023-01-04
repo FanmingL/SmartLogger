@@ -694,7 +694,7 @@ def param_adjust():
     selected_config_list = list(sorted(sorted(selected_config_list, key=lambda x: x[0]), key=lambda x: len(x[1]), reverse=True))
     # Logger.local_log('possible config', possible_config)
     # Logger.logger(f'possible config json: {json.dumps(possible_config)}')
-    encode_possible_config_js = base64.urlsafe_b64encode(json.dumps(possible_config).encode()).decode()
+    encode_possible_config_js = base64.b64encode(json.dumps(possible_config).encode()).decode()
     rename_rule = {} if 'SHORT_NAME_FROM_CONFIG' not in config else config['SHORT_NAME_FROM_CONFIG']
     rename_rule_dict = rename_rule
     possible_short_name = sorted([k for k in short_name_to_ind if not _str_to_short_name(k, rename_rule,

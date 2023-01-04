@@ -17,7 +17,8 @@ MACHINE_NUM = 8
 MACHINE_IDX = -1
 
 
-def make_cmd(environment_dict: dict, directory: str, start_up_header: str, parameter_dict: dict, task_ind: int=-1, total_task_num: int=-1):
+def make_cmd(environment_dict: dict, directory: str, start_up_header: str,
+             parameter_dict: dict, task_ind: int=-1, total_task_num: int=-1, equality_assign: bool=False):
     cmd = ""
     for ind, (k, v) in enumerate(environment_dict.items()):
         if ind == 0:
@@ -29,17 +30,26 @@ def make_cmd(environment_dict: dict, directory: str, start_up_header: str, param
         cmd += f" echo \'******************task ind: {task_ind + 1}/{total_task_num} ************************\' && "
     cmd += f" {start_up_header} "
     for k, v in parameter_dict.items():
-        if v is None:
-            pass
-        elif isinstance(v, bool):
-            if v:
-                cmd += f" --{k} "
-        elif isinstance(v, list):
-            if len(v) > 0:
-                v = [str(item) for item in v]
-                cmd += f" --{k} {' '.join(v)} "
+        if equality_assign:
+            if v is None:
+                pass
+            elif isinstance(v, bool):
+                if v:
+                    cmd += f" {k}={v} "
+            else:
+                cmd += f" {k}={v} "
         else:
-            cmd += f" --{k} {v} "
+            if v is None:
+                pass
+            elif isinstance(v, bool):
+                if v:
+                    cmd += f" --{k} "
+            elif isinstance(v, list):
+                if len(v) > 0:
+                    v = [str(item) for item in v]
+                    cmd += f" --{k} {' '.join(v)} "
+            else:
+                cmd += f" --{k} {v} "
     print(cmd)
     return cmd
 
@@ -79,7 +89,8 @@ def make_cmd_array(directory, session_name, start_up_header,
                    parameters_base, environment_dict, aligned_candidates,
                    exclusive_candidates, GPUS, max_parallel_process, max_subwindow=6,
                    machine_idx=-1, total_machine=8, task_is_valid=None, split_all=False,
-                   cmd_post_process=None, sleep_before=0.0, sleep_after=0.0, error_stop=False, rnd_seed=42):
+                   cmd_post_process=None, sleep_before=0.0, sleep_after=0.0, error_stop=False,
+                   rnd_seed=42, equality_assign=False):
     if rnd_seed is not None:
         random_gen = random.Random()
         random_gen.seed(rnd_seed)
@@ -133,7 +144,8 @@ def make_cmd_array(directory, session_name, start_up_header,
                 parameters.update(task)
                 if 'CUDA_VISIBLE_DEVICES' in environment_dict and len(GPUS) > 0:
                     environment_dict['CUDA_VISIBLE_DEVICES'] = str(GPUS[task_ind % len(GPUS)])
-                cmd_once = make_cmd(environment_dict, directory, start_up_header, parameters, cmd_ind, total_pane_task_num)
+                cmd_once = make_cmd(environment_dict, directory, start_up_header, parameters, cmd_ind,
+                                    total_pane_task_num, equality_assign)
                 if cmd_post_process is not None:
                     cmd_once = cmd_post_process(cmd_once)
                 if cmd_ind == 0:
@@ -235,7 +247,7 @@ def get_cmd_array(max_subwindows, max_parallel_process, machine_idx, total_machi
     cmd_array, session_name = make_cmd_array(
         directory, session_name, start_up_header, parameters_base, environment_dict,
         aligned_candidates, exclusive_candidates, GPUS, max_parallel_process, max_subwindows,
-        machine_idx, total_machine, task_is_valid=lambda x: True, cmd_post_process=lambda x: x
+        machine_idx, total_machine, task_is_valid=lambda x: True, cmd_post_process=lambda x: x, equality_assign=True
     )
     # customized command
     # 7. 额外命令
@@ -266,7 +278,7 @@ def generate_tmuxp_file(session_name, cmd_array, use_json=False):
 
 
 def main():
-    cmd_array, session_name = get_cmd_array(MAX_SUBWINDOW, MAX_PARALLEL, MACHINE_IDX, MACHINE_NUM)
+    cmd_array, session_name = get_cmd_array(MAX_SUBWINDOW, MAX_PARALLEL, MACHINE_IDX, MACHINE_NUM, )
     generate_tmuxp_file(session_name, cmd_array)
 
 
