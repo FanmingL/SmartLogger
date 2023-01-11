@@ -1598,6 +1598,11 @@ def standardize_row_and_col(item_name, row_header, alg_as_row_header):
             return item_name.replace('_', '-')
 
 
+def format_float_to_str(num, valid_bit):
+    if num > 0:
+        format_code = f'%.{valid_bit}f'
+        return format_code % num
+    return f'{int(num)}'
 def summary_buffer_to_output(summary_dict_buffer, privileged_col_idx=None, placeholder=None, alg_as_row_header=False):
     final_str = ''
     for table_name in summary_dict_buffer:
@@ -1633,7 +1638,13 @@ def summary_buffer_to_output(summary_dict_buffer, privileged_col_idx=None, place
             if ind < len(task_list) - 1:
                 final_str += ' & '
         final_str = final_str + '\\\\\\midrule' + '\n'
-        valid_bit = 2
+        try:
+            valid_bit = int(plot_config.TABLE_VALID_BITS)
+        except Exception as e:
+            import traceback
+            Logger.local_log(f'[WARNING] unexpected Exception!!!! {e}')
+            traceback.print_exc()
+            valid_bit = 2
         for row_name in row_id_list:
             row_content = summary_dict[row_name]
             max_performance_ind, max_performance = 0, -10000000
@@ -1659,9 +1670,9 @@ def summary_buffer_to_output(summary_dict_buffer, privileged_col_idx=None, place
                     data_mean, data_error = 0, 0
 
                 if max_performance_ind == ind_task:
-                    final_str = final_str + '$ \\mathbf{' + f"{round(data_mean, valid_bit)}" + '} $ & ' + '$ \\mathbf{' + f"{round(data_error, valid_bit)}" + '} $'
+                    final_str = final_str + '$ \\mathbf{' + f"{format_float_to_str(data_mean, valid_bit)}" + '} $ & ' + '$ \\mathbf{' + f"{format_float_to_str(data_error, valid_bit)}" + '} $'
                 else:
-                    final_str = final_str + f"${round(data_mean, valid_bit)}$" + '& ' + f"${round(data_error, valid_bit)}$"
+                    final_str = final_str + f"${format_float_to_str(data_mean, valid_bit)}$" + '& ' + f"${format_float_to_str(data_error, valid_bit)}$"
 
                 if ind_task < len(task_list) - 1:
                     final_str = final_str + ' & '
@@ -1712,7 +1723,13 @@ def summary_buffer_to_output_md(summary_dict_buffer, privileged_col_idx=None, pl
         for ind, task in enumerate(task_list):
             final_str = final_str + f':{length_placeholder}:|'
         final_str += '\n'
-        valid_bit = 2
+        try:
+            valid_bit = int(plot_config.TABLE_VALID_BITS)
+        except Exception as e:
+            import traceback
+            Logger.local_log(f'[WARNING] unexpected Exception!!!! {e}')
+            traceback.print_exc()
+            valid_bit = 2
         for row_name in row_id_list:
             row_content = summary_dict[row_name]
             max_performance_ind, max_performance = 0, -10000000
@@ -1739,15 +1756,15 @@ def summary_buffer_to_output_md(summary_dict_buffer, privileged_col_idx=None, pl
 
                 if max_performance_ind == ind_task:
                     final_str = final_str + '$ \\mathbf{'
-                    final_str = final_str + f"{round(data_mean, valid_bit)}"
+                    final_str = final_str + f"{format_float_to_str(data_mean, valid_bit)}"
                     final_str = final_str + '} \\pm'
                     final_str = final_str + '\\mathbf{'
-                    final_str = final_str + f"{round(data_error, valid_bit)}"
+                    final_str = final_str + f"{format_float_to_str(data_error, valid_bit)}"
                     final_str = final_str + '} ^\star$'
                 else:
-                    final_str = final_str + f"${round(data_mean, valid_bit)}"
+                    final_str = final_str + f"${format_float_to_str(data_mean, valid_bit)}"
                     final_str = final_str + '\\pm '
-                    final_str = final_str + f"{round(data_error, valid_bit)}$"
+                    final_str = final_str + f"{format_float_to_str(data_error, valid_bit)}$"
                 final_str = final_str + ' | '
             final_str = final_str + '\n'
         final_str = final_str + '\n'
@@ -1791,7 +1808,13 @@ def summary_buffer_to_output_html(summary_dict_buffer, privileged_col_idx=None, 
             task_safe = standardize_row_and_col(task, row_header=False, alg_as_row_header=alg_as_row_header)
             final_str = final_str + '<th>' + '{}'.format(task_safe) + '</th>\n'
         final_str += '</tr>\n'
-        valid_bit = 2
+        try:
+            valid_bit = int(plot_config.TABLE_VALID_BITS)
+        except Exception as e:
+            import traceback
+            Logger.local_log(f'[WARNING] unexpected Exception!!!! {e}')
+            traceback.print_exc()
+            valid_bit = 2
         for row_name in row_id_list:
             row_content = summary_dict[row_name]
             max_performance_ind, max_performance = 0, -10000000
@@ -1820,15 +1843,15 @@ def summary_buffer_to_output_html(summary_dict_buffer, privileged_col_idx=None, 
                 if max_performance_ind == ind_task:
 
                     final_str = final_str + '$ \\mathbf{'
-                    final_str = final_str + f"{round(data_mean, valid_bit)}"
+                    final_str = final_str + f"{format_float_to_str(data_mean, valid_bit)}"
                     final_str = final_str + '} \\pm'
                     final_str = final_str + '\\mathbf{'
-                    final_str = final_str + f"{round(data_error, valid_bit)}"
+                    final_str = final_str + f"{format_float_to_str(data_error, valid_bit)}"
                     final_str = final_str + '} ^\star$'
                 else:
-                    final_str = final_str + f"${round(data_mean, valid_bit)}"
+                    final_str = final_str + f"${format_float_to_str(data_mean, valid_bit)}"
                     final_str = final_str + '\\pm '
-                    final_str = final_str + f"{round(data_error, valid_bit)}$"
+                    final_str = final_str + f"{format_float_to_str(data_error, valid_bit)}$"
                 final_str = final_str + ' </td> \n'
             final_str = final_str + ' </tr> \n'
         final_str = final_str + '</table>'
