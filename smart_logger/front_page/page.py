@@ -1239,16 +1239,33 @@ def del_data_rename(rule_idx):
     return redirect('/param_adjust')
 
 
-@app.route("/del_xy/<rule_idx>", methods=['GET'])
+@app.route("/del_xy/<rule_idx>/<method>", methods=['GET'])
 @require_login(source_name='del_xy', allow_guest=True)
-def del_xy(rule_idx):
+def del_xy(rule_idx, method):
     Logger.logger(f'try to rm {rule_idx} {type(rule_idx)}')
     config_name = query_cookie('used_config')
     config = load_config(config_name)
     if 'PLOTTING_XY' not in config:
         config['PLOTTING_XY'] = []
     else:
-        config['PLOTTING_XY'] = [config['PLOTTING_XY'][i] for i in range(len(config['PLOTTING_XY'])) if not str(i) == str(rule_idx)]
+        idx = int(rule_idx)
+        if idx < len(config['PLOTTING_XY']):
+            if str(method) == 'top':
+                if idx > 0:
+                    tmp = config['PLOTTING_XY'].pop(idx)
+                    config['PLOTTING_XY'].insert(0, tmp)
+            elif str(method) == 'down':
+                if idx < len(config['PLOTTING_XY']) - 1:
+                    tmp = config['PLOTTING_XY'].pop(idx)
+                    config['PLOTTING_XY'].append(tmp)
+            elif str(method) == 'up_once':
+                if idx > 0:
+                    config['PLOTTING_XY'][idx], config['PLOTTING_XY'][idx-1] = config['PLOTTING_XY'][idx-1], config['PLOTTING_XY'][idx]
+            elif str(method) == 'down_once':
+                if idx < len(config['PLOTTING_XY']) - 1:
+                    config['PLOTTING_XY'][idx], config['PLOTTING_XY'][idx + 1] = config['PLOTTING_XY'][idx + 1], config['PLOTTING_XY'][idx]
+            elif str(method) == 'remove':
+                config['PLOTTING_XY'] = [config['PLOTTING_XY'][i] for i in range(len(config['PLOTTING_XY'])) if not str(i) == str(rule_idx)]
     save_config(config, config_name)
     return redirect('/param_adjust')
 

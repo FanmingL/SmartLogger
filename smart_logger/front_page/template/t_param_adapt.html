@@ -835,7 +835,11 @@
     {% if plotting_xy|length > 0 %}
         {% for k, v in plotting_xy %}
             &nbsp;&nbsp;>XY[{{loop.index0}}]
-            <a href="{{url_for('del_xy', rule_idx=loop.index0)}}" style="font-family: monospace">删除</a>
+            <a href="{{url_for('del_xy', rule_idx=loop.index0, method='top')}}" style="font-family: monospace">置顶</a>
+            <a href="{{url_for('del_xy', rule_idx=loop.index0, method='down')}}" style="font-family: monospace">置底</a>
+            <a href="{{url_for('del_xy', rule_idx=loop.index0, method='up_once')}}" style="font-family: monospace">上移一级</a>
+            <a href="{{url_for('del_xy', rule_idx=loop.index0, method='down_once')}}" style="font-family: monospace">下移一级</a>
+            <a href="{{url_for('del_xy', rule_idx=loop.index0, method='remove')}}" style="font-family: monospace">删除</a>
             <br/>
             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{k}} --> {{v}};
             <br/>

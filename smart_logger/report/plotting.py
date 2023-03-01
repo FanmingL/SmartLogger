@@ -924,6 +924,11 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
             else:
                 alg_to_ind_in_subfig = {}
         for alg_name in algs:
+            bar_fill = True
+            alpha = 1.0
+            if not str(plot_config.BAR_HOLLOW_ALG_NAME) == 'None' and alg_name == str(plot_config.BAR_HOLLOW_ALG_NAME):
+                bar_fill = False
+                alpha = 0.5
             data_alg_list = data[sub_figure][alg_name]
             if alg_name not in alg_to_color_idx:
                 continue
@@ -949,7 +954,8 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
             line_type = line_style[type_idx][1]
             marker = line_style[marker_idx][2]
             hatch = line_style[marker_idx][3]
-
+            if not bar_fill:
+                hatch = None
             line_idx = alg_to_ind_in_subfig[alg_name] if alg_name in alg_to_ind_in_subfig else color_idx
             # curve, = ax.plot(x_data, y_data, color=line_color,
             #                  linestyle=line_type, marker=marker, label=alg_name,
@@ -960,7 +966,7 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
                 x_cord = _col
             else:
                 x_cord = _col + line_idx * (1 - plot_config.BAR_INTERVAL - bwidth) / (len(alg_to_ind_in_subfig) - 1) - 0.5 + 0.5 * plot_config.BAR_INTERVAL + bwidth * 0.5
-            error_params=dict(capsize=4)    # 设置误差标记参数
+            error_params=dict(capsize=4, alpha=alpha)    # 设置误差标记参数
 
             if str(plot_config.BAR_NORMALIZE_VALUE) == 'True' and sub_figure in sub_figure_min_value :
                 y_data_item = y_data[-1]
@@ -983,7 +989,7 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
                 curve, = ax.bar(x_cord, y_data_item,
                                 bwidth, yerr=y_error_item, color=line_color,
                                 error_kw=error_params, hatch=hatch,
-                                edgecolor='black', linewidth=1.0, zorder=2.5
+                                edgecolor='black', linewidth=1.0, zorder=2.5, fill=bar_fill, alpha=alpha
                                 )
 
             else:
@@ -994,7 +1000,7 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
                         y_data_item = float(plot_config.YMIN)
                         y_error_item = 0.0
                 curve, = ax.bar(x_cord, y_data_item, bwidth, yerr=y_error_item, color=line_color, error_kw=error_params, hatch=hatch,
-                                edgecolor='black', linewidth=1.0, zorder=2.5
+                                edgecolor='black', linewidth=1.0, zorder=2.5, fill=bar_fill, alpha=alpha
                                 )
             if str(plot_config.BAR_MARK_MAXIMUM) == 'True':
                 if sub_figure in sub_figure_max_alg_name and alg_name == sub_figure_max_alg_name[sub_figure][0]:
@@ -1603,6 +1609,8 @@ def format_float_to_str(num, valid_bit):
         format_code = f'%.{valid_bit}f'
         return format_code % num
     return f'{int(num)}'
+
+
 def summary_buffer_to_output(summary_dict_buffer, privileged_col_idx=None, placeholder=None, alg_as_row_header=False):
     final_str = ''
     for table_name in summary_dict_buffer:
