@@ -720,8 +720,8 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
                 final_names.append(name + f' ({alg_to_seed_num[name]}-{alg_to_seed_num_max[name]})')
         else:
             final_names.append(name)
-    axarr[fig_row - 1][0].legend(handles=curves, labels=final_names, loc='center left', bbox_to_anchor=(plot_config.LEGEND_POSITION_X, plot_config.LEGEND_POSITION_Y),
-                       ncol=plot_config.LEGEND_COLUMN, fontsize=plot_config.FONTSIZE_LEGEND, frameon=plot_config.USE_LEGEND_FRAME)
+    axarr[fig_row - 1][0].legend(handles=curves, labels=final_names, loc=plot_config.LEGEND_WHICH_POSITION, bbox_to_anchor=(plot_config.LEGEND_POSITION_X, plot_config.LEGEND_POSITION_Y),
+                       ncol=plot_config.LEGEND_COLUMN, fontsize=plot_config.FONTSIZE_LEGEND, frameon=plot_config.USE_LEGEND_FRAME, bbox_transform=axarr[fig_row - 1][0].transAxes)
     sup_title_name = y_name
     if plot_config.RECORD_DATE_TIME:
         sup_title_name += ': {}'.format(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
@@ -1108,8 +1108,8 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
                 final_names.append(name + f' ({alg_to_seed_num[name]}-{alg_to_seed_num_max[name]})')
         else:
             final_names.append(name)
-    axarr[fig_row - 1][0].legend(handles=curves, labels=final_names, loc='center left', bbox_to_anchor=(plot_config.LEGEND_POSITION_X, plot_config.LEGEND_POSITION_Y),
-                       ncol=plot_config.LEGEND_COLUMN, fontsize=plot_config.FONTSIZE_LEGEND, frameon=plot_config.USE_LEGEND_FRAME)
+    axarr[fig_row - 1][0].legend(handles=curves, labels=final_names, loc=plot_config.LEGEND_WHICH_POSITION, bbox_to_anchor=(plot_config.LEGEND_POSITION_X, plot_config.LEGEND_POSITION_Y),
+                       ncol=plot_config.LEGEND_COLUMN, fontsize=plot_config.FONTSIZE_LEGEND, frameon=plot_config.USE_LEGEND_FRAME, bbox_transform=axarr[fig_row - 1][0].transAxes)
     sup_title_name = y_name
     if plot_config.RECORD_DATE_TIME:
         sup_title_name += ': {}'.format(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))

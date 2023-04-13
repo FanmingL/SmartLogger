@@ -144,11 +144,14 @@ SUBPLOT_HSPACE = 0.4
 DESCRIPTION['SUBPLOT_HSPACE'] = '子图之间的纵向间隔 (0.1, 0.2, ...)'
 
 # 图例的位置X
-LEGEND_POSITION_X = 0.15
+LEGEND_POSITION_X = 0.0
 DESCRIPTION['LEGEND_POSITION_X'] = '图例的横向位置 (-0.1, 0.0, 0.2, ...)'
 # 图例的位置Y
-LEGEND_POSITION_Y = -0.38
+LEGEND_POSITION_Y = -0.18
 DESCRIPTION['LEGEND_POSITION_Y'] = '图例纵向位置 (-0.1, 0.0, 0.2, ...)'
+# 图例锚点位置
+LEGEND_WHICH_POSITION = 'upper left'
+DESCRIPTION['LEGEND_WHICH_POSITION'] = '图例锚点位置 (upper left, lower right, ...)'
 
 # 大标题位置
 SUPTITLE_Y = 0.99
