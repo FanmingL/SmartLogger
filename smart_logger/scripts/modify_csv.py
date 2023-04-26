@@ -10,7 +10,7 @@ def main():
     for root, dir_name, file_name in os.walk(script_path, followlinks=True):
         for f_name in file_name:
             if f_name == csv_name:
-                print(f'{os.path.join(root,f_name)}')
+                print(f'{os.path.join(root, f_name)}')
                 full_path = os.path.join(root, f_name)
                 with open(full_path, 'r') as f:
                     header = f.readline()

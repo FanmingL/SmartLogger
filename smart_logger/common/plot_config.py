@@ -1,4 +1,5 @@
 from smart_logger.common.common_config import LOG_DIR_BACKING_NAME
+
 # 绘图相关
 DESCRIPTION = dict()
 # 数据目录
@@ -61,8 +62,6 @@ DATA_KEY_RENAME_CONFIG = {
     'TotalInteraction': 'timestep',
     'EpRet': 'EpRetTrain',
 }
-
-
 
 # 需要上传生成的哪些图片到远程
 FIGURE_TO_SYNC = ['total_curve.png', 'total_curve.pdf']
@@ -176,8 +175,6 @@ DESCRIPTION['FONTSIZE_YTICK'] = '纵轴刻度字体大小 (1, 2, ...)'
 FONTSIZE_SUPTITLE = 22
 DESCRIPTION['FONTSIZE_SUPTITLE'] = '大标题字体大小 (1, 2, ...)'
 
-
-
 # 线宽
 LINE_WIDTH = 2.0
 DESCRIPTION['LINE_WIDTH'] = '线宽 (1.0, 1.5, ...)'
@@ -205,7 +202,6 @@ DESCRIPTION['TABLE_VALID_BITS'] = '表格中有效位数 (0, 1, ...)'
 # 算法最低相对性能
 MIN_RELATIVE_PERFORMANCE = 0.0
 DESCRIPTION['MIN_RELATIVE_PERFORMANCE'] = '算法最低相对性能 (0.0, 0.1, ...)'
-
 
 # 储存的图像文件的前缀
 OUTPUT_FILE_PREFIX = "None"
@@ -306,4 +302,3 @@ def get_global_plot_configs(things):
 
 def global_plot_configs(things=[*locals().items()]):
     return get_global_plot_configs(things)
-

@@ -1,7 +1,8 @@
+import os
+import random
+
 from demo_parameter.Parameter import Parameter
 from smart_logger.util_logger.logger import Logger
-import random
-import os
 
 
 def generate_data(env_name, seed, policy_lr, information):

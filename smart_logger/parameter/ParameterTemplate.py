@@ -1,12 +1,13 @@
-import os, sys
 import argparse
+import hashlib
 import json
+import os
+import os.path as osp
 import socket
+from datetime import datetime
+
 from smart_logger.common import common_config
 from smart_logger.common import experiment_config
-import os.path as osp
-from datetime import datetime
-import hashlib
 
 
 class ParameterTemplate:
@@ -259,5 +260,3 @@ class ParameterTemplate:
         except Exception as e:
             self.info(f'Error occurs while fetching commit id!!! {e}')
         return commit_id
-
-

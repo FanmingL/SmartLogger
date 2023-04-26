@@ -1,19 +1,17 @@
-import sys
+import os
+import fnmatch
+import json
 import os
 import time
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
+from pathlib import Path
 
 import pandas as pd
 
-import smart_logger.common.plot_config as plot_config
-import json
-
 import smart_logger.common.page_config as page_config
-from smart_logger.util_logger.logger import Logger
+import smart_logger.common.plot_config as plot_config
 from smart_logger.report.plotting import merger_to_short_name, list_embedding, standardize_string, make_merger_feature
-from concurrent.futures import ProcessPoolExecutor, as_completed, ThreadPoolExecutor
-from pathlib import Path
-import fnmatch
-import re
+from smart_logger.util_logger.logger import Logger
 
 
 def get_config_path(config_name, user_name=None):
@@ -75,15 +73,18 @@ def _load_config(file_name):
 def has_config(file_name):
     return os.path.exists(get_config_path(file_name))
 
+
 def load_config(file_name):
     _choose_config(config_name=file_name)
     config = _load_config(file_name)
     return config_post_process(config)
 
+
 def delete_config_file(file_name):
     path_name = get_config_path(file_name)
     if os.path.exists(path_name):
         os.system(f'rm \"{path_name}\"')
+
 
 def list_current_configs():
     total_config_files = os.listdir(page_config.CONFIG_PATH)
@@ -99,7 +100,7 @@ def list_current_experiment():
         for file in files:
             if file == 'progress.csv':
                 if os.path.exists(os.path.join(root, 'parameter.json')) or \
-                    os.path.exists(os.path.join(root, 'config', 'parameter.json')) or \
+                        os.path.exists(os.path.join(root, 'config', 'parameter.json')) or \
                         os.path.exists(os.path.join(root, 'config', 'running_config.json')):
                     folder_name = root[len(base_path) + 1:]
                     total_folders.append(root[len(base_path) + 1:])
@@ -172,7 +173,10 @@ def _get_parameter(folder_name):
     # Logger.logger(f'important params: {important_configs_dict}')
     return param, important_configs_dict
 
+
 """multithread + multiprocess"""
+
+
 def _load_data_one_thread(folder_name, task_ind):
     result = {task_ind: None}
     try:
@@ -215,8 +219,8 @@ def _load_data_multi_process(process_num, thread_num, path_list):
     tasks_num_per_thread = len(path_list) // process_num
     start_ind = 0
     for i in range(process_num - 1):
-        path_array.append(path_list[start_ind:start_ind+tasks_num_per_thread])
-        task_ind_array.append(task_ind_list[start_ind:start_ind+tasks_num_per_thread])
+        path_array.append(path_list[start_ind:start_ind + tasks_num_per_thread])
+        task_ind_array.append(task_ind_list[start_ind:start_ind + tasks_num_per_thread])
         start_ind = start_ind + tasks_num_per_thread
     if start_ind < len(path_list):
         path_array.append(path_list[start_ind:])
@@ -243,7 +247,10 @@ def _load_data_multi_process(process_num, thread_num, path_list):
         else:
             results.append(None)
     return results
+
+
 """end_multithread + end_multiprocess"""
+
 
 def get_parameter(folder_name):
     param, important_configs_dict = _get_parameter(folder_name)
@@ -391,7 +398,7 @@ def config_to_short_name(config, data_merger, short_name_from_config, short_name
     elements = []
     for k in data_merger:
         if k in config:
-            elements.append(make_merger_feature(k,  config[k]))
+            elements.append(make_merger_feature(k, config[k]))
     short_name_origin = list_embedding(elements)
     short_name = merger_to_short_name(elements, short_name_from_config, short_name_property)
     return short_name_origin, short_name
@@ -442,6 +449,7 @@ def _choose_config(config_name):
             config_new['SHORT_NAME_FROM_CONFIG_PROPERTY'][k] = dict()
     if k_set_mismatch:
         save_config(config_new, config_name)
+
 
 def can_ignore(config, data_ignore, data_merger, data_ignore_property):
     if len(data_ignore) == 0:
@@ -568,7 +576,8 @@ def analyze_experiment(need_ignore=False, data_ignore=None, need_select=False,
             folder_ignore.append(folder)
             config_list_ignore.append(config)
             ignore_file = True
-        short_name, short_name_nick = config_to_short_name(config, data_merge, data_short_name_dict, data_short_name_property)
+        short_name, short_name_nick = config_to_short_name(config, data_merge, data_short_name_dict,
+                                                           data_short_name_property)
         if not ignore_file:
             nick_name_list.append(short_name_nick)
             if short_name not in short_name_to_ind:
@@ -581,6 +590,7 @@ def analyze_experiment(need_ignore=False, data_ignore=None, need_select=False,
             if short_name not in short_name_to_ind_ignore:
                 short_name_to_ind_ignore[short_name] = len(short_name_to_ind_ignore)
             alg_idxs_ignore.append(short_name_to_ind_ignore[short_name])
+
     def stat_config(_config_list):
         _possible_config = dict()
         for config in _config_list:
@@ -609,7 +619,8 @@ def analyze_experiment(need_ignore=False, data_ignore=None, need_select=False,
     possible_config_ignore, selected_choices_ignore = stat_config(config_list_ignore)
     Logger.logger(f'short name to ind: {short_name_to_ind}')
     sorted_res = [*zip(*sorted([*zip(alg_idxs, folder_list, nick_name_list)], key=lambda x: x[0]))]
-    sorted_res_ignore = [*zip(*sorted([*zip(alg_idxs_ignore, folder_ignore, nick_name_ignore_list)], key=lambda x: x[0]))]
+    sorted_res_ignore = [
+        *zip(*sorted([*zip(alg_idxs_ignore, folder_ignore, nick_name_ignore_list)], key=lambda x: x[0]))]
     if len(sorted_res) > 0:
         alg_idxs, folder_list, nick_name_list = sorted_res
     if len(sorted_res_ignore) > 0:
@@ -640,7 +651,6 @@ def diff_to_default(config):
     return default_missing_key, current_missing_key, differences
 
 
-
 def record_config_for_user(user, config_name):
     user_history_data_path = os.path.join(page_config.USER_DATA_PATH, f"{user}.json")
     have_user_history_data = os.path.exists(user_history_data_path)
@@ -656,4 +666,3 @@ def record_config_for_user(user, config_name):
         user_data = dict(config=config_name)
 
     json.dump(user_data, open(user_history_data_path, 'w'))
-

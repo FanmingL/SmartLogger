@@ -1,21 +1,20 @@
-import sys
+import fnmatch
+import json
 import os
+import random
 import time
+from concurrent.futures import ProcessPoolExecutor, as_completed, ThreadPoolExecutor
+from datetime import datetime
+
+import matplotlib
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
 
 import smart_logger.common.plot_config as plot_config
 from smart_logger.util_logger.logger import Logger
-import pandas as pd
-import json
-import numpy as np
-import matplotlib.pyplot as plt
-import random
-import seaborn as sns
-import matplotlib
-from datetime import datetime
-from concurrent.futures import ProcessPoolExecutor, as_completed, ThreadPoolExecutor
-import json
-import fnmatch
-import re
+
 sns.set_theme()
 
 # '/', '\', '|', '-', '+', 'x', 'o', 'O', '.', '*'
@@ -33,6 +32,7 @@ line_style = [
     ['green', '-', 'P', '/+'],
 ]
 
+
 def title_tuple_to_str(title):
     try:
         title_idx = int(plot_config.TITLE_NAME_IDX)
@@ -45,6 +45,7 @@ def title_tuple_to_str(title):
     if title_idx is None:
         return ', '.join([*title])
     return title[title_idx]
+
 
 def bar_tick_tuple_to_str(title):
     try:
@@ -59,34 +60,38 @@ def bar_tick_tuple_to_str(title):
         return ', '.join([*title])
     return title[title_idx]
 
+
 def make_merger_feature(k, v):
     if isinstance(v, str):
         return v
     else:
         return f'{k}_{v}'
 
+
 def list_embedding(str_list):
     return '+'.join(sorted([str(item) for item in str_list]))
 
+
 def separate_string(s):
     return s.split('+')
+
 
 def standardize_string(s):
     return list_embedding(s.split('+'))
 
 
 def smooth(y, radius, mode='two_sided', valid_only=False):
-    if len(y) < 2*radius+1:
+    if len(y) < 2 * radius + 1:
         return np.ones_like(y) * y.mean()
     elif mode == 'two_sided':
-        convkernel = np.ones(2 * radius+1)
+        convkernel = np.ones(2 * radius + 1)
         out = np.convolve(y, convkernel, mode='same') / np.convolve(np.ones_like(y), convkernel, mode='same')
         if valid_only:
             out[:radius] = out[-radius:] = np.nan
     elif mode == 'causal':
         convkernel = np.ones(radius)
         out = np.convolve(y, convkernel, mode='full') / np.convolve(np.ones_like(y), convkernel, mode='full')
-        out = out[:-radius+1]
+        out = out[:-radius + 1]
         if valid_only:
             out[:radius] = np.nan
     else:
@@ -149,6 +154,7 @@ def stat_data(data):
     #     data_error[i] = std_error
     return data_mean, data_error, data_std
 
+
 def _str_to_short_name(auto_named, short_name_from_config, short_name_property):
     _res = auto_named
     _res_standard = standardize_string(_res)
@@ -173,10 +179,12 @@ def _str_to_short_name(auto_named, short_name_from_config, short_name_property):
                     pass
     return _res, rename_it
 
+
 def merger_to_short_name(merger, short_name_from_config, short_name_property):
     _res = list_embedding(merger)
     short_name, renamed = _str_to_short_name(_res, short_name_from_config, short_name_property)
     return short_name
+
 
 def _load_data(folder_name):
     try:
@@ -341,8 +349,8 @@ def _load_data_multi_process(process_num, thread_num, path_list):
     tasks_num_per_thread = len(path_list) // process_num
     start_ind = 0
     for i in range(process_num - 1):
-        path_array.append(path_list[start_ind:start_ind+tasks_num_per_thread])
-        task_ind_array.append(task_ind_list[start_ind:start_ind+tasks_num_per_thread])
+        path_array.append(path_list[start_ind:start_ind + tasks_num_per_thread])
+        task_ind_array.append(task_ind_list[start_ind:start_ind + tasks_num_per_thread])
         start_ind = start_ind + tasks_num_per_thread
     if start_ind < len(path_list):
         path_array.append(path_list[start_ind:])
@@ -445,7 +453,7 @@ def _preprocess_date(data, alg_to_color_idx, x_name, y_name):
                 if not str(plot_config.XMAX) == 'None':
                     xmax = float(plot_config.XMAX)
                     final_ind = np.argmin(np.square(np.array(x_item) - float(xmax))) + 1
-                    y_list[x_ind] = y_data[x_ind][final_ind-1]
+                    y_list[x_ind] = y_data[x_ind][final_ind - 1]
             if len(y_list) == 0:
                 continue
             y_mean = np.mean(y_list)
@@ -454,7 +462,7 @@ def _preprocess_date(data, alg_to_color_idx, x_name, y_name):
             figure_data[sub_figure][alg] = y_mean
     for sub_figure in figure_data:
 
-        sort_perf = sorted(figure_data[sub_figure].items(), key=lambda x:x[1], reverse=True)
+        sort_perf = sorted(figure_data[sub_figure].items(), key=lambda x: x[1], reverse=True)
         perf_list = [item[1] for item in sort_perf]
         perf_max = np.max(perf_list)
         perf_min = np.min(perf_list)
@@ -480,10 +488,11 @@ def _preprocess_date(data, alg_to_color_idx, x_name, y_name):
         alg_perf_reserved = {k: alg_perf[k] for k in _reserved_alg_list}
     else:
         alg_perf_reserved = alg_perf
-    sort_alg_list = sorted(alg_perf_reserved.items(), key=lambda x:x[1], reverse=True)
+    sort_alg_list = sorted(alg_perf_reserved.items(), key=lambda x: x[1], reverse=True)
     Logger.local_log(f'alg perf: {sort_alg_list}')
     sort_alg_list = [item[0] for item in sort_alg_list]
     return sort_alg_list, alg_perf_reserved
+
 
 def alg_discriminative_evaluation(alg_corresponding_mean_std):
     mean_list = []
@@ -508,6 +517,7 @@ def alg_discriminative_evaluation(alg_corresponding_mean_std):
     inter_var = inter_var / sum_seed_num
     intra_var = intra_var / sum_seed_num
     return 1.0 - inter_var / (intra_var + inter_var + 1e-8)
+
 
 def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_name, y_name, plot_config_dict):
     Logger.local_log(f'PID: {os.getpid()} started!!')
@@ -561,7 +571,7 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
 
             x_intevals = [(np.max(item) - np.min(item)) / max(np.shape(item)[0], 1) for item in x_data]
             require_resample = False
-            inteval_range = (np.max(x_intevals) - np.min(x_intevals)) / 2./  np.mean(x_intevals)
+            inteval_range = (np.max(x_intevals) - np.min(x_intevals)) / 2. / np.mean(x_intevals)
             Logger.local_log(f'inteval range: {inteval_range}')
             if str(plot_config.REQUIRE_RESAMPLE) == 'True':
                 require_resample = True
@@ -626,7 +636,8 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
                 continue
             if plot_config.USE_SMOOTH:
                 y_data = smooth(y_data, radius=plot_config.SMOOTH_RADIUS)
-            Logger.local_log(f'PID:{os.getpid()}, figure: {sub_figure}, alg: {alg_name}, data_len: {data_len}, min len: {min(data_len)}, {min_data_len}')
+            Logger.local_log(
+                f'PID:{os.getpid()}, figure: {sub_figure}, alg: {alg_name}, data_len: {data_len}, min len: {min(data_len)}, {min_data_len}')
             color_idx, type_idx, marker_idx = alg_to_color_idx[alg_name]
             line_color = line_style[color_idx][0]
             line_type = line_style[type_idx][1]
@@ -720,8 +731,10 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
                 final_names.append(name + f' ({alg_to_seed_num[name]}-{alg_to_seed_num_max[name]})')
         else:
             final_names.append(name)
-    axarr[fig_row - 1][0].legend(handles=curves, labels=final_names, loc=plot_config.LEGEND_WHICH_POSITION, bbox_to_anchor=(plot_config.LEGEND_POSITION_X, plot_config.LEGEND_POSITION_Y),
-                       ncol=plot_config.LEGEND_COLUMN, fontsize=plot_config.FONTSIZE_LEGEND, frameon=plot_config.USE_LEGEND_FRAME, bbox_transform=axarr[fig_row - 1][0].transAxes)
+    axarr[fig_row - 1][0].legend(handles=curves, labels=final_names, loc=plot_config.LEGEND_WHICH_POSITION,
+                                 bbox_to_anchor=(plot_config.LEGEND_POSITION_X, plot_config.LEGEND_POSITION_Y),
+                                 ncol=plot_config.LEGEND_COLUMN, fontsize=plot_config.FONTSIZE_LEGEND,
+                                 frameon=plot_config.USE_LEGEND_FRAME, bbox_transform=axarr[fig_row - 1][0].transAxes)
     sup_title_name = y_name
     if plot_config.RECORD_DATE_TIME:
         sup_title_name += ': {}'.format(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
@@ -833,6 +846,7 @@ def _bar_data_process(x_name, y_name, sub_figure, alg_name, data_alg_list):
 
     return x_data, y_data, y_data_error, y_data_std, seed_num, min_data_len
 
+
 def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_name, y_name, plot_config_dict):
     Logger.local_log(f'PID: {os.getpid()} started!!')
     for k in plot_config_dict:
@@ -878,12 +892,17 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
             alg_to_ind_in_subfig[alg_name] = alg_to_color_idx[alg_name][-1]
             if alg_to_color_idx[alg_name][-1] not in used_ind:
                 used_ind.append(alg_to_color_idx[alg_name][-1])
-            if str(plot_config.BAR_NORMALIZE_VALUE) == 'True' or str(plot_config.BAR_SORT_X) == 'True' or str(plot_config.BAR_MARK_MAXIMUM) == 'True':
-                x_data, y_data, y_data_error, y_data_std, seed_num, min_data_len = _bar_data_process(x_name, y_name, sub_figure, alg_name, data_alg_list)
+            if str(plot_config.BAR_NORMALIZE_VALUE) == 'True' or str(plot_config.BAR_SORT_X) == 'True' or str(
+                    plot_config.BAR_MARK_MAXIMUM) == 'True':
+                x_data, y_data, y_data_error, y_data_std, seed_num, min_data_len = _bar_data_process(x_name, y_name,
+                                                                                                     sub_figure,
+                                                                                                     alg_name,
+                                                                                                     data_alg_list)
                 if sub_figure not in sub_figure_min_value:
                     sub_figure_min_value[sub_figure] = y_data[-1]
                     if plot_config.YMIN is not None and not str(plot_config.YMIN) == 'None':
-                        sub_figure_min_value[sub_figure] = max(float(plot_config.YMIN), sub_figure_min_value[sub_figure])
+                        sub_figure_min_value[sub_figure] = max(float(plot_config.YMIN),
+                                                               sub_figure_min_value[sub_figure])
                     sub_figure_max_value[sub_figure] = y_data[-1]
                     if alg_name not in exclude_str:
                         sub_figure_max_alg_name[sub_figure] = (alg_name, y_data[-1])
@@ -891,7 +910,8 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
                 else:
                     sub_figure_min_value[sub_figure] = min(y_data[-1], sub_figure_min_value[sub_figure])
                     if plot_config.YMIN is not None and not str(plot_config.YMIN) == 'None':
-                        sub_figure_min_value[sub_figure] = max(float(plot_config.YMIN), sub_figure_min_value[sub_figure])
+                        sub_figure_min_value[sub_figure] = max(float(plot_config.YMIN),
+                                                               sub_figure_min_value[sub_figure])
                     if y_data[-1] > sub_figure_max_value[sub_figure]:
                         sub_figure_max_value[sub_figure] = y_data[-1]
                     if sub_figure not in sub_figure_max_value or y_data[-1] > sub_figure_max_alg_name[sub_figure][1]:
@@ -912,7 +932,8 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
         ax = axarr[_row][0]
 
         if _col == 0:
-            content_row = [bar_tick_tuple_to_str(sub_figure_content[_row * fig_column + i]) for i in range(fig_column) if _row * fig_column + i < len(sub_figure_content)]
+            content_row = [bar_tick_tuple_to_str(sub_figure_content[_row * fig_column + i]) for i in range(fig_column)
+                           if _row * fig_column + i < len(sub_figure_content)]
             if len(content_row) > 0:
                 ax.set_xticks(np.arange(len(content_row)), content_row)
         alg_count = 0
@@ -920,7 +941,8 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
         alg_corresponding_mean_std = dict()
         if str(plot_config.BAR_SORT_X) == 'True':
             if sub_figure in sub_figure_list_value:
-                alg_to_ind_in_subfig = {sub_figure_list_value[sub_figure][i][0]: i for i in range(len(sub_figure_list_value[sub_figure]))}
+                alg_to_ind_in_subfig = {sub_figure_list_value[sub_figure][i][0]: i for i in
+                                        range(len(sub_figure_list_value[sub_figure]))}
             else:
                 alg_to_ind_in_subfig = {}
         for alg_name in algs:
@@ -946,7 +968,9 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
             if len(data_alg_list) == 0:
                 Logger.local_log(f'{x_name}-{y_name} cannot be found in data-{sub_figure}-{alg_name}')
                 continue
-            x_data, y_data, y_data_error, y_data_std, seed_num, min_data_len = _bar_data_process(x_name, y_name, sub_figure, alg_name, data_alg_list)
+            x_data, y_data, y_data_error, y_data_std, seed_num, min_data_len = _bar_data_process(x_name, y_name,
+                                                                                                 sub_figure, alg_name,
+                                                                                                 data_alg_list)
             if x_data is None:
                 continue
             color_idx, type_idx, marker_idx, _ = alg_to_color_idx[alg_name]
@@ -961,14 +985,16 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
             #                  linestyle=line_type, marker=marker, label=alg_name,
             #                  linewidth=plot_config.LINE_WIDTH, markersize=plot_config.MARKER_SIZE,
             #                  markevery=max(min_data_len // 8, 1))
-            bwidth = (1.0 - plot_config.BAR_INTERVAL) / len(alg_to_ind_in_subfig) if len(alg_to_ind_in_subfig) > 0 else 0.1
+            bwidth = (1.0 - plot_config.BAR_INTERVAL) / len(alg_to_ind_in_subfig) if len(
+                alg_to_ind_in_subfig) > 0 else 0.1
             if len(alg_to_ind_in_subfig) <= 1:
                 x_cord = _col
             else:
-                x_cord = _col + line_idx * (1 - plot_config.BAR_INTERVAL - bwidth) / (len(alg_to_ind_in_subfig) - 1) - 0.5 + 0.5 * plot_config.BAR_INTERVAL + bwidth * 0.5
-            error_params=dict(capsize=4, alpha=alpha)    # 设置误差标记参数
+                x_cord = _col + line_idx * (1 - plot_config.BAR_INTERVAL - bwidth) / (
+                            len(alg_to_ind_in_subfig) - 1) - 0.5 + 0.5 * plot_config.BAR_INTERVAL + bwidth * 0.5
+            error_params = dict(capsize=4, alpha=alpha)  # 设置误差标记参数
 
-            if str(plot_config.BAR_NORMALIZE_VALUE) == 'True' and sub_figure in sub_figure_min_value :
+            if str(plot_config.BAR_NORMALIZE_VALUE) == 'True' and sub_figure in sub_figure_min_value:
                 y_data_item = y_data[-1]
                 y_error_item = y_data_error[-1]
                 if not str(plot_config.YMIN) == 'None':
@@ -980,12 +1006,12 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
                     y_error_item = 0.0
 
                 else:
-                    y_data_item = ( y_data_item - sub_figure_min_value[sub_figure]) / (
+                    y_data_item = (y_data_item - sub_figure_min_value[sub_figure]) / (
                             sub_figure_max_value[sub_figure] - sub_figure_min_value[sub_figure]) * (
-                                            1 - plot_config.BAR_NORMALIZE_MINIMUM_VALUE) + plot_config.BAR_NORMALIZE_MINIMUM_VALUE
+                                          1 - plot_config.BAR_NORMALIZE_MINIMUM_VALUE) + plot_config.BAR_NORMALIZE_MINIMUM_VALUE
                     y_error_item = y_error_item / (
-                                sub_figure_max_value[sub_figure] - sub_figure_min_value[sub_figure]) * (
-                                                         1 - plot_config.BAR_NORMALIZE_MINIMUM_VALUE)
+                            sub_figure_max_value[sub_figure] - sub_figure_min_value[sub_figure]) * (
+                                           1 - plot_config.BAR_NORMALIZE_MINIMUM_VALUE)
                 curve, = ax.bar(x_cord, y_data_item,
                                 bwidth, yerr=y_error_item, color=line_color,
                                 error_kw=error_params, hatch=hatch,
@@ -999,26 +1025,33 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
                     if y_data_item < float(plot_config.YMIN):
                         y_data_item = float(plot_config.YMIN)
                         y_error_item = 0.0
-                curve, = ax.bar(x_cord, y_data_item, bwidth, yerr=y_error_item, color=line_color, error_kw=error_params, hatch=hatch,
+                curve, = ax.bar(x_cord, y_data_item, bwidth, yerr=y_error_item, color=line_color, error_kw=error_params,
+                                hatch=hatch,
                                 edgecolor='black', linewidth=1.0, zorder=2.5, fill=bar_fill, alpha=alpha
                                 )
             if str(plot_config.BAR_MARK_MAXIMUM) == 'True':
                 if sub_figure in sub_figure_max_alg_name and alg_name == sub_figure_max_alg_name[sub_figure][0]:
                     y_bottom, y_top = ax.get_ylim()
                     sign = np.sign(y_data_item)
-                    ax.plot(x_cord, sign * min((np.abs(y_data_item) + y_error_item) * 1.06, np.abs(y_data_item) * 1.3), color=line_color, marker='*',
+                    ax.plot(x_cord, sign * min((np.abs(y_data_item) + y_error_item) * 1.06, np.abs(y_data_item) * 1.3),
+                            color=line_color, marker='*',
                             markersize=plot_config.MARKER_SIZE * 2.0)
-                    ax.plot(np.linspace(_col - 0.5 + 0.25 * plot_config.BAR_INTERVAL ,
-                                       _col + (1 - plot_config.BAR_INTERVAL) - 0.5 + 0.75 * plot_config.BAR_INTERVAL, 100),
-                            y_data_item * np.ones(100, ), color='black', alpha=0.8, linestyle='-.', linewidth=1.0, zorder=2.6)
-                    ax.plot(_col - 0.5 + 0.25 * plot_config.BAR_INTERVAL, y_data_item, color='black', alpha=1.0, marker='4',
+                    ax.plot(np.linspace(_col - 0.5 + 0.25 * plot_config.BAR_INTERVAL,
+                                        _col + (1 - plot_config.BAR_INTERVAL) - 0.5 + 0.75 * plot_config.BAR_INTERVAL,
+                                        100),
+                            y_data_item * np.ones(100, ), color='black', alpha=0.8, linestyle='-.', linewidth=1.0,
+                            zorder=2.6)
+                    ax.plot(_col - 0.5 + 0.25 * plot_config.BAR_INTERVAL, y_data_item, color='black', alpha=1.0,
+                            marker='4',
                             markersize=plot_config.MARKER_SIZE * 2.0)
-                    ax.plot(_col + (1 - plot_config.BAR_INTERVAL) - 0.5 + 0.75 * plot_config.BAR_INTERVAL, y_data_item, color='black', alpha=1.0,
+                    ax.plot(_col + (1 - plot_config.BAR_INTERVAL) - 0.5 + 0.75 * plot_config.BAR_INTERVAL, y_data_item,
+                            color='black', alpha=1.0,
                             marker='3',
                             markersize=plot_config.MARKER_SIZE * 2.0)
             if str(plot_config.SHOW_BAR_SEED_NUM) == 'True':
                 sign = np.sign(y_data_item)
-                ax.text(x_cord, sign * min((np.abs(y_data_item) + y_error_item) * 1.12, np.abs(y_data_item) * 1.5), f'{seed_num}',
+                ax.text(x_cord, sign * min((np.abs(y_data_item) + y_error_item) * 1.12, np.abs(y_data_item) * 1.5),
+                        f'{seed_num}',
                         horizontalalignment='center', verticalalignment='center', fontsize=plot_config.FONTSIZE_YTICK)
             Logger.local_log('plotting', np.shape(x_data), np.shape(y_data), min_data_len)
             if alg_name not in alg_to_line_handler:
@@ -1061,7 +1094,8 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
                 title_name = f'{title_name}-EVAL{pca_eval}'
             ax.set_title(title_name, fontsize=plot_config.FONTSIZE_TITLE)
             ax.grid(True)
-        if plot_config.YMIN is not None and not str(plot_config.YMIN) == 'None' and not str(plot_config.BAR_NORMALIZE_VALUE) == 'True':
+        if plot_config.YMIN is not None and not str(plot_config.YMIN) == 'None' and not str(
+                plot_config.BAR_NORMALIZE_VALUE) == 'True':
             ymin = float(plot_config.YMIN)
             # if str(plot_config.BAR_NORMALIZE_VALUE) == 'True':
             #     ymin = plot_config.BAR_NORMALIZE_MINIMUM_VALUE
@@ -1108,8 +1142,10 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
                 final_names.append(name + f' ({alg_to_seed_num[name]}-{alg_to_seed_num_max[name]})')
         else:
             final_names.append(name)
-    axarr[fig_row - 1][0].legend(handles=curves, labels=final_names, loc=plot_config.LEGEND_WHICH_POSITION, bbox_to_anchor=(plot_config.LEGEND_POSITION_X, plot_config.LEGEND_POSITION_Y),
-                       ncol=plot_config.LEGEND_COLUMN, fontsize=plot_config.FONTSIZE_LEGEND, frameon=plot_config.USE_LEGEND_FRAME, bbox_transform=axarr[fig_row - 1][0].transAxes)
+    axarr[fig_row - 1][0].legend(handles=curves, labels=final_names, loc=plot_config.LEGEND_WHICH_POSITION,
+                                 bbox_to_anchor=(plot_config.LEGEND_POSITION_X, plot_config.LEGEND_POSITION_Y),
+                                 ncol=plot_config.LEGEND_COLUMN, fontsize=plot_config.FONTSIZE_LEGEND,
+                                 frameon=plot_config.USE_LEGEND_FRAME, bbox_transform=axarr[fig_row - 1][0].transAxes)
     sup_title_name = y_name
     if plot_config.RECORD_DATE_TIME:
         sup_title_name += ': {}'.format(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
@@ -1237,7 +1273,8 @@ def _make_subtable(data, x_name, y_name, at_x, plot_config_dict, iter, alg_as_ro
             if sub_figure not in summary_dict:
                 summary_dict[sub_figure] = dict()
             summary_dict[sub_figure][alg_name] = (selected_mean, selected_error)
-            Logger.local_log(f'table: {sub_figure}, alg: {alg_name}, x-y: {x_name}-{y_name}, data_len: {data_len}, min len: {min(data_len)}, selected mean: {selected_mean}, selected error: {selected_error}')
+            Logger.local_log(
+                f'table: {sub_figure}, alg: {alg_name}, x-y: {x_name}-{y_name}, data_len: {data_len}, min len: {min(data_len)}, selected mean: {selected_mean}, selected error: {selected_error}')
 
         fig_ind += 1
     if alg_as_row_header:
@@ -1272,7 +1309,7 @@ def _plotting(data):
             random.randint(0, style_num - 1), random.randint(0, style_num - 1),
             random.randint(0, style_num - 1))
         if cand_item not in current_style_set:
-            additional_randomized_style[style_num+len(additional_randomized_style)] = cand_item
+            additional_randomized_style[style_num + len(additional_randomized_style)] = cand_item
             current_style_set.add(cand_item)
     total_f = []
     total_png = []
@@ -1350,13 +1387,14 @@ def _plotting(data):
                                 data_candidate[k] = _data[k]
                         data_it[k1][k2].append(data_candidate)
         futures.append(plotting_executor.submit(_plot_sub_figure, data_it, fig_row,
-                                                fig_column, figsize, alg_to_color_idx, x_name, y_name, plot_config_dict))
+                                                fig_column, figsize, alg_to_color_idx, x_name, y_name,
+                                                plot_config_dict))
     config_to_png_path = dict()
     for future in as_completed(futures):
         png_path, x_name, y_name = future.result()
-        config_to_png_path[x_name+y_name] = png_path
+        config_to_png_path[x_name + y_name] = png_path
     for x_name, y_name in plot_config.PLOTTING_XY:
-        total_png.append(config_to_png_path[x_name+y_name])
+        total_png.append(config_to_png_path[x_name + y_name])
     # 汇总图
     # pdf = matplotlib.backends.backend_pdf.PdfPages(os.path.join(plot_config.PLOT_FIGURE_SAVING_PATH, f'total_curve.pdf'))
     # for f in total_f:
@@ -1392,11 +1430,13 @@ def key_func(sub_figure):
             ret.append(item)
     return tuple(ret)
 
+
 def _sub_figure_sorted(sub_figure_content: list):
     if len(sub_figure_content) > 0 and isinstance(sub_figure_content[0], tuple):
         return sorted(sub_figure_content, key=key_func)
     return sorted(sub_figure_content, key=lambda x: x[0])
     pass
+
 
 def _bar_plotting(data):
     sub_figure_content = [k for k in data]
@@ -1470,8 +1510,11 @@ def _bar_plotting(data):
                                     break
                         else:
                             alg_to_color_idx[alg_name] = candidate
-                        alg_to_color_idx[alg_name] = (alg_to_color_idx[alg_name][0], alg_to_color_idx[alg_name][1], alg_to_color_idx[alg_name][2], alg_idx)
-                    used_color.add((alg_to_color_idx[alg_name][0], alg_to_color_idx[alg_name][1], alg_to_color_idx[alg_name][2]))
+                        alg_to_color_idx[alg_name] = (
+                        alg_to_color_idx[alg_name][0], alg_to_color_idx[alg_name][1], alg_to_color_idx[alg_name][2],
+                        alg_idx)
+                    used_color.add(
+                        (alg_to_color_idx[alg_name][0], alg_to_color_idx[alg_name][1], alg_to_color_idx[alg_name][2]))
     plotting_executor = ProcessPoolExecutor(max_workers=plot_config.PROCESS_NUM)
     futures = []
     for x_name, y_name in plot_config.PLOTTING_XY:
@@ -1494,13 +1537,14 @@ def _bar_plotting(data):
                                 data_candidate[k] = _data[k]
                         data_it[k1][k2].append(data_candidate)
         futures.append(plotting_executor.submit(_plot_sub_bar_figure, data_it, fig_row,
-                                                fig_column, figsize, alg_to_color_idx, x_name, y_name, plot_config_dict))
+                                                fig_column, figsize, alg_to_color_idx, x_name, y_name,
+                                                plot_config_dict))
     config_to_png_path = dict()
     for future in as_completed(futures):
         png_path, x_name, y_name = future.result()
-        config_to_png_path[x_name+y_name] = png_path
+        config_to_png_path[x_name + y_name] = png_path
     for x_name, y_name in plot_config.PLOTTING_XY:
-        total_png.append(config_to_png_path[x_name+y_name])
+        total_png.append(config_to_png_path[x_name + y_name])
     # 汇总图
     # pdf = matplotlib.backends.backend_pdf.PdfPages(os.path.join(plot_config.PLOT_FIGURE_SAVING_PATH, f'total_curve.pdf'))
     # for f in total_f:
@@ -1522,7 +1566,8 @@ def _bar_plotting(data):
     for ind, png_file in enumerate(png_images):
         start_row = sum(rows[:ind])
         merge_png.paste(png_file, (0, start_row))
-    total_png_output_path = os.path.join(plot_config.PLOT_FIGURE_SAVING_PATH, f"bar_{plot_config.FINAL_OUTPUT_NAME}.png")
+    total_png_output_path = os.path.join(plot_config.PLOT_FIGURE_SAVING_PATH,
+                                         f"bar_{plot_config.FINAL_OUTPUT_NAME}.png")
     merge_png.save(total_png_output_path, "PNG")
     Logger.local_log(f'saved png to file://{total_png_output_path} cost: {time.time() - start_merge_time}')
 
@@ -1574,15 +1619,18 @@ def _to_table(data, atx, iter, privileged_col_idx=None, placeholder=None, md=Tru
                                 data_candidate[k] = _data[k]
                         data_it[k1][k2].append(data_candidate)
         plot_config_dict = {k: getattr(plot_config, k) for k in plot_config.global_plot_configs()}
-        futures.append(plotting_executor.submit(_make_subtable, data_it, x_name, y_name, atx, plot_config_dict, iter, alg_as_row_header))
+        futures.append(plotting_executor.submit(_make_subtable, data_it, x_name, y_name, atx, plot_config_dict, iter,
+                                                alg_as_row_header))
     summary_dict_buffer = dict()
     for future in as_completed(futures):
         summary_dict, x_name, y_name = future.result()
         summary_dict_buffer[y_name] = summary_dict
     if md:
-        result_editor = summary_buffer_to_output_md(summary_dict_buffer, privileged_col_idx, placeholder, alg_as_row_header)
+        result_editor = summary_buffer_to_output_md(summary_dict_buffer, privileged_col_idx, placeholder,
+                                                    alg_as_row_header)
     else:
-        result_editor = summary_buffer_to_output(summary_dict_buffer, privileged_col_idx, placeholder, alg_as_row_header)
+        result_editor = summary_buffer_to_output(summary_dict_buffer, privileged_col_idx, placeholder,
+                                                 alg_as_row_header)
     result = summary_buffer_to_output_html(summary_dict_buffer, privileged_col_idx, placeholder, alg_as_row_header)
     return result, result_editor
 
@@ -1614,7 +1662,7 @@ def format_float_to_str(num, valid_bit):
 def summary_buffer_to_output(summary_dict_buffer, privileged_col_idx=None, placeholder=None, alg_as_row_header=False):
     final_str = ''
     for table_name in summary_dict_buffer:
-        final_str = final_str + '\n\n' + '='*15 + f'Table: {table_name}' + '='*15 + '\n'
+        final_str = final_str + '\n\n' + '=' * 15 + f'Table: {table_name}' + '=' * 15 + '\n'
         summary_dict = summary_dict_buffer[table_name]
         row_id_list = [k for k in summary_dict.keys()]
         row_id_list = sorted(row_id_list)
@@ -1627,7 +1675,7 @@ def summary_buffer_to_output(summary_dict_buffer, privileged_col_idx=None, place
         cols_keys = sorted(cols_keys)
         prid_cols_keys = []
         if privileged_col_idx is not None:
-            prid_cols_keys = sorted([(k, v) for k, v in privileged_col_idx.items()], key=lambda x:x[1])
+            prid_cols_keys = sorted([(k, v) for k, v in privileged_col_idx.items()], key=lambda x: x[1])
             prid_cols_keys = [item[0] for item in prid_cols_keys if item[0] in cols_keys]
         for item in cols_keys:
             if item not in prid_cols_keys:
@@ -1658,7 +1706,8 @@ def summary_buffer_to_output(summary_dict_buffer, privileged_col_idx=None, place
             max_performance_ind, max_performance = 0, -10000000
             if not plot_config.TABLE_BOLD_MAX:
                 max_performance = -max_performance
-            final_str = final_str + standardize_row_and_col(item_name=row_name, row_header=True, alg_as_row_header=alg_as_row_header) + ' & '
+            final_str = final_str + standardize_row_and_col(item_name=row_name, row_header=True,
+                                                            alg_as_row_header=alg_as_row_header) + ' & '
             for ind_task, task in enumerate(task_list):
                 if task in row_content:
                     data_mean, data_error = row_content[task]
@@ -1687,13 +1736,13 @@ def summary_buffer_to_output(summary_dict_buffer, privileged_col_idx=None, place
 
             final_str = final_str + '\\\\' + '\n'
         final_str = final_str + '\\bottomrule' + '\n'
-        final_str = final_str + '='*15 + f'End Table: {table_name}' + '='*15 + '\n'
+        final_str = final_str + '=' * 15 + f'End Table: {table_name}' + '=' * 15 + '\n'
     Logger.local_log(final_str)
     return final_str
 
 
-
-def summary_buffer_to_output_md(summary_dict_buffer, privileged_col_idx=None, placeholder=None, alg_as_row_header=False):
+def summary_buffer_to_output_md(summary_dict_buffer, privileged_col_idx=None, placeholder=None,
+                                alg_as_row_header=False):
     final_str = ''
     for table_name in summary_dict_buffer:
         final_str = final_str + '## ' + f'Table: {table_name}' + '\n'
@@ -1709,7 +1758,7 @@ def summary_buffer_to_output_md(summary_dict_buffer, privileged_col_idx=None, pl
         cols_keys = sorted(cols_keys)
         prid_cols_keys = []
         if privileged_col_idx is not None:
-            prid_cols_keys = sorted([(k, v) for k, v in privileged_col_idx.items()], key=lambda x:x[1])
+            prid_cols_keys = sorted([(k, v) for k, v in privileged_col_idx.items()], key=lambda x: x[1])
             prid_cols_keys = [item[0] for item in prid_cols_keys if item[0] in cols_keys]
 
         for item in cols_keys:
@@ -1743,7 +1792,8 @@ def summary_buffer_to_output_md(summary_dict_buffer, privileged_col_idx=None, pl
             max_performance_ind, max_performance = 0, -10000000
             if not plot_config.TABLE_BOLD_MAX:
                 max_performance = -max_performance
-            final_str = final_str + '|' + standardize_row_and_col(row_name, row_header=True, alg_as_row_header=alg_as_row_header) + ' | '
+            final_str = final_str + '|' + standardize_row_and_col(row_name, row_header=True,
+                                                                  alg_as_row_header=alg_as_row_header) + ' | '
             for ind_task, task in enumerate(task_list):
                 if task in row_content:
                     data_mean, data_error = row_content[task]
@@ -1781,7 +1831,8 @@ def summary_buffer_to_output_md(summary_dict_buffer, privileged_col_idx=None, pl
     return final_str
 
 
-def summary_buffer_to_output_html(summary_dict_buffer, privileged_col_idx=None, placeholder=None, alg_as_row_header=False):
+def summary_buffer_to_output_html(summary_dict_buffer, privileged_col_idx=None, placeholder=None,
+                                  alg_as_row_header=False):
     final_str = ''
     for table_name in summary_dict_buffer:
         final_str = final_str + '<h3> ' + f'Table: {table_name}' + '</h3>' + '\n'
@@ -1798,7 +1849,7 @@ def summary_buffer_to_output_html(summary_dict_buffer, privileged_col_idx=None, 
         cols_keys = sorted(cols_keys)
         prid_cols_keys = []
         if privileged_col_idx is not None:
-            prid_cols_keys = sorted([(k, v) for k, v in privileged_col_idx.items()], key=lambda x:x[1])
+            prid_cols_keys = sorted([(k, v) for k, v in privileged_col_idx.items()], key=lambda x: x[1])
             prid_cols_keys = [item[0] for item in prid_cols_keys if item[0] in cols_keys]
 
         for item in cols_keys:
@@ -1829,7 +1880,9 @@ def summary_buffer_to_output_html(summary_dict_buffer, privileged_col_idx=None, 
             if not plot_config.TABLE_BOLD_MAX:
                 max_performance = -max_performance
             final_str = final_str + '<tr>'
-            final_str = final_str + '<td style="text-align: left;">' + standardize_row_and_col(row_name, row_header=True, alg_as_row_header=alg_as_row_header) + '</td>\n'
+            final_str = final_str + '<td style="text-align: left;">' + standardize_row_and_col(row_name,
+                                                                                               row_header=True,
+                                                                                               alg_as_row_header=alg_as_row_header) + '</td>\n'
             for ind_task, task in enumerate(task_list):
                 if task in row_content:
                     data_mean, data_error = row_content[task]
@@ -1866,12 +1919,13 @@ def summary_buffer_to_output_html(summary_dict_buffer, privileged_col_idx=None, 
     Logger.local_log(final_str)
     return final_str
 
+
 def _overwrite_config(config):
     for k in plot_config.global_plot_configs():
         if k in config:
             if not config[k] == getattr(plot_config, k):
                 Logger.local_log(f'config {k} in file is {config[k]}, '
-                      f'which is {getattr(plot_config, k)} in code, overwrite it!')
+                                 f'which is {getattr(plot_config, k)} in code, overwrite it!')
                 setattr(plot_config, k, config[k])
 
 
@@ -1890,6 +1944,7 @@ def plot(config_json_path=None):
     data = collect_data()
     _plotting(data)
 
+
 def _make_table(latex=None):
     data = collect_data()
     privileged_col_idx = dict(
@@ -1897,20 +1952,24 @@ def _make_table(latex=None):
     placeholder = dict(
     )
     xmax = float(plot_config.XMAX) if not str(plot_config.XMAX) == 'None' else None
-    result, result_source = _to_table(data, xmax, None, privileged_col_idx, placeholder=placeholder, md=False if latex else True)
+    result, result_source = _to_table(data, xmax, None, privileged_col_idx, placeholder=placeholder,
+                                      md=False if latex else True)
     if latex is None:
         return result
     else:
         return result_source
 
+
 def make_table(config_json_path=None):
     overwrite_config(config_json_path)
     return _make_table()
+
 
 def bar(config_json_path=None):
     overwrite_config(config_json_path)
     data = collect_data()
     _bar_plotting(data)
+
 
 if __name__ == '__main__':
     # make_table('/Users/fanmingluo/Desktop/small_logger_cache/WEB_ROM/configs/formal_ablation_eta')

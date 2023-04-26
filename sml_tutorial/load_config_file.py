@@ -1,8 +1,8 @@
 import os
 
 from demo_parameter.Parameter import Parameter
-from smart_logger.util_logger.logger import Logger
 from smart_logger.common.serialize_config import init_config
+from smart_logger.util_logger.logger import Logger
 
 
 def main():

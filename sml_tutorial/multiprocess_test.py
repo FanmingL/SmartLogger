@@ -1,10 +1,11 @@
 import os.path
-from concurrent.futures import ProcessPoolExecutor, as_completed
-import smart_logger
+from concurrent.futures import ProcessPoolExecutor
 from multiprocessing import Process
+from multiprocessing import current_process
+
+import smart_logger
 import smart_logger.common.common_config as common_config
 import smart_logger.common.experiment_config as experiment_config
-from multiprocessing import current_process
 
 
 def single_process(logger_config=None):
@@ -17,10 +18,9 @@ def single_process(logger_config=None):
     print('random status', np.random.get_state()[-4][10])
 
 
-
 def process_test():
-    print('-'*30, 'process test', '-'*30)
-    phs = [Process(target=single_process, args=(smart_logger.get_total_config(),),) for _ in range(3)]
+    print('-' * 30, 'process test', '-' * 30)
+    phs = [Process(target=single_process, args=(smart_logger.get_total_config(),), ) for _ in range(3)]
     for ph in phs:
         ph.start()
     for ph in phs:
@@ -28,7 +28,7 @@ def process_test():
 
 
 def process_pool_test():
-    print('-'*30, 'pool test', '-'*30)
+    print('-' * 30, 'pool test', '-' * 30)
     process_pool = ProcessPoolExecutor(max_workers=1)
     tasks = [smart_logger.get_total_config() for _ in range(5)]
     futures = []
@@ -49,4 +49,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

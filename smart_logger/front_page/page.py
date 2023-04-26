@@ -1,29 +1,28 @@
-import random
-import sys, os
-
-from flask import Flask, redirect, url_for, request, send_from_directory, send_file, render_template, make_response
-import smart_logger.common.page_config as page_config
-from smart_logger.util_logger.logger import Logger
-import smart_logger.common.plot_config as plot_config
-from smart_logger.front_page.experiment_data_loader import default_config, load_config, list_current_experiment, \
-    get_parameter, reformat_dict, reformat_str, legal_path, save_config, list_current_configs,\
-    make_config_type, analyze_experiment, delete_config_file, has_config, standardize_merger_item, get_record_data_item,\
-    get_config_path, record_config_for_user
-from smart_logger.report.plotting import plot as local_plot
-from smart_logger.report.plotting import bar as local_bar
-from smart_logger.report.plotting import _overwrite_config, _str_to_short_name
-from smart_logger.report.plotting import _make_table
 import base64
 import json
-from flask_cors import CORS
-import time
 import os
+import random
+import shutil
 import sys
+import threading
+import time
 from datetime import datetime, timedelta
 from functools import wraps
-import math
-import shutil
-import threading
+
+from flask import Flask, redirect, url_for, request, send_from_directory, render_template, make_response
+from flask_cors import CORS
+
+import smart_logger.common.page_config as page_config
+import smart_logger.common.plot_config as plot_config
+from smart_logger.front_page.experiment_data_loader import default_config, load_config, list_current_experiment, \
+    get_parameter, reformat_dict, reformat_str, legal_path, save_config, list_current_configs, \
+    make_config_type, analyze_experiment, delete_config_file, has_config, standardize_merger_item, get_record_data_item, \
+    get_config_path, record_config_for_user
+from smart_logger.report.plotting import _make_table
+from smart_logger.report.plotting import _overwrite_config, _str_to_short_name
+from smart_logger.report.plotting import bar as local_bar
+from smart_logger.report.plotting import plot as local_plot
+from smart_logger.util_logger.logger import Logger
 
 
 def get_project_path():
@@ -60,10 +59,11 @@ def query_cookie(key):
             cookie_dict['user_name'] = page_config.USER_NAME
         elif key == 'cookie_code':
             cookie_dict['cookie_code'] = 'forever_code' if 'cookie_code' not in request.cookies else request.cookies[
-            'cookie_code']
+                'cookie_code']
         elif key == 'used_config':
             cookie_dict['used_config'] = _choose_config_init(
-            page_config.USER_NAME, check_valid=False) if 'used_config' not in request.cookies else request.cookies['used_config']
+                page_config.USER_NAME, check_valid=False) if 'used_config' not in request.cookies else request.cookies[
+                'used_config']
             if not has_config(cookie_dict['used_config']):
                 cookie_dict['used_config'] = _choose_config_init(page_config.USER_NAME, check_valid=False)
         return cookie_dict[key]
@@ -195,6 +195,7 @@ def _choose_config_init(user_name, check_valid=True):
                 save_config(config, config_name)
     return config_name
 
+
 # 判断是否能够登录的服务
 @app.route('/login_direct', methods=['POST'])
 def login_post_direct():
@@ -253,6 +254,7 @@ def experiment():
 def csv_to_html(dataframe):
     pass
 
+
 def rfilesize(filesize_byte):
     if filesize_byte < 1024:
         return f'{fsize}B'
@@ -262,6 +264,7 @@ def rfilesize(filesize_byte):
         return f'{round(filesize_byte / 1024 / 1024, 3)}MB'
     else:
         return f'{round(filesize_byte / 1024 / 1024 / 1024, 3)}GB'
+
 
 @app.route("/experiment_parameter/<folder_name>", methods=['GET'])
 @require_login(source_name='experiment_parameter', allow_guest=True)
@@ -275,7 +278,8 @@ def obtain_experiment_parameter(folder_name):
     if full_path is not None:
         for i in range(len(full_path)):
             if full_path[i] is not None:
-                full_path[i] = base64.urlsafe_b64encode(os.path.join(os.path.dirname(folder_name), full_path[i]).encode()).decode()
+                full_path[i] = base64.urlsafe_b64encode(
+                    os.path.join(os.path.dirname(folder_name), full_path[i]).encode()).decode()
             else:
                 full_path[i] = 'None'
     total_filesize = sum(filesize_bytes)
@@ -291,7 +295,7 @@ def obtain_experiment_parameter(folder_name):
         html_code = '<table border="1" align="center" frame="hsides" rules="rows" table-layout="fixed">\n' + html_code
         html_code = f'<p> {csv_data_df.shape[0]} rows × {csv_data_df.shape[1]} columns  </p>' + html_code
         tables = [html_code]
-        show_table=True
+        show_table = True
 
     else:
         tables = []
@@ -375,7 +379,8 @@ def experiment_zip_and_download(folder_name):
         os.makedirs(z_folder, exist_ok=True)
         try:
             z_file_name = os.path.join(z_folder, f'{base_name}')
-            archive_data = shutil.make_archive(z_file_name, 'zip', base_dir=os.path.basename(file_name), root_dir=os.path.dirname(file_name))
+            archive_data = shutil.make_archive(z_file_name, 'zip', base_dir=os.path.basename(file_name),
+                                               root_dir=os.path.dirname(file_name))
             Logger.logger(f'zip file to {archive_data}')
             z_file_name = archive_data
         except Exception as e:
@@ -388,6 +393,7 @@ def experiment_zip_and_download(folder_name):
             return render_template('404.html')
     else:
         return render_template('404.html')
+
 
 @app.route("/plot", methods=['GET'])
 @require_login(source_name='plot', allow_guest=True)
@@ -403,20 +409,21 @@ def plot():
     for k in added_key:
         config_ordered[k] = config[k]
 
-    config_ordered = {k: v for k, v in config_ordered.items() if k not in ['SHORT_NAME_FROM_CONFIG', 'DATA_IGNORE', 'DATA_MERGER',
-                                                           'PLOTTING_XY', 'FIGURE_TO_SYNC', 'FIGURE_SEPARATION',
-                                                           'DATA_KEY_RENAME_CONFIG', 'DESCRIPTION',
-                                                           'LOG_DIR_BACKING_NAME', 'DATA_PATH',
-                                                           'PLOT_FIGURE_SAVING_PATH', 'FIGURE_SERVER_MACHINE_IP',
-                                                           'FIGURE_SERVER_MACHINE_PORT', 'FIGURE_SERVER_MACHINE_USER',
-                                                           'FIGURE_SERVER_MACHINE_PASSWD',
-                                                           'FIGURE_SERVER_MACHINE_TARGET_PATH', 'PLOTTING_ORDER',
-                                                           'LEGEND_ORDER', 'DATA_SELECT', 'USE_IGNORE_RULE',
-                                                           'TABLE_BOLD_MAX', 'DATA_IGNORE_PROPERTY',
-                                                           'DATA_SELECT_PROPERTY', 'DATA_IGNORE_GARBAGE',
-                                                           'DATA_SELECT_GARBAGE', 'DATA_IGNORE_PROPERTY_GARBAGE',
-                                                           'DATA_SELECT_PROPERTY_GARBAGE',
-                                                           'SHORT_NAME_FROM_CONFIG_PROPERTY']}
+    config_ordered = {k: v for k, v in config_ordered.items() if
+                      k not in ['SHORT_NAME_FROM_CONFIG', 'DATA_IGNORE', 'DATA_MERGER',
+                                'PLOTTING_XY', 'FIGURE_TO_SYNC', 'FIGURE_SEPARATION',
+                                'DATA_KEY_RENAME_CONFIG', 'DESCRIPTION',
+                                'LOG_DIR_BACKING_NAME', 'DATA_PATH',
+                                'PLOT_FIGURE_SAVING_PATH', 'FIGURE_SERVER_MACHINE_IP',
+                                'FIGURE_SERVER_MACHINE_PORT', 'FIGURE_SERVER_MACHINE_USER',
+                                'FIGURE_SERVER_MACHINE_PASSWD',
+                                'FIGURE_SERVER_MACHINE_TARGET_PATH', 'PLOTTING_ORDER',
+                                'LEGEND_ORDER', 'DATA_SELECT', 'USE_IGNORE_RULE',
+                                'TABLE_BOLD_MAX', 'DATA_IGNORE_PROPERTY',
+                                'DATA_SELECT_PROPERTY', 'DATA_IGNORE_GARBAGE',
+                                'DATA_SELECT_GARBAGE', 'DATA_IGNORE_PROPERTY_GARBAGE',
+                                'DATA_SELECT_PROPERTY_GARBAGE',
+                                'SHORT_NAME_FROM_CONFIG_PROPERTY']}
     config = config_ordered
     config_description = plot_config.DESCRIPTION
     for k in config:
@@ -454,16 +461,15 @@ def plot():
     file_list_encode = [base64.urlsafe_b64encode(os.path.join(item).encode()).decode() for item in file_list]
 
     return render_template('t_plot.html',
-                             plot_config=config,   # plot_config list list
+                           plot_config=config,  # plot_config list list
                            config_type=config_type,
-                             config_name=config_name,
+                           config_name=config_name,
                            description=config_description,
                            config_file_list=config_file_list,
                            initial_figure_url=initial_figure_url,
                            file_list=file_list,
                            file_list_encode=file_list_encode,
                            )
-
 
 
 @app.route("/query_pregenerated_file/<file_name>/<attach>", methods=['GET'])
@@ -482,6 +488,7 @@ def query_pregenerated_file(file_name, attach):
     as_attach = True if int(attach) == 1 else False
     return send_from_directory(figure_saving_path, file_name, as_attachment=as_attach)
 
+
 @app.route("/table", methods=['GET'])
 @require_login(source_name='table', allow_guest=True)
 def table():
@@ -489,10 +496,10 @@ def table():
     config = load_config(config_name)
     config_file_list = list_current_configs()
     return render_template('t_table.html',
-                             plot_config=config,   # plot_config list list
-                             config_name=config_name,
-                             config_file_list=config_file_list,
-                             bold_max=config['TABLE_BOLD_MAX'])
+                           plot_config=config,  # plot_config list list
+                           config_name=config_name,
+                           config_file_list=config_file_list,
+                           bold_max=config['TABLE_BOLD_MAX'])
 
 
 @app.route("/query_table", methods=['GET'])
@@ -578,7 +585,6 @@ def plot_config_update():
     return redirect('/plot', code=204)
 
 
-
 @app.route("/exp_figure", methods=['GET'])
 @require_login(source_name='exp_figure', allow_guest=True)
 def exp_figure():
@@ -609,7 +615,8 @@ def exp_figure():
     saving_png = f'{os.path.join(output_path, final_output_name)}.png'
     Logger.logger(f'return figure {saving_png}, drawing cost {time.time() - start_time}')
     target_folder = os.path.join(page_config.WEB_RAM_PATH, page_config.TOTAL_FIGURE_FOLDER, f'{final_output_name}.png')
-    target_folder_tmp = os.path.join(page_config.WEB_RAM_PATH, page_config.TOTAL_FIGURE_FOLDER + "_tmp", target_file_name)
+    target_folder_tmp = os.path.join(page_config.WEB_RAM_PATH, page_config.TOTAL_FIGURE_FOLDER + "_tmp",
+                                     target_file_name)
 
     Logger.logger(f'cp \"{saving_png}\" \"{target_folder}\"')
     os.makedirs(os.path.dirname(target_folder), exist_ok=True)
@@ -626,9 +633,11 @@ def lst_output_figure():
     config = load_config(config_name)
     _overwrite_config(config)
     if config['PLOT_MODE'].lower() == 'curve':
-        target_file = os.path.join(page_config.WEB_RAM_PATH, page_config.TOTAL_FIGURE_FOLDER + "_tmp", f'{config_name}.png')
+        target_file = os.path.join(page_config.WEB_RAM_PATH, page_config.TOTAL_FIGURE_FOLDER + "_tmp",
+                                   f'{config_name}.png')
     else:
-        target_file = os.path.join(page_config.WEB_RAM_PATH, page_config.TOTAL_FIGURE_FOLDER + "_tmp", f'bar_{config_name}.png')
+        target_file = os.path.join(page_config.WEB_RAM_PATH, page_config.TOTAL_FIGURE_FOLDER + "_tmp",
+                                   f'bar_{config_name}.png')
 
     target_file = os.path.abspath(target_file)
     target_dir = os.path.dirname(target_file)
@@ -651,20 +660,21 @@ def param_adjust():
     data_choose_property = [] if 'DATA_SELECT_PROPERTY' not in config else config['DATA_SELECT_PROPERTY']
     data_merge = [] if 'DATA_MERGER' not in config else config['DATA_MERGER']
     data_short_name_dict = {} if 'SHORT_NAME_FROM_CONFIG' not in config else config['SHORT_NAME_FROM_CONFIG']
-    data_short_name_property = {} if 'SHORT_NAME_FROM_CONFIG_PROPERTY' not in config else config['SHORT_NAME_FROM_CONFIG_PROPERTY']
+    data_short_name_property = {} if 'SHORT_NAME_FROM_CONFIG_PROPERTY' not in config else config[
+        'SHORT_NAME_FROM_CONFIG_PROPERTY']
     Logger.local_log(f'start analyze_experiment')
     start_time = time.time()
     exp_data, exp_data_ignores, selected_choices, possible_config_ignore, selected_choices_ignore, alg_idxs_ignore, \
         folder_ignore, nick_name_ignore_list, alg_idx, possible_config, \
-            short_name_to_ind, nick_name_list = analyze_experiment(need_ignore=config['USE_IGNORE_RULE'],
-                                                                   data_ignore=data_ignore,
-                                                                   need_select=not config['USE_IGNORE_RULE'],
-                                                                   data_select=data_choose,
-                                                                   data_merge=data_merge,
-                                                                   data_short_name_dict=data_short_name_dict,
-                                                                   data_ignore_property=data_ignore_property,
-                                                                   data_select_property=data_choose_property,
-                                                                   data_short_name_property=data_short_name_property)
+        short_name_to_ind, nick_name_list = analyze_experiment(need_ignore=config['USE_IGNORE_RULE'],
+                                                               data_ignore=data_ignore,
+                                                               need_select=not config['USE_IGNORE_RULE'],
+                                                               data_select=data_choose,
+                                                               data_merge=data_merge,
+                                                               data_short_name_dict=data_short_name_dict,
+                                                               data_ignore_property=data_ignore_property,
+                                                               data_select_property=data_choose_property,
+                                                               data_short_name_property=data_short_name_property)
     Logger.local_log(f'finish analyze_experiment {time.time() - start_time}')
 
     exp_data_encoded = [base64.urlsafe_b64encode(item.encode()).decode() for item in exp_data]
@@ -679,7 +689,9 @@ def param_adjust():
             merge_config_file[k] = [False, len(possible_config[k])]
     possible_config_keys_list = [k for k in possible_config]
     merge_config_file = [(k, v[0], v[1]) for k, v in merge_config_file.items()]
-    merge_config_file = list(sorted(sorted(sorted(merge_config_file, key=lambda x: x[0]), key=lambda x: x[1], reverse=True), key=lambda x: x[2], reverse=True))
+    merge_config_file = list(
+        sorted(sorted(sorted(merge_config_file, key=lambda x: x[0]), key=lambda x: x[1], reverse=True),
+               key=lambda x: x[2], reverse=True))
     selected_config_list = [(k, v, len(v)) for k, v in possible_config.items()]
     if plot_config.USE_IGNORE_RULE:
         for k in possible_config:
@@ -691,14 +703,17 @@ def param_adjust():
         possible_config = [(k, v) for k, v in possible_config_ignore.items()]
 
     possible_config = list(sorted(sorted(possible_config, key=lambda x: x[0]), key=lambda x: len(x[1]), reverse=True))
-    selected_config_list = list(sorted(sorted(selected_config_list, key=lambda x: x[0]), key=lambda x: len(x[1]), reverse=True))
+    selected_config_list = list(
+        sorted(sorted(selected_config_list, key=lambda x: x[0]), key=lambda x: len(x[1]), reverse=True))
     # Logger.local_log('possible config', possible_config)
     # Logger.logger(f'possible config json: {json.dumps(possible_config)}')
     encode_possible_config_js = base64.b64encode(json.dumps(possible_config).encode()).decode()
     rename_rule = {} if 'SHORT_NAME_FROM_CONFIG' not in config else config['SHORT_NAME_FROM_CONFIG']
     rename_rule_dict = rename_rule
     possible_short_name = sorted([k for k in short_name_to_ind if not _str_to_short_name(k, rename_rule,
-                                                                                     config['SHORT_NAME_FROM_CONFIG_PROPERTY'])[1]])
+                                                                                         config[
+                                                                                             'SHORT_NAME_FROM_CONFIG_PROPERTY'])[
+        1]])
     rename_rule = [(k, v) for k, v in rename_rule.items()]
     rename_rule = sorted(rename_rule, key=lambda x: x[0])
     plotting_xy = [] if 'PLOTTING_XY' not in config else config['PLOTTING_XY']
@@ -713,13 +728,16 @@ def param_adjust():
     exists_ordered_curves = plot_config.PLOTTING_ORDER
     remain_unordered_curves = [item for item in nick_name_set if item not in exists_ordered_curves]
     exists_ordered_curves_encode = [base64.urlsafe_b64encode(item.encode()).decode() for item in exists_ordered_curves]
-    remain_unordered_curves_encode = [base64.urlsafe_b64encode(item.encode()).decode() for item in remain_unordered_curves]
+    remain_unordered_curves_encode = [base64.urlsafe_b64encode(item.encode()).decode() for item in
+                                      remain_unordered_curves]
     total_curves = exists_ordered_curves + remain_unordered_curves
     total_curves = [item for item in total_curves if item in nick_name_set]
     exists_ordered_legends = plot_config.LEGEND_ORDER
     exists_unordered_legends = [item for item in total_curves if item not in exists_ordered_legends]
-    exists_ordered_legends_encode = [base64.urlsafe_b64encode(item.encode()).decode() for item in exists_ordered_legends]
-    exists_unordered_legends_encode = [base64.urlsafe_b64encode(item.encode()).decode() for item in exists_unordered_legends]
+    exists_ordered_legends_encode = [base64.urlsafe_b64encode(item.encode()).decode() for item in
+                                     exists_ordered_legends]
+    exists_unordered_legends_encode = [base64.urlsafe_b64encode(item.encode()).decode() for item in
+                                       exists_unordered_legends]
     return render_template('t_param_adapt.html',
                            exp_data=exp_data,
                            exp_data_encoded=exp_data_encoded,
@@ -759,7 +777,6 @@ def param_adjust():
                            )
 
 
-
 @app.route("/merge_process", methods=['POST'])
 @require_login(source_name='merge_process', allow_guest=True)
 def merge_process():
@@ -769,7 +786,6 @@ def merge_process():
     config['DATA_MERGER'] = new_merger
     save_config(config, config_name)
     return redirect('param_adjust')
-
 
 
 @app.route("/choose_config/<source>", methods=['POST'])
@@ -791,6 +807,7 @@ def choose_config(source):
         record_config_for_user(query_cookie('user_name'), config_name)
     return response
 
+
 @app.route("/rename_config", methods=['POST'])
 @require_login(source_name='rename_config', allow_guest=True)
 def rename_config():
@@ -807,6 +824,7 @@ def rename_config():
         response.set_cookie('used_config', config_name, expires=outdate_config_path)
         record_config_for_user(query_cookie('user_name'), config_name)
     return response
+
 
 @app.route("/create_config", methods=['GET'])
 @require_login(source_name='create_config', allow_guest=True)
@@ -849,6 +867,7 @@ def delete_config():
 
     return response
 
+
 @app.route("/reset_config", methods=['GET'])
 @require_login(source_name='reset_config', allow_guest=True)
 def reset_config():
@@ -868,6 +887,7 @@ def _generate_grid_analyze_result(config_name):
         config['REPORT_PCA_EVAL'] = True
         merger_formal = merger.replace('/', '-')
         save_config(config, f'{config_name}_gs_{merger_formal}')
+
 
 @app.route("/merge_config", methods=['POST'])
 @require_login(source_name='merge_config', allow_guest=True)
@@ -964,14 +984,20 @@ def del_ignore(rule_idx, move_to_garbage):
             if 'DATA_IGNORE' not in config:
                 config['DATA_IGNORE'] = []
             else:
-                config['DATA_IGNORE'] = [config['DATA_IGNORE'][i] for i in range(len(config['DATA_IGNORE'])) if not str(i) == str(rule_idx)]
-                config['DATA_IGNORE_PROPERTY'] = [config['DATA_IGNORE_PROPERTY'][i] for i in range(len(config['DATA_IGNORE_PROPERTY'])) if not str(i) == str(rule_idx)]
+                config['DATA_IGNORE'] = [config['DATA_IGNORE'][i] for i in range(len(config['DATA_IGNORE'])) if
+                                         not str(i) == str(rule_idx)]
+                config['DATA_IGNORE_PROPERTY'] = [config['DATA_IGNORE_PROPERTY'][i] for i in
+                                                  range(len(config['DATA_IGNORE_PROPERTY'])) if
+                                                  not str(i) == str(rule_idx)]
         else:
             if 'DATA_SELECT' not in config:
                 config['DATA_SELECT'] = []
             else:
-                config['DATA_SELECT'] = [config['DATA_SELECT'][i] for i in range(len(config['DATA_SELECT'])) if not str(i) == str(rule_idx)]
-                config['DATA_SELECT_PROPERTY'] = [config['DATA_SELECT_PROPERTY'][i] for i in range(len(config['DATA_SELECT_PROPERTY'])) if not str(i) == str(rule_idx)]
+                config['DATA_SELECT'] = [config['DATA_SELECT'][i] for i in range(len(config['DATA_SELECT'])) if
+                                         not str(i) == str(rule_idx)]
+                config['DATA_SELECT_PROPERTY'] = [config['DATA_SELECT_PROPERTY'][i] for i in
+                                                  range(len(config['DATA_SELECT_PROPERTY'])) if
+                                                  not str(i) == str(rule_idx)]
     save_config(config, config_name)
     return redirect('/param_adjust')
 
@@ -1010,16 +1036,25 @@ def del_garbage(rule_idx, move_back):
             if 'DATA_IGNORE_GARBAGE' not in config:
                 config['DATA_IGNORE_GARBAGE'] = []
             else:
-                config['DATA_IGNORE_GARBAGE'] = [config['DATA_IGNORE_GARBAGE'][i] for i in range(len(config['DATA_IGNORE_GARBAGE'])) if not str(i) == str(rule_idx)]
-                config['DATA_IGNORE_PROPERTY_GARBAGE'] = [config['DATA_IGNORE_PROPERTY_GARBAGE'][i] for i in range(len(config['DATA_IGNORE_PROPERTY_GARBAGE'])) if not str(i) == str(rule_idx)]
+                config['DATA_IGNORE_GARBAGE'] = [config['DATA_IGNORE_GARBAGE'][i] for i in
+                                                 range(len(config['DATA_IGNORE_GARBAGE'])) if
+                                                 not str(i) == str(rule_idx)]
+                config['DATA_IGNORE_PROPERTY_GARBAGE'] = [config['DATA_IGNORE_PROPERTY_GARBAGE'][i] for i in
+                                                          range(len(config['DATA_IGNORE_PROPERTY_GARBAGE'])) if
+                                                          not str(i) == str(rule_idx)]
         else:
             if 'DATA_SELECT_GARBAGE' not in config:
                 config['DATA_SELECT_GARBAGE'] = []
             else:
-                config['DATA_SELECT_GARBAGE'] = [config['DATA_SELECT_GARBAGE'][i] for i in range(len(config['DATA_SELECT_GARBAGE'])) if not str(i) == str(rule_idx)]
-                config['DATA_SELECT_PROPERTY_GARBAGE'] = [config['DATA_SELECT_PROPERTY_GARBAGE'][i] for i in range(len(config['DATA_SELECT_PROPERTY_GARBAGE'])) if not str(i) == str(rule_idx)]
+                config['DATA_SELECT_GARBAGE'] = [config['DATA_SELECT_GARBAGE'][i] for i in
+                                                 range(len(config['DATA_SELECT_GARBAGE'])) if
+                                                 not str(i) == str(rule_idx)]
+                config['DATA_SELECT_PROPERTY_GARBAGE'] = [config['DATA_SELECT_PROPERTY_GARBAGE'][i] for i in
+                                                          range(len(config['DATA_SELECT_PROPERTY_GARBAGE'])) if
+                                                          not str(i) == str(rule_idx)]
     save_config(config, config_name)
     return redirect('/param_adjust')
+
 
 @app.route("/del_rename/<rule_idx>", methods=['GET'])
 @require_login(source_name='del_rename', allow_guest=True)
@@ -1034,7 +1069,6 @@ def del_rename(rule_idx):
     config['SHORT_NAME_FROM_CONFIG'] = {k: v for k, v in rename_rule}
     save_config(config, config_name)
     return redirect('/param_adjust')
-
 
 
 @app.route("/ignore_with_renamed/<rule_idx>", methods=['GET'])
@@ -1054,7 +1088,6 @@ def ignore_with_renamed(rule_idx):
     # config['SHORT_NAME_FROM_CONFIG'] = {k: v for k, v in rename_rule}
     save_config(config, config_name)
     return redirect('/param_adjust')
-
 
 
 @app.route("/change_plot_order/<alg_name>/<idx>/<method>", methods=['GET'])
@@ -1078,8 +1111,8 @@ def change_plot_order(alg_name, idx, method):
             orders = orders + [alg_name]
         elif method == 'up_once':
             if idx > 0:
-                tmp = orders[idx-1]
-                orders[idx-1] = orders[idx]
+                tmp = orders[idx - 1]
+                orders[idx - 1] = orders[idx]
                 orders[idx] = tmp
         elif method == 'down_once':
             if idx < len(orders) - 1:
@@ -1106,8 +1139,8 @@ def change_plot_order(alg_name, idx, method):
             orders = [item for item in orders if not item == alg_name]
         elif method == 'up_once':
             if idx > 0:
-                tmp = orders[idx-1]
-                orders[idx-1] = orders[idx]
+                tmp = orders[idx - 1]
+                orders[idx - 1] = orders[idx]
                 orders[idx] = tmp
         elif method == 'down_once':
             if idx < len(orders) - 1:
@@ -1153,8 +1186,8 @@ def change_legend_order(alg_name, idx, method):
             orders = [item for item in orders if not item == alg_name]
         elif method == 'up_once':
             if idx > 0:
-                tmp = orders[idx-1]
-                orders[idx-1] = orders[idx]
+                tmp = orders[idx - 1]
+                orders[idx - 1] = orders[idx]
                 orders[idx] = tmp
         elif method == 'down_once':
             if idx < len(orders) - 1:
@@ -1180,7 +1213,8 @@ def ignore_with_unnamed(rule_idx):
     data_select_property = [] if 'DATA_SELECT_PROPERTY' not in config else config['DATA_SELECT_PROPERTY']
 
     data_short_name_dict = {} if 'SHORT_NAME_FROM_CONFIG' not in config else config['SHORT_NAME_FROM_CONFIG']
-    data_short_name_property = {} if 'SHORT_NAME_FROM_CONFIG_PROPERTY' not in config else config['SHORT_NAME_FROM_CONFIG_PROPERTY']
+    data_short_name_property = {} if 'SHORT_NAME_FROM_CONFIG_PROPERTY' not in config else config[
+        'SHORT_NAME_FROM_CONFIG_PROPERTY']
     _, _, _, _, _, _, _, _, _, _, short_name_to_ind, _ = analyze_experiment(
         need_ignore=config['USE_IGNORE_RULE'], data_ignore=data_ignore,
         need_select=not config['USE_IGNORE_RULE'], data_select=data_select,
@@ -1207,7 +1241,8 @@ def add_rename():
     rename_rule = {} if 'SHORT_NAME_FROM_CONFIG' not in config else config['SHORT_NAME_FROM_CONFIG']
     rename_rule[request.form['added_rule_rename_long']] = request.form['added_rule_rename_short']
     config['SHORT_NAME_FROM_CONFIG'] = rename_rule
-    config['SHORT_NAME_FROM_CONFIG_PROPERTY'][request.form['added_rule_rename_long']] = {'manual': 'change_mannual_rename' in request.form}
+    config['SHORT_NAME_FROM_CONFIG_PROPERTY'][request.form['added_rule_rename_long']] = {
+        'manual': 'change_mannual_rename' in request.form}
     save_config(config, config_name)
     return redirect('/param_adjust')
 
@@ -1260,12 +1295,15 @@ def del_xy(rule_idx, method):
                     config['PLOTTING_XY'].append(tmp)
             elif str(method) == 'up_once':
                 if idx > 0:
-                    config['PLOTTING_XY'][idx], config['PLOTTING_XY'][idx-1] = config['PLOTTING_XY'][idx-1], config['PLOTTING_XY'][idx]
+                    config['PLOTTING_XY'][idx], config['PLOTTING_XY'][idx - 1] = config['PLOTTING_XY'][idx - 1], \
+                    config['PLOTTING_XY'][idx]
             elif str(method) == 'down_once':
                 if idx < len(config['PLOTTING_XY']) - 1:
-                    config['PLOTTING_XY'][idx], config['PLOTTING_XY'][idx + 1] = config['PLOTTING_XY'][idx + 1], config['PLOTTING_XY'][idx]
+                    config['PLOTTING_XY'][idx], config['PLOTTING_XY'][idx + 1] = config['PLOTTING_XY'][idx + 1], \
+                    config['PLOTTING_XY'][idx]
             elif str(method) == 'remove':
-                config['PLOTTING_XY'] = [config['PLOTTING_XY'][i] for i in range(len(config['PLOTTING_XY'])) if not str(i) == str(rule_idx)]
+                config['PLOTTING_XY'] = [config['PLOTTING_XY'][i] for i in range(len(config['PLOTTING_XY'])) if
+                                         not str(i) == str(rule_idx)]
     save_config(config, config_name)
     return redirect('/param_adjust')
 
@@ -1294,6 +1332,7 @@ def change_filter_rule():
     save_config(config, config_name)
     return redirect('/param_adjust')
 
+
 @app.route("/change_table_bold_rule", methods=['POST'])
 @require_login(source_name='change_table_bold_rule', allow_guest=True)
 def change_table_bold_rule():
@@ -1317,7 +1356,8 @@ def del_separator(rule_idx):
         config['FIGURE_SEPARATION'] = []
     else:
         if len(config['FIGURE_SEPARATION']) > 1:
-            config['FIGURE_SEPARATION'] = [config['FIGURE_SEPARATION'][i] for i in range(len(config['FIGURE_SEPARATION'])) if not str(i) == str(rule_idx)]
+            config['FIGURE_SEPARATION'] = [config['FIGURE_SEPARATION'][i] for i in
+                                           range(len(config['FIGURE_SEPARATION'])) if not str(i) == str(rule_idx)]
     save_config(config, config_name)
     return redirect('/param_adjust')
 

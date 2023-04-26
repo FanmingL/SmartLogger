@@ -1,8 +1,11 @@
 import os
 import sys
+
 from setuptools import setup, find_packages
+
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'smart_logger'))
 from version import __version__
+
 setup(
     name="smart_logger",
     version=__version__,

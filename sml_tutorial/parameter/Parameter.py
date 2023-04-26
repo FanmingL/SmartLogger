@@ -1,6 +1,7 @@
-from smart_logger.parameter.ParameterTemplate import ParameterTemplate
-import smart_logger
 import argparse
+
+import smart_logger
+from smart_logger.parameter.ParameterTemplate import ParameterTemplate
 
 
 class Parameter(ParameterTemplate):

@@ -1,10 +1,10 @@
 # 标准初始化方法
+import os
+import random
+
+from common_config.load_config import init_smart_logger
 from parameter.Parameter import Parameter
 from smart_logger import Logger
-import os
-from common_config.load_config import init_smart_logger
-import random
-from smart_logger import logger_from_param
 
 
 class Demo:
@@ -42,4 +42,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

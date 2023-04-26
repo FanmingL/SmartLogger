@@ -2,12 +2,15 @@ try:
     from torch.utils.tensorboard import SummaryWriter
 except Exception as e:
     from tensorboardX import SummaryWriter
-import time, atexit, copy
+import atexit
+import copy
 import os
 import os.path as osp
+import time
+
 from smart_logger.common import common_config
 from smart_logger.common.common_config import system
-from datetime import datetime
+
 color2num = dict(
     gray=30,
     red=31,
@@ -152,7 +155,7 @@ class LoggerBase:
             valstr = "%8.3g" % val if hasattr(val, "__float__") else val
             self.log(fmt % (key, valstr))
             vals.append(val)
-        self.log("-" * n_slashes+'\n')
+        self.log("-" * n_slashes + '\n')
         if self.output_file is not None:
             if self.first_row:
                 self.output_file.write(self.spliter.join(self.log_headers) + "\n")
@@ -170,7 +173,7 @@ class LoggerBase:
     def rewrite_file(self):
         self.output_file.close()
         old_output_file = os.path.join(self.output_dir, self.output_fname)
-        bk_output_file = os.path.join(self.output_dir, self.output_fname+'back')
+        bk_output_file = os.path.join(self.output_dir, self.output_fname + 'back')
         with open(old_output_file, 'r') as f:
             with open(bk_output_file, 'w') as f_out:
                 f_out.write(self.spliter.join(self.log_headers) + "\n")

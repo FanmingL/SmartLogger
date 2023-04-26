@@ -1,6 +1,8 @@
-import os
-from smart_logger.scripts.generate_tmuxp_base import generate_tmuxp_file, make_cmd_array
 import argparse
+import os
+
+from smart_logger.scripts.generate_tmuxp_base import generate_tmuxp_file, make_cmd_array
+
 MAX_SUBWINDOW = 6
 MAX_PARALLEL = 10
 
@@ -43,6 +45,7 @@ def get_cmd_array(total_machine=8, machine_idx=0):
 
     def task_is_valid(_task):
         return True
+
     # 从这里开始不用再修改了
 
     cmd_array, session_name = make_cmd_array(

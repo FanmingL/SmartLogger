@@ -1,6 +1,7 @@
-from smart_logger import Logger
-from smart_logger.parameter.ParameterTemplate import ParameterTemplate
 import os
+
+from smart_logger.util_logger.logger import Logger
+from smart_logger.parameter.ParameterTemplate import ParameterTemplate
 
 
 def logger_from_param(parameter: ParameterTemplate, save_config=True, **logger_kwargs):
@@ -26,5 +27,3 @@ def logger_from_param(parameter: ParameterTemplate, save_config=True, **logger_k
     if save_config:
         parameter.save_config()
     return logger, parameter
-
-

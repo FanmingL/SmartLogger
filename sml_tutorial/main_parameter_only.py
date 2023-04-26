@@ -1,5 +1,6 @@
-from demo_parameter.Parameter import Parameter
 import os
+
+from demo_parameter.Parameter import Parameter
 
 
 def main():
@@ -12,4 +13,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

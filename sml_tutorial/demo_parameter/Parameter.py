@@ -1,6 +1,7 @@
-from smart_logger.parameter.ParameterTemplate import ParameterTemplate
-from smart_logger.common import experiment_config
 import argparse
+
+from smart_logger.common import experiment_config
+from smart_logger.parameter.ParameterTemplate import ParameterTemplate
 
 
 class Parameter(ParameterTemplate):
@@ -41,4 +42,6 @@ if __name__ == '__main__':
     def main():
         parameter = Parameter()
         print(parameter)
+
+
     main()

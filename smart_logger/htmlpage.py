@@ -1,9 +1,9 @@
+import argparse
 import os
-import sys
+
 import smart_logger.common.page_config as page_config
 import smart_logger.common.plot_config as plot_config
 from smart_logger.front_page.page import start_page_server
-import argparse
 
 
 def main():
@@ -20,7 +20,7 @@ def main():
     parser.add_argument('--port', '-p', type=int, default=7005,
                         help="Server port")
     parser.add_argument('--login_free', '-lf', action='store_true',
-                            help='Do not require login.')
+                        help='Do not require login.')
     args = parser.parse_args()
     # 关键配置项1：数据目录，该目录下存有日志文件
     plot_config.DATA_PATH = os.path.abspath(args.data_path)

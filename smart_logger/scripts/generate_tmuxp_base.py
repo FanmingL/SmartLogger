@@ -1,10 +1,11 @@
 import copy
 import json
+import math
+import os
+import random
 
 import yaml
-import os
-import math
-import random
+
 # 生成run_all.yaml，以并行启动程序
 # 用tmuxp load run_all.yaml来一键启动程序
 # 可以不用改，主要影响窗体结构
@@ -18,7 +19,7 @@ MACHINE_IDX = -1
 
 
 def make_cmd(environment_dict: dict, directory: str, start_up_header: str,
-             parameter_dict: dict, task_ind: int=-1, total_task_num: int=-1, equality_assign: bool=False):
+             parameter_dict: dict, task_ind: int = -1, total_task_num: int = -1, equality_assign: bool = False):
     cmd = ""
     for ind, (k, v) in enumerate(environment_dict.items()):
         if ind == 0:
@@ -85,6 +86,7 @@ def _get_all_permutation(current_dict, key_list, key_choices):
         dict_list += possible_dict_res
     return dict_list
 
+
 def make_cmd_array(directory, session_name, start_up_header,
                    parameters_base, environment_dict, aligned_candidates,
                    exclusive_candidates, GPUS, max_parallel_process, max_subwindow=6,
@@ -97,7 +99,7 @@ def make_cmd_array(directory, session_name, start_up_header,
     else:
         random_gen = None
     cmd_sep = '&&' if error_stop else ';'
-    sub_cmd_sep = ' && ' # ';\\'
+    sub_cmd_sep = ' && '  # ';\\'
     cmd_array = []
 
     aligned_task_num = check_aligned_valid(aligned_candidates)
@@ -133,7 +135,7 @@ def make_cmd_array(directory, session_name, start_up_header,
         for cmd_ind in range(cmd_num_per_pane):
             # task_ind = cmd_ind + pane_ind * cmd_num_per_pane
             task_ind = pane_ind + cmd_ind * total_pane_num
-            if ((cmd_num_per_pane - 1) * total_pane_num + pane_ind + 1 ) <= len(final_tasks_list):
+            if ((cmd_num_per_pane - 1) * total_pane_num + pane_ind + 1) <= len(final_tasks_list):
                 total_pane_task_num = cmd_num_per_pane
             else:
                 total_pane_task_num = cmd_num_per_pane - 1
@@ -168,7 +170,8 @@ def make_cmd_array(directory, session_name, start_up_header,
                             cmd = dict(shell_command=[cmd_once], sleep_before=sleep_before, sleep_after=sleep_after)
         if split_all:
             if not isinstance(cmd, dict):
-                cmd = dict(shell_command=[' echo \' task finished!!! \' && date ', cmd_sep], sleep_before=sleep_before, sleep_after=sleep_after)
+                cmd = dict(shell_command=[' echo \' task finished!!! \' && date ', cmd_sep], sleep_before=sleep_before,
+                           sleep_after=sleep_after)
             else:
                 cmd['shell_command'].append(' echo \' task finished!!! \' && date ')
                 cmd['shell_command'].append(cmd_sep)
@@ -176,11 +179,12 @@ def make_cmd_array(directory, session_name, start_up_header,
             if isinstance(cmd, dict):
                 cmd['shell_command'].append(' echo \' task finished!!! \' && date ')
             else:
-                cmd = dict(shell_command=[' echo \' task finished!!! \' && date '], sleep_before=sleep_before, sleep_after=sleep_after)
+                cmd = dict(shell_command=[' echo \' task finished!!! \' && date '], sleep_before=sleep_before,
+                           sleep_after=sleep_after)
         if split_all:
             for cmd_ind, cmd_item in enumerate(cmd['shell_command']):
                 if cmd_ind < len(cmd['shell_command']) - 2:
-                    if cmd['shell_command'][cmd_ind+1] == cmd_sep:
+                    if cmd['shell_command'][cmd_ind + 1] == cmd_sep:
                         cmd['shell_command'][cmd_ind] += f'\\'
                     elif cmd['shell_command'][cmd_ind] == cmd_sep:
                         cmd['shell_command'][cmd_ind] = f'{cmd_sep}\\'
@@ -199,12 +203,13 @@ def make_cmd_array(directory, session_name, start_up_header,
     else:
         session_name += aligned_candidates['information']
     session_name = session_name.replace('.', '_')
-    print('*'*70)
+    print('*' * 70)
     print(f'Machine num: {1 if machine_idx < 0 else machine_idx}/{1 if machine_idx < 0 else total_machine}, '
           f'Task num: {len(final_tasks_list)}/{total_task_num}, pane num: {total_pane_num}, task per pane: {cmd_num_per_pane}\n'
           f'Task ind: {sorted(task_ind_list)}, task ind len: {len(task_ind_list)}')
-    print('*'*70)
+    print('*' * 70)
     return cmd_array, session_name
+
 
 def get_cmd_array(max_subwindows, max_parallel_process, machine_idx, total_machine):
     """
@@ -214,7 +219,8 @@ def get_cmd_array(max_subwindows, max_parallel_process, machine_idx, total_machi
     session_name = 'SMARTLOGGER_TEST'
     # 0. 代码运行路径
     # current_path = os.path.dirname(os.path.abspath(__file__))
-    current_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'sml_tutorial')
+    current_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+                                'sml_tutorial')
     cmd_array = []
     # GPUS = [0, 1, 2, 3]
     # 1. GPU设置
@@ -252,11 +258,11 @@ def get_cmd_array(max_subwindows, max_parallel_process, machine_idx, total_machi
     # customized command
     # 7. 额外命令
     # cmd_array.append(['htop'])
-    print('='*30, 'SUMMARIZE', '='*30)
+    print('=' * 30, 'SUMMARIZE', '=' * 30)
     for win_ind, win_cmds_list in enumerate(cmd_array):
         for pane_ind, pand_cmd in enumerate(win_cmds_list):
             print(f'win: {win_ind}, pane: {pane_ind}: {pand_cmd}')
-    print('='*30, 'END', '='*30)
+    print('=' * 30, 'END', '=' * 30)
 
     return cmd_array, session_name
 

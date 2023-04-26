@@ -1,6 +1,7 @@
-import os.path as osp
 import os
+import os.path as osp
 from multiprocessing import current_process
+
 # 配置开始，本文件存放与实验内容无关的配置
 # 我们把日志文件夹同步到远程时，会放在远程的/home/luofm/Data/LOG_DIR_BACKING_NAME路径下
 LOG_DIR_BACKING_NAME = 'RAMRLLog'
@@ -97,6 +98,3 @@ def system(cmd, print_func=None):
     else:
         print_func(cmd)
     os.system(cmd)
-
-
-
