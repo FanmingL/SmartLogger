@@ -657,11 +657,10 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
             if len(data_len) > 1:
                 ax.fill_between(x_data, y_data - y_data_error, y_data + y_data_error, color=line_color,
                                 alpha=plot_config.SHADING_ALPHA)
-            if _col == 0:
-                if str(plot_config.FIXED_Y_LABEL) == 'None':
-                    ax.set_ylabel(y_name, fontsize=plot_config.FONTSIZE_LABEL)
-                else:
-                    ax.set_ylabel(plot_config.FIXED_Y_LABEL, fontsize=plot_config.FONTSIZE_LABEL)
+            if str(plot_config.FIXED_Y_LABEL) == 'None':
+                axarr[_row][0].set_ylabel(y_name, fontsize=plot_config.FONTSIZE_LABEL)
+            else:
+                axarr[_row][0].set_ylabel(plot_config.FIXED_Y_LABEL, fontsize=plot_config.FONTSIZE_LABEL)
             ax.set_xlabel(x_name, fontsize=plot_config.FONTSIZE_LABEL)
             ax.tick_params(axis='x', labelsize=plot_config.FONTSIZE_XTICK)
             ax.tick_params(axis='y', labelsize=plot_config.FONTSIZE_YTICK)
@@ -1063,11 +1062,11 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
             # if len(data_len) > 1:
             #     ax.fill_between(x_data, y_data - y_data_error, y_data + y_data_error, color=line_color,
             #                     alpha=plot_config.SHADING_ALPHA)
-            if _col == 0:
-                if str(plot_config.FIXED_Y_LABEL) == 'None':
-                    ax.set_ylabel(y_name, fontsize=plot_config.FONTSIZE_LABEL)
-                else:
-                    ax.set_ylabel(plot_config.FIXED_Y_LABEL, fontsize=plot_config.FONTSIZE_LABEL)
+            if str(plot_config.FIXED_Y_LABEL) == 'None':
+                axarr[_row][_col].set_ylabel(y_name, fontsize=plot_config.FONTSIZE_LABEL)
+            else:
+                axarr[_row][_col].set_ylabel(plot_config.FIXED_Y_LABEL, fontsize=plot_config.FONTSIZE_LABEL)
+
             # ax.set_xlabel(x_name, fontsize=plot_config.FONTSIZE_LABEL)
             ax.tick_params(axis='x', labelsize=plot_config.FONTSIZE_XTICK)
             ax.tick_params(axis='y', labelsize=plot_config.FONTSIZE_YTICK)
