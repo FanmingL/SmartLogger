@@ -1,6 +1,7 @@
 import argparse
 import hashlib
 import json
+import sys
 import os
 import os.path as osp
 import socket
@@ -32,6 +33,7 @@ class ParameterTemplate:
         self.log_func = print
         self.json_name = 'parameter.json'
         self.json_name_version = 'running_config.json'
+        self.cmd_name = 'executed_cmd.txt'
         self.txt_name = 'full_description.txt'
         if config_path:
             self.config_path = config_path
@@ -157,6 +159,8 @@ class ParameterTemplate:
             things = self.get_version_dict()
             ser = json.dumps(things)
             f.write(ser)
+        with open(os.path.join(self.config_path, self.cmd_name), 'w') as f:
+            f.write(f'python {" ".join(sys.argv)}')
         self.info(f'save readable config to {os.path.join(self.config_path, self.txt_name)}')
         with open(os.path.join(self.config_path, self.txt_name), 'w') as f:
             print(self, file=f)
