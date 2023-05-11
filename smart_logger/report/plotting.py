@@ -179,6 +179,12 @@ def _str_to_short_name(auto_named, short_name_from_config, short_name_property):
                     pass
     return _res, rename_it
 
+def version_tuple(version):
+    return tuple(map(int, (version.split("."))))
+
+
+def is_greater(ver1, ver2):
+    return version_tuple(ver1) > version_tuple(ver2)
 
 def merger_to_short_name(merger, short_name_from_config, short_name_property):
     _res = list_embedding(merger)
@@ -270,8 +276,10 @@ def _load_data(folder_name):
                 match_ignore = True
         if match_ignore:
             return None
-
-        data = pd.read_csv(progress_data, on_bad_lines='skip')
+        if is_greater(pd.__version__, '1.3.0'):
+            data = pd.read_csv(progress_data, on_bad_lines='skip')
+        else:
+            data = pd.read_csv(progress_data)
         if len(data.keys()) == 1:
             data = pd.read_table(progress_data)
         for k, v in plot_config.DATA_KEY_RENAME_CONFIG.items():
