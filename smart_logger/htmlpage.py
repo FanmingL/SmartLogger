@@ -17,6 +17,8 @@ def main():
                         help="user name")
     parser.add_argument('--password', '-pw', type=str, default='123456',
                         help="password")
+    parser.add_argument('--title', '-t', type=str, default='None',
+                        help="page title prefix")
     parser.add_argument('--port', '-p', type=int, default=7005,
                         help="Server port")
     parser.add_argument('--login_free', '-lf', action='store_true',
@@ -51,6 +53,8 @@ def main():
     # 密码
     page_config.PASSWD = args.password
     page_config.REQUIRE_RELOGIN = not args.login_free
+    # 标题
+    page_config.PAGE_TITLE_PREFIX = args.title if not str(args.title) == 'None' else None
     start_page_server()
 
 

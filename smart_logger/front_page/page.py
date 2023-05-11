@@ -248,7 +248,10 @@ def experiment():
     _overwrite_config(config)
     exp_folders = list_current_experiment()
     exp_folders_code = [base64.urlsafe_b64encode(item.encode()).decode() for item in exp_folders]
-    return render_template('t_experiment.html', exp_folder_list=exp_folders, exp_folders_code=exp_folders_code)
+    return render_template('t_experiment.html', exp_folder_list=exp_folders,
+                           exp_folders_code=exp_folders_code,
+                           title_prefix=f'{page_config.PAGE_TITLE_PREFIX}-' if page_config.PAGE_TITLE_PREFIX is not None else ''
+                           )
 
 
 def csv_to_html(dataframe):
@@ -314,7 +317,9 @@ def obtain_experiment_parameter(folder_name):
                            data_length=data_length,
                            total_filesize=total_filesize,
                            tables=tables,
-                           show_table=show_table)
+                           show_table=show_table,
+                           title_prefix=f'{page_config.PAGE_TITLE_PREFIX}-' if page_config.PAGE_TITLE_PREFIX is not None else ''
+                           )
 
 
 @app.route("/experiment_data_download/<folder_name>/<attach>", methods=['GET'])
@@ -469,6 +474,7 @@ def plot():
                            initial_figure_url=initial_figure_url,
                            file_list=file_list,
                            file_list_encode=file_list_encode,
+                           title_prefix=f'{page_config.PAGE_TITLE_PREFIX}-' if page_config.PAGE_TITLE_PREFIX is not None else ''
                            )
 
 
@@ -499,7 +505,9 @@ def table():
                            plot_config=config,  # plot_config list list
                            config_name=config_name,
                            config_file_list=config_file_list,
-                           bold_max=config['TABLE_BOLD_MAX'])
+                           bold_max=config['TABLE_BOLD_MAX'],
+                           title_prefix=f'{page_config.PAGE_TITLE_PREFIX}-' if page_config.PAGE_TITLE_PREFIX is not None else ''
+                           )
 
 
 @app.route("/query_table", methods=['GET'])
@@ -773,7 +781,8 @@ def param_adjust():
                            data_choose_rule=data_choose,
                            selected_config_list=selected_config_list,
                            data_ignore_garbage=data_ignore_garbage,
-                           data_choose_garbage=data_choose_garbage
+                           data_choose_garbage=data_choose_garbage,
+                           title_prefix=f'{page_config.PAGE_TITLE_PREFIX}-' if page_config.PAGE_TITLE_PREFIX is not None else ''
                            )
 
 

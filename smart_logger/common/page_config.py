@@ -26,3 +26,5 @@ TOTAL_FIGURE_FOLDER = f'full_path'
 COOKIE_PERIOD = 24
 # 是否需要重复登录，False则不需要二次登录
 REQUIRE_RELOGIN = True
+# 网页title前缀
+PAGE_TITLE_PREFIX = None
