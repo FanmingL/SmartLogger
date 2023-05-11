@@ -267,13 +267,21 @@ def get_cmd_array(max_subwindows, max_parallel_process, machine_idx, total_machi
     return cmd_array, session_name
 
 
-def generate_tmuxp_file(session_name, cmd_array, use_json=False):
+def generate_tmuxp_file(session_name, cmd_array, use_json=False, layout='tiled'):
+    """
+    layout的选项
+    even-horizontal：窗口中的面板将均匀地水平排列。
+    even-vertical：窗口中的面板将均匀地垂直排列。
+    main-horizontal：一个主面板在上，其他面板在下均匀地水平排列。
+    main-vertical：一个主面板在左，其他面板在右均匀地垂直排列。
+    tiled：面板在窗口中平均地排列。
+    """
     config = {"session_name": session_name, "windows": []}
     for window_ind, cmd_list in enumerate(cmd_array):
         window_cmd = {
             "window_name": f"window-{window_ind}",
             "panes": cmd_list,
-            "layout": "tiled"
+            "layout": layout
         }
         config["windows"].append(window_cmd)
     print(f'session name: {config["session_name"]}')
