@@ -73,6 +73,21 @@ class LoggerBase:
         atexit.register(self.output_file.close)
         self.log("Logging data to %s" % self.output_file.name, color='green')
 
+    def save_env(self):
+        import json
+        env_param_file_name = 'env_params.json'
+        python_pkg_file_name = 'pyenv.txt'
+        env_param_dict = dict()
+        for k, v in os.environ.items():
+            env_param_dict[k] = v
+        with open(os.path.join(self.output_dir, env_param_file_name), 'w') as f:
+            json.dump(env_param_dict, f)
+        import pkg_resources
+        installed_packages = pkg_resources.working_set
+        with open(os.path.join(self.output_dir, python_pkg_file_name), 'w') as f:
+            for package in installed_packages:
+                f.write(f"{package.project_name}=={package.version}, {package.location}\n")
+
     def init_tb(self):
         if osp.exists(self.output_tb_dir):
             self.log("Warning: Log dir %s already exists! Storing info there anyway." % self.output_dir, color='blue')

@@ -56,6 +56,8 @@ class Logger(LoggerBase):
         self.init_tb()
         # 备份代码文件
         self.backup_code()
+        # 备份环境当前环境
+        self.save_env()
         self.tb_header_dict = {}
         # 如果当前没有默认Logger，则将自己设为默认Logger
         if Logger.logger is None:

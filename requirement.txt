@@ -1,3 +1,4 @@
+setuptools
 tensorboardX
 numpy
 paramiko
