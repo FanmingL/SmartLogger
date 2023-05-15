@@ -1660,7 +1660,7 @@ def standardize_row_and_col(item_name, row_header, alg_as_row_header):
 
 
 def format_float_to_str(num, valid_bit):
-    if num > 0:
+    if valid_bit > 0:
         format_code = f'%.{valid_bit}f'
         return format_code % num
     return f'{int(num)}'
