@@ -81,6 +81,48 @@
             let selected_config = config_selection.options[config_selection.selectedIndex].value;
             form_rename.submit();
         }
+        function select_image_type_cb_cb() {
+            var selectElement = document.getElementById('select_image_type_cb_id');
+            var selectedValue = selectElement.value;
+
+            let httpRequest = new XMLHttpRequest();
+                httpRequest.onreadystatechange = function () {
+              if (httpRequest.readyState === 4 && httpRequest.status === 200) {
+                  location.href="{{url_for('plot')}}";
+              }
+              };
+            httpRequest.open('POST', "{{url_for('plot_config_focus_update')}}", false);
+            var data_to_send = {'selected_value': selectedValue}
+            httpRequest.send(JSON.stringify(data_to_send));
+        }
+        function select_image_content_cb() {
+            var selectElement = document.getElementById('select_pair_image_type_id');
+            var selectedValue = selectElement.value;
+
+            let httpRequest = new XMLHttpRequest();
+                httpRequest.onreadystatechange = function () {
+              if (httpRequest.readyState === 4 && httpRequest.status === 200) {
+                  location.href="{{url_for('plot')}}";
+              }
+              };
+            httpRequest.open('POST', "{{url_for('plot_config_content_focus_update')}}", false);
+            var data_to_send = {'selected_value': selectedValue}
+            httpRequest.send(JSON.stringify(data_to_send));
+        }
+        function select_sub_image_cb() {
+            var selectElement = document.getElementById('select_sub_image_type_id');
+            var selectedValue = selectElement.value;
+
+            let httpRequest = new XMLHttpRequest();
+                httpRequest.onreadystatechange = function () {
+              if (httpRequest.readyState === 4 && httpRequest.status === 200) {
+                  location.href="{{url_for('plot')}}";
+              }
+              };
+            httpRequest.open('POST', "{{url_for('plot_config_sub_image_update')}}", false);
+            var data_to_send = {'selected_value': selectedValue}
+            httpRequest.send(JSON.stringify(data_to_send));
+        }
     </script>
     <style>
         .main_images {
@@ -95,6 +137,12 @@
             top: 17%;
 
         }
+        .right-align {
+            text-align: right;
+          }
+        .td-class {
+                font-size: 14px;
+            }
         .file_list {
             position: absolute;
             left: 1%;
@@ -214,13 +262,82 @@
     <b>
         参数: {{config_name}}
     </b>
+    <br/>
+    <table>
+    <tr>
+        <td class="td-class">&nbsp;&nbsp;参数组选择:</td>
+        <td>
+            <select id="select_image_type_cb_id" name="select_image_type_cb" onchange="select_image_type_cb_cb()">
+                <option value="default"  {% if image_config_group_choose == "default" %} selected {% endif %}>默认参数组</option>
+                <option value="pair_image" {% if image_config_group_choose == "pair_image" %} selected {% endif %}>同横纵轴图组</option>
+                <option value="same_title" {% if image_config_group_choose == "same_title" %} selected {% endif %}>同标题图组</option>
+                <option value="sole_image" {% if image_config_group_choose == "sole_image" %} selected {% endif %}>单独子图</option>
+            </select>
+        </td>
+        <td>
+            {% if image_config_group_choose == "pair_image" or image_config_group_choose == "sole_image"  or image_config_group_choose == "same_title" %}
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="{{url_for('plot_config_following_default', following_type='all')}}" style="font-family: monospace" onclick="return confirm('确定要清除当前参数组的所有单独设置吗？')" >跟随默认</a>
+            {% else %}
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="{{url_for('plot_config_following_default', following_type='reset')}}" style="font-family: monospace" onclick="return confirm('确定要清除所有单独设置吗？')" >清除所有单独设置 </a>
+            {% endif %}
+        </td>
+    </tr>
+    {% if image_config_group_choose == "pair_image" or image_config_group_choose == "sole_image"  %}
+        <tr>
+            <td class="td-class">&nbsp;&nbsp;图组选择:</td>
+            <td>
+                <select id="select_pair_image_type_id" name="select_pair_image_type" onchange="select_image_content_cb()" style="width: 150px">
+                    {% for item in total_same_paired_images_x %}
+                        <option value="{{item}}-{{total_same_paired_images_y[loop.index0]}}" {% if image_content_choose_idx == loop.index0 %} selected {% endif %}>{{item}}-{{total_same_paired_images_y[loop.index0]}}</option>
+                    {% endfor %}
+                </select>
+            </td>
+            <td>
+                {% if image_config_group_choose == "pair_image" %}
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="{{url_for('plot_config_following_default', following_type='xy')}}" style="font-family: monospace" onclick="return confirm('确定要清除以下单独设置吗？')">跟随默认</a>
+                {% endif %}
+            </td>
+        </tr>
+    {% endif %}
+    {% if image_config_group_choose == "sole_image" or image_config_group_choose == "same_title" %}
+        <tr>
+            {% if image_config_group_choose == "sole_image" %}
+            <td class="td-class">&nbsp;&nbsp;子图选择:</td>
+            {%  else %}
+            <td class="td-class">&nbsp;&nbsp;图组选择:</td>
+            {% endif %}
+            <td>
+                <select id="select_sub_image_type_id" name="select_sub_image_type" onchange="select_sub_image_cb()" style="width: 150px">
+                    {% for item in sub_image_list %}
+                        <option value="{{item}}" {% if sub_image_title_choose_idx == loop.index0 %} selected {% endif %} >{{item}}</option>
+                    {% endfor %}
+                </select>
+                {% if sub_image_list | length == 0 %}
+                    暂未发现有效子图，请重新加载图片
+                {% endif %}
+            </td>
+            <td>
+                {% if sub_image_list | length > 0 %}
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="{{url_for('plot_config_following_default', following_type='title')}}" style="font-family: monospace" onclick="return confirm('确定要清除以下单独设置吗？')">跟随默认</a>
+                {% endif %}
+            </td>
+        </tr>
+    {% endif %}
+</table>
+
+
     <form name="form_plot" action="{{url_for('plot_config_update')}}" method="POST">
     <p>
-        {% for config_name, config_value in plot_config.items() %}
-        >>{{loop.index0+1}}. {{description[config_name]}} ({{config_name}})
+        {% if  image_config_group_choose == "sole_image" or image_config_group_choose == "same_title" or image_config_group_choose == "pair_image" %}
+        *勾选复选框表示使用独立配置<br/>
+        {% endif %}
+        {% for config_name, config_value in plot_config %}
+        >>{{loop.index0+1}}. {% if  image_config_group_choose == "sole_image" or image_config_group_choose == "same_title" or image_config_group_choose == "pair_image" %}
+        <input type="checkbox" name="checkbox_{{config_name}}_checkbox" id="checkbox_{{config_name}}_id" value="set_particular" {% if config_name in additional_config_cur_setting %}checked="checked" {%endif%}  >
+        {% endif %}
+        {{description[config_name]}} ({{config_name}})
+
         {% if config_type[config_name] == 'str' %}
-
-
         <br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;> <input type="text" name="{{config_name}}" id="{{config_name}}_id" value="{{config_value}}" style="width: 400px;"  ><br/>
         {% elif config_type[config_name] == 'int' %}
         <br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;> <input type="text" name="{{config_name}}" id="{{config_name}}_id" value={{config_value}} style="width: 400px;"  ><br/>

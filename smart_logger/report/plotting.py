@@ -34,6 +34,44 @@ line_style = [
     ['green', '-', 'P', '/+'],
 ]
 
+def get_plot_config(atrrname, x_name=None, y_name=None, xy_name=None, title=None):
+    if x_name is not None and y_name is not None and xy_name is None:
+        xy_name = f'{x_name}-{y_name}'
+    if isinstance(title, tuple):
+        title = title_tuple_to_str(title)
+    if xy_name is None and title is None:
+        return getattr(plot_config, atrrname)
+    elif xy_name is not None and title is None:
+        additional_config = plot_config.ADDITIONAL_PLOT_CONFIGS
+        for k in additional_config:
+            if k == 'pair_image':
+                config_dict = additional_config[k]
+                if xy_name in config_dict and atrrname in config_dict[xy_name]:
+                    return config_dict[xy_name][atrrname]
+    elif title is not None and xy_name is None:
+        additional_config = plot_config.ADDITIONAL_PLOT_CONFIGS
+        for k in additional_config:
+            if k == 'same_title':
+                config_dict = additional_config[k]
+                if title in config_dict and atrrname in config_dict[title]:
+                    return config_dict[title][atrrname]
+    else:
+        additional_config = plot_config.ADDITIONAL_PLOT_CONFIGS
+        for k in additional_config:
+            if k == 'sole_image':
+                config_dict = additional_config[k]
+                if xy_name in config_dict and title in config_dict[xy_name]:
+                    if atrrname in config_dict[xy_name][title]:
+                        return config_dict[xy_name][title][atrrname]
+            elif k == 'pair_image':
+                config_dict = additional_config[k]
+                if xy_name in config_dict and atrrname in config_dict[xy_name]:
+                    return config_dict[xy_name][atrrname]
+            elif k == 'same_title':
+                config_dict = additional_config[k]
+                if title in config_dict and atrrname in config_dict[title]:
+                    return config_dict[title][atrrname]
+    return getattr(plot_config, atrrname)
 
 def title_tuple_to_str(title):
     try:
@@ -459,9 +497,10 @@ def _preprocess_date(data, alg_to_color_idx, x_name, y_name):
             x_data = [np.array(data_alg['data'][x_name]) for data_alg in data_alg_list]
             y_data = [np.array(data_alg['data'][y_name]) for data_alg in data_alg_list]
             y_list = [y_data_item[-1] for y_data_item in y_data]
+            x_max = get_plot_config('XMAX', x_name=x_name, y_name=y_name, title=sub_figure)
             for x_ind, x_item in enumerate(x_data):
-                if not str(plot_config.XMAX) == 'None':
-                    xmax = float(plot_config.XMAX)
+                if not str(x_max) == 'None':
+                    xmax = float(x_max)
                     final_ind = np.argmin(np.square(np.array(x_item) - float(xmax))) + 1
                     y_list[x_ind] = y_data[x_ind][final_ind - 1]
             if len(y_list) == 0:
@@ -483,15 +522,14 @@ def _preprocess_date(data, alg_to_color_idx, x_name, y_name):
     for alg in alg_data:
         perfs = [alg_data[alg][k] for k in alg_data[alg]]
         alg_perf[alg] = 1.1 if len(perfs) == 0 else np.mean(perfs)
-
-    if plot_config.MIN_RELATIVE_PERFORMANCE > 0.0:
-        alg_perf_reserved = dict()
+    min_rel = get_plot_config('MIN_RELATIVE_PERFORMANCE', x_name=x_name, y_name=y_name)
+    if min_rel > 0.0:
         _reserved_alg_list = []
         for alg in alg_data:
             perfs = [alg_data[alg][k] for k in alg_data[alg]]
             if len(perfs) > 0:
                 for p in perfs:
-                    if p < plot_config.MIN_RELATIVE_PERFORMANCE:
+                    if p < min_rel:
                         break
                 else:
                     _reserved_alg_list.append(alg)
@@ -541,13 +579,22 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
     alg_to_seed_num = dict()
     alg_to_seed_num_max = dict()
     f, axarr = plt.subplots(fig_row, fig_column, sharex=False, squeeze=False, figsize=figsize)
-    plt.subplots_adjust(wspace=plot_config.SUBPLOT_WSPACE, hspace=plot_config.SUBPLOT_HSPACE)
-    if plot_config.MIN_RELATIVE_PERFORMANCE > 0.0 or plot_config.SORT_BY_PERFORMANCE_ORDER:
+    def _get_plot_config_xy(attri):
+        return get_plot_config(attri, x_name=x_name, y_name=y_name)
+
+    plt.subplots_adjust(wspace=_get_plot_config_xy('SUBPLOT_WSPACE'), hspace=_get_plot_config_xy('SUBPLOT_HSPACE'))
+    if _get_plot_config_xy('MIN_RELATIVE_PERFORMANCE') > 0.0 or _get_plot_config_xy('SORT_BY_PERFORMANCE_ORDER'):
         averaged_sort_alg_list, valid_alg_dict = _preprocess_date(data, alg_to_color_idx, x_name, y_name)
     else:
         averaged_sort_alg_list, valid_alg_dict = None, None
     fig_to_pca_evaluation = dict()
+    figure_plotting_record = dict()
     for sub_figure in sub_figure_content:
+        def _get_plot_config_all(attri):
+            return get_plot_config(attri, x_name=x_name, y_name=y_name, title=sub_figure)
+        sub_figure_str = title_tuple_to_str(sub_figure)
+        if sub_figure_str not in figure_plotting_record:
+            figure_plotting_record[sub_figure_str] = set()
         _col = fig_ind % fig_column
         _row = fig_ind // fig_column
         ax = axarr[_row][_col]
@@ -583,23 +630,25 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
             require_resample = False
             inteval_range = (np.max(x_intevals) - np.min(x_intevals)) / 2. / np.mean(x_intevals)
             Logger.local_log(f'inteval range: {inteval_range}')
-            if str(plot_config.REQUIRE_RESAMPLE) == 'True':
+            require_resample_config = _get_plot_config_all('REQUIRE_RESAMPLE')
+            if str(require_resample_config) == 'True':
                 require_resample = True
-            elif str(plot_config.REQUIRE_RESAMPLE) == 'None':
+            elif str(require_resample_config) == 'None':
                 if inteval_range > 0.05:
                     require_resample = True
 
             data_len = [len(item) for item in x_data]
             min_data_len = min(data_len)
             seed_num = len(data_len)
+            plot_for_every_config = _get_plot_config_all('PLOT_FOR_EVERY')
             if not require_resample:
-                x_data = [np.array(data[:min_data_len:plot_config.PLOT_FOR_EVERY]) for data in x_data]
-                y_data = [np.array(data[:min_data_len:plot_config.PLOT_FOR_EVERY]) for data in y_data]
+                x_data = [np.array(data[:min_data_len:plot_for_every_config]) for data in x_data]
+                y_data = [np.array(data[:min_data_len:plot_for_every_config]) for data in y_data]
                 x_data = x_data[0]
             else:
                 min_x = np.max([np.min(item) for item in x_data])
                 max_x = np.min([np.max(item) for item in x_data])
-                sample_num = min_data_len // plot_config.PLOT_FOR_EVERY
+                sample_num = min_data_len // plot_for_every_config
                 x_data_new = np.linspace(min_x, max_x, sample_num)
                 for i in range(len(y_data)):
                     try:
@@ -628,12 +677,9 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
                         except Exception as e2:
                             Logger.local_log(_y_data)
                             Logger.local_log(f'Failed')
-
-            if not str(plot_config.XMAX) == 'None':
-                # if 'Humanoid' in str(sub_figure):
-                #     xmax = float(plot_config.XMAX) * 2.0
-                # else:
-                xmax = float(plot_config.XMAX)
+            xmax_config = _get_plot_config_all('XMAX')
+            if not str(xmax_config) == 'None':
+                xmax = float(xmax_config)
                 final_ind = np.argmin(np.square(np.array(x_data) - float(xmax))) + 1
                 x_data = x_data[:final_ind]
                 y_data = [data[:final_ind] for data in y_data]
@@ -644,8 +690,10 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
                 Logger.local_log(f'exception: {e}')
                 Logger.local_log(y_data)
                 continue
-            if plot_config.USE_SMOOTH:
-                y_data = smooth(y_data, radius=plot_config.SMOOTH_RADIUS)
+            use_smooth_config = _get_plot_config_all('USE_SMOOTH')
+            if use_smooth_config:
+                smooth_radius_config = _get_plot_config_all('SMOOTH_RADIUS')
+                y_data = smooth(y_data, radius=smooth_radius_config)
             Logger.local_log(
                 f'PID:{os.getpid()}, figure: {sub_figure}, alg: {alg_name}, data_len: {data_len}, min len: {min(data_len)}, {min_data_len}')
             color_idx, type_idx, marker_idx = alg_to_color_idx[alg_name]
@@ -655,8 +703,9 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
 
             curve, = ax.plot(x_data, y_data, color=line_color,
                              linestyle=line_type, marker=marker, label=alg_name,
-                             linewidth=plot_config.LINE_WIDTH, markersize=plot_config.MARKER_SIZE,
+                             linewidth=_get_plot_config_all('LINE_WIDTH'), markersize=_get_plot_config_all('MARKER_SIZE'),
                              markevery=max(min_data_len // 8, 1))
+            figure_plotting_record[sub_figure_str].add(alg_name)
             Logger.local_log('plotting', np.shape(x_data), np.shape(y_data), min_data_len)
             if alg_name not in alg_to_line_handler:
                 alg_to_line_handler[alg_name] = curve
@@ -666,28 +715,28 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
             alg_to_seed_num_max[alg_name] = max(seed_num, alg_to_seed_num_max[alg_name])
             if len(data_len) > 1:
                 ax.fill_between(x_data, y_data - y_data_error, y_data + y_data_error, color=line_color,
-                                alpha=plot_config.SHADING_ALPHA)
-            if str(plot_config.FIXED_Y_LABEL) == 'None':
-                axarr[_row][0].set_ylabel(y_name, fontsize=plot_config.FONTSIZE_LABEL)
+                                alpha=_get_plot_config_all('SHADING_ALPHA'))
+            if str(_get_plot_config_xy('FIXED_Y_LABEL')) == 'None':
+                axarr[_row][0].set_ylabel(y_name, fontsize=_get_plot_config_all('FONTSIZE_LABEL'))
             else:
-                axarr[_row][0].set_ylabel(plot_config.FIXED_Y_LABEL, fontsize=plot_config.FONTSIZE_LABEL)
-            ax.set_xlabel(x_name, fontsize=plot_config.FONTSIZE_LABEL)
-            ax.tick_params(axis='x', labelsize=plot_config.FONTSIZE_XTICK)
-            ax.tick_params(axis='y', labelsize=plot_config.FONTSIZE_YTICK)
+                axarr[_row][0].set_ylabel(_get_plot_config_xy('FIXED_Y_LABEL'), fontsize=_get_plot_config_all('FONTSIZE_LABEL'))
+            ax.set_xlabel(x_name, fontsize=_get_plot_config_all('FONTSIZE_LABEL'))
+            ax.tick_params(axis='x', labelsize=_get_plot_config_all('FONTSIZE_XTICK'))
+            ax.tick_params(axis='y', labelsize=_get_plot_config_all('FONTSIZE_YTICK'))
             ax.yaxis.set_major_locator(matplotlib.ticker.MaxNLocator(5))
 
-            if plot_config.X_AXIS_SCI_FORM:
+            if _get_plot_config_all('X_AXIS_SCI_FORM'):
                 ax.ticklabel_format(style='sci', scilimits=(-1, 2), axis='x')
-                ax.xaxis.offsetText.set_fontsize(plot_config.FONTSIZE_XTICK)
-            if plot_config.Y_AXIS_SCI_FORM:
+                ax.xaxis.offsetText.set_fontsize(_get_plot_config_all('FONTSIZE_XTICK'))
+            if _get_plot_config_xy('Y_AXIS_SCI_FORM'):
                 ax.ticklabel_format(style='sci', scilimits=(-1, 2), axis='y')
-                ax.yaxis.offsetText.set_fontsize(plot_config.FONTSIZE_YTICK)
+                ax.yaxis.offsetText.set_fontsize(_get_plot_config_xy('FONTSIZE_YTICK'))
             title_name = title_tuple_to_str(sub_figure)
-            if not plot_config.TITLE_SUFFIX == 'None':
-                title_name = f'{title_name}{plot_config.TITLE_SUFFIX}'
+            if not _get_plot_config_all('TITLE_SUFFIX') == 'None':
+                title_name = f'{title_name}{_get_plot_config_all("TITLE_SUFFIX")}'
             alg_corresponding_mean_std[alg_name] = (y_data[-1], y_data_std[-1], seed_num)
             alg_count += 1
-            if plot_config.REPORT_PCA_EVAL:
+            if _get_plot_config_all('REPORT_PCA_EVAL'):
                 pca_eval = alg_discriminative_evaluation(alg_corresponding_mean_std)
                 fig_to_pca_evaluation[sub_figure] = pca_eval
                 if pca_eval >= 1e-3:
@@ -695,23 +744,21 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
                 else:
                     pca_eval = format(pca_eval, '.3e')
                 title_name = f'{title_name}-EVAL{pca_eval}'
-            ax.set_title(title_name, fontsize=plot_config.FONTSIZE_TITLE)
+            ax.set_title(title_name, fontsize=_get_plot_config_all('FONTSIZE_TITLE'))
             ax.grid(True)
 
-            if plot_config.XMAX is not None and not str(plot_config.XMAX) == 'None':
-                # if 'Humanoid' in str(sub_figure):
-                #     xmax = float(plot_config.XMAX) * 2.0
-                # else:
-                xmax = float(plot_config.XMAX)
+            if xmax_config is not None and not str(xmax_config) == 'None':
+                xmax = float(xmax_config)
                 ax.set_xlim(right=int(xmax))
-            if plot_config.YMIN is not None and not str(plot_config.YMIN) == 'None':
-                ymin = float(plot_config.YMIN)
+            ymin_config = _get_plot_config_all('YMIN')
+            if ymin_config is not None and not str(ymin_config) == 'None':
+                ymin = ymin_config
                 ax.set_ylim(bottom=ymin)
         if alg_count == 0:
             title_name = title_tuple_to_str(sub_figure)
-            if not plot_config.TITLE_SUFFIX == 'None':
-                title_name = f'{title_name}{plot_config.TITLE_SUFFIX}'
-            ax.set_title(title_name, fontsize=plot_config.FONTSIZE_TITLE)
+            if not _get_plot_config_all('TITLE_SUFFIX') == 'None':
+                title_name = f'{title_name}{_get_plot_config_all("TITLE_SUFFIX")}'
+            ax.set_title(title_name, fontsize=_get_plot_config_all("FONTSIZE_TITLE"))
 
         fig_ind += 1
     names = [k for k in alg_to_line_handler]
@@ -719,7 +766,7 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
         ordered_names = [k for k in plot_config.LEGEND_ORDER if k in names]
         remain_names = [k for k in names if k not in ordered_names]
         names = ordered_names + remain_names
-    if plot_config.SORT_BY_PERFORMANCE_ORDER:
+    if _get_plot_config_xy('SORT_BY_PERFORMANCE_ORDER'):
         _names = []
         for name in averaged_sort_alg_list:
             if name in names:
@@ -733,21 +780,21 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
     curves = [alg_to_line_handler[k] for k in names]
     final_names = []
     for ind, name in enumerate(names):
-        if str(plot_config.SHOW_SEED_NUM) == 'True':
+        if str(_get_plot_config_xy('SHOW_SEED_NUM')) == 'True':
             if alg_to_seed_num[name] == alg_to_seed_num_max[name]:
                 final_names.append(name + f' ({alg_to_seed_num[name]})')
             else:
                 final_names.append(name + f' ({alg_to_seed_num[name]}-{alg_to_seed_num_max[name]})')
         else:
             final_names.append(name)
-    axarr[fig_row - 1][0].legend(handles=curves, labels=final_names, loc=plot_config.LEGEND_WHICH_POSITION,
-                                 bbox_to_anchor=(plot_config.LEGEND_POSITION_X, plot_config.LEGEND_POSITION_Y),
-                                 ncol=plot_config.LEGEND_COLUMN, fontsize=plot_config.FONTSIZE_LEGEND,
-                                 frameon=plot_config.USE_LEGEND_FRAME, bbox_transform=axarr[fig_row - 1][0].transAxes)
+    axarr[fig_row - 1][0].legend(handles=curves, labels=final_names, loc=_get_plot_config_xy('LEGEND_WHICH_POSITION'),
+                                 bbox_to_anchor=(_get_plot_config_xy('LEGEND_POSITION_X'), _get_plot_config_xy('LEGEND_POSITION_Y')),
+                                 ncol=_get_plot_config_xy('LEGEND_COLUMN'), fontsize=_get_plot_config_xy('FONTSIZE_LEGEND'),
+                                 frameon=_get_plot_config_xy('USE_LEGEND_FRAME'), bbox_transform=axarr[fig_row - 1][0].transAxes)
     sup_title_name = y_name
-    if plot_config.RECORD_DATE_TIME:
+    if _get_plot_config_xy('RECORD_DATE_TIME'):
         sup_title_name += ': {}'.format(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-    if plot_config.REPORT_PCA_EVAL:
+    if _get_plot_config_xy('REPORT_PCA_EVAL'):
         fig_pca_eval = [fig_to_pca_evaluation[k] for k in fig_to_pca_evaluation]
         if len(fig_pca_eval) > 0:
             fig_pca_eval = np.mean(fig_pca_eval)
@@ -756,13 +803,13 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
             else:
                 fig_pca_eval = format(fig_pca_eval, '.3e')
             sup_title_name += f' EVAL: {fig_pca_eval}'
-    if plot_config.NEED_SUP_TITLE:
-        plt.suptitle(sup_title_name, fontsize=plot_config.FONTSIZE_SUPTITLE, y=plot_config.SUPTITLE_Y)
+    if _get_plot_config_xy('NEED_SUP_TITLE'):
+        plt.suptitle(sup_title_name, fontsize=_get_plot_config_xy('FONTSIZE_SUPTITLE'), y=_get_plot_config_xy('SUPTITLE_Y'))
     saving_name = y_name
-    if not plot_config.OUTPUT_FILE_PREFIX == 'None':
+    if not _get_plot_config_xy('OUTPUT_FILE_PREFIX') == 'None':
         _saving_dir = os.path.dirname(saving_name)
         _saving_file = os.path.basename(saving_name)
-        _saving_file = plot_config.OUTPUT_FILE_PREFIX + _saving_file
+        _saving_file = _get_plot_config_xy('OUTPUT_FILE_PREFIX') + _saving_file
         saving_name = os.path.join(_saving_dir, _saving_file)
     os.makedirs(plot_config.PLOT_FIGURE_SAVING_PATH, exist_ok=True)
     png_saving_path = os.path.join(plot_config.PLOT_FIGURE_SAVING_PATH, f'{saving_name}.png')
@@ -770,13 +817,21 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
     os.makedirs(os.path.dirname(png_saving_path), exist_ok=True)
     Logger.local_log(f'saving PDF to file://{pdf_saving_path}')
     Logger.local_log(f'saving PNG to file://{png_saving_path}')
-    f.savefig(png_saving_path, bbox_inches='tight', dpi=plot_config.PNG_DPI)
+    f.savefig(png_saving_path, bbox_inches='tight', dpi=_get_plot_config_xy('PNG_DPI'))
     f.savefig(pdf_saving_path, bbox_inches='tight')
     plt.close(f)
-    return png_saving_path, x_name, y_name
+    for k in figure_plotting_record:
+        figure_plotting_record[k] = sorted(list(figure_plotting_record[k]))
+    return png_saving_path, x_name, y_name, figure_plotting_record
 
 
 def _bar_data_process(x_name, y_name, sub_figure, alg_name, data_alg_list):
+    def _get_plot_config_xy(attri):
+        return get_plot_config(attri, x_name=x_name, y_name=y_name)
+
+    def _get_plot_config_all(attri):
+        return get_plot_config(attri, x_name=x_name, y_name=y_name, title=sub_figure)
+
     x_data = [data_alg['data'][x_name] for data_alg in data_alg_list]
     y_data = [data_alg['data'][y_name] for data_alg in data_alg_list]
     for i in range(len(x_data)):
@@ -788,23 +843,25 @@ def _bar_data_process(x_name, y_name, sub_figure, alg_name, data_alg_list):
     require_resample = False
     inteval_range = (np.max(x_intevals) - np.min(x_intevals)) / 2. / np.mean(x_intevals)
     Logger.local_log(f'inteval range: {inteval_range}')
-    if str(plot_config.REQUIRE_RESAMPLE) == 'True':
+    require_resample_config = _get_plot_config_all('REQUIRE_RESAMPLE')
+    if str(require_resample_config) == 'True':
         require_resample = True
-    elif str(plot_config.REQUIRE_RESAMPLE) == 'None':
+    elif str(require_resample_config) == 'None':
         if inteval_range > 0.05:
             require_resample = True
 
     data_len = [len(item) for item in x_data]
     min_data_len = min(data_len)
     seed_num = len(data_len)
+    plot_for_every_config = _get_plot_config_all('PLOT_FOR_EVERY')
     if not require_resample:
-        x_data = [np.array(data[:min_data_len:plot_config.PLOT_FOR_EVERY]) for data in x_data]
-        y_data = [np.array(data[:min_data_len:plot_config.PLOT_FOR_EVERY]) for data in y_data]
+        x_data = [np.array(data[:min_data_len:plot_for_every_config]) for data in x_data]
+        y_data = [np.array(data[:min_data_len:plot_for_every_config]) for data in y_data]
         x_data = x_data[0]
     else:
         min_x = np.max([np.min(item) for item in x_data])
         max_x = np.min([np.max(item) for item in x_data])
-        sample_num = min_data_len // plot_config.PLOT_FOR_EVERY
+        sample_num = min_data_len // plot_for_every_config
         x_data_new = np.linspace(min_x, max_x, sample_num)
         for i in range(len(y_data)):
             try:
@@ -833,12 +890,9 @@ def _bar_data_process(x_name, y_name, sub_figure, alg_name, data_alg_list):
                 except Exception as e2:
                     Logger.local_log(_y_data)
                     Logger.local_log(f'Failed')
-
-    if not str(plot_config.XMAX) == 'None':
-        # if 'Humanoid' in str(sub_figure):
-        #     xmax = float(plot_config.XMAX) * 2.0
-        # else:
-        xmax = float(plot_config.XMAX)
+    xmax_config = _get_plot_config_all('XMAX')
+    if not str(xmax_config) == 'None':
+        xmax = float(xmax_config)
         final_ind = np.argmin(np.square(np.array(x_data) - float(xmax))) + 1
         x_data = x_data[:final_ind]
         y_data = [data[:final_ind] for data in y_data]
@@ -849,8 +903,9 @@ def _bar_data_process(x_name, y_name, sub_figure, alg_name, data_alg_list):
         Logger.local_log(f'exception: {e}')
         Logger.local_log(y_data)
         return None, None, None, None, None, None
-    if plot_config.USE_SMOOTH:
-        y_data = smooth(y_data, radius=plot_config.SMOOTH_RADIUS)
+
+    if _get_plot_config_all('USE_SMOOTH'):
+        y_data = smooth(y_data, radius=_get_plot_config_all('SMOOTH_RADIUS'))
     Logger.local_log(
         f'PID:{os.getpid()}, figure: {sub_figure}, alg: {alg_name}, data_len: {data_len}, min len: {min(data_len)}, {min_data_len}')
 
@@ -861,6 +916,9 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
     Logger.local_log(f'PID: {os.getpid()} started!!')
     for k in plot_config_dict:
         setattr(plot_config, k, plot_config_dict[k])
+    def _get_plot_config_xy(attri):
+        return get_plot_config(attri, x_name=x_name, y_name=y_name)
+
     sub_figure_content = [k for k in data]
     # sub_figure_content = sorted(sub_figure_content)
     sub_figure_content = _sub_figure_sorted(sub_figure_content)
@@ -870,8 +928,9 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
     alg_to_seed_num = dict()
     alg_to_seed_num_max = dict()
     f, axarr = plt.subplots(fig_row, 1, sharex=False, squeeze=False, figsize=figsize)
-    plt.subplots_adjust(wspace=plot_config.SUBPLOT_WSPACE, hspace=plot_config.SUBPLOT_HSPACE)
-    if plot_config.MIN_RELATIVE_PERFORMANCE > 0.0 or plot_config.SORT_BY_PERFORMANCE_ORDER:
+    plt.subplots_adjust(wspace=_get_plot_config_xy('SUBPLOT_WSPACE'), hspace=_get_plot_config_xy("SUBPLOT_HSPACE"))
+    min_rel_perf = _get_plot_config_xy('MIN_RELATIVE_PERFORMANCE')
+    if min_rel_perf > 0.0 or plot_config.SORT_BY_PERFORMANCE_ORDER:
         averaged_sort_alg_list, valid_alg_dict = _preprocess_date(data, alg_to_color_idx, x_name, y_name)
     else:
         averaged_sort_alg_list, valid_alg_dict = None, None
@@ -881,8 +940,9 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
     sub_figure_min_value, sub_figure_max_value = {}, {}
     sub_figure_list_value = {}
     sub_figure_max_alg_name = {}
-    if not str(plot_config.BAR_MAXIMUM_EXCLUDE) == 'None':
-        exclude_str = str(plot_config.BAR_MAXIMUM_EXCLUDE)
+    bar_maximum_exclude_config = _get_plot_config_xy('BAR_MAXIMUM_EXCLUDE')
+    if not str(bar_maximum_exclude_config) == 'None':
+        exclude_str = str(bar_maximum_exclude_config)
         if ',' in exclude_str:
             exclude_str = [item.strip() for item in exclude_str.split(',') if len(item) > 0]
         else:
@@ -890,6 +950,8 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
     else:
         exclude_str = []
     for sub_figure in sub_figure_content:
+        def _get_plot_config_all(attri):
+            return get_plot_config(attri, x_name=x_name, y_name=y_name, title=sub_figure)
         algs, _, _ = sort_algs(data[sub_figure])
         for alg_name in algs:
             data_alg_list = data[sub_figure][alg_name]
@@ -902,25 +964,28 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
             alg_to_ind_in_subfig[alg_name] = alg_to_color_idx[alg_name][-1]
             if alg_to_color_idx[alg_name][-1] not in used_ind:
                 used_ind.append(alg_to_color_idx[alg_name][-1])
-            if str(plot_config.BAR_NORMALIZE_VALUE) == 'True' or str(plot_config.BAR_SORT_X) == 'True' or str(
-                    plot_config.BAR_MARK_MAXIMUM) == 'True':
+
+            if str(_get_plot_config_all('BAR_NORMALIZE_VALUE')) == 'True' or str(_get_plot_config_all('BAR_SORT_X')) == 'True' or str(
+                    _get_plot_config_all('BAR_MARK_MAXIMUM')) == 'True':
                 x_data, y_data, y_data_error, y_data_std, seed_num, min_data_len = _bar_data_process(x_name, y_name,
                                                                                                      sub_figure,
                                                                                                      alg_name,
                                                                                                      data_alg_list)
                 if sub_figure not in sub_figure_min_value:
                     sub_figure_min_value[sub_figure] = y_data[-1]
-                    if plot_config.YMIN is not None and not str(plot_config.YMIN) == 'None':
-                        sub_figure_min_value[sub_figure] = max(float(plot_config.YMIN),
+                    ymin_config = _get_plot_config_all('YMIN')
+                    if ymin_config is not None and not str(ymin_config) == 'None':
+                        sub_figure_min_value[sub_figure] = max(float(ymin_config),
                                                                sub_figure_min_value[sub_figure])
                     sub_figure_max_value[sub_figure] = y_data[-1]
                     if alg_name not in exclude_str:
                         sub_figure_max_alg_name[sub_figure] = (alg_name, y_data[-1])
                     sub_figure_list_value[sub_figure] = [(alg_name, y_data[-1])]
                 else:
+                    ymin_config = _get_plot_config_all('YMIN')
                     sub_figure_min_value[sub_figure] = min(y_data[-1], sub_figure_min_value[sub_figure])
-                    if plot_config.YMIN is not None and not str(plot_config.YMIN) == 'None':
-                        sub_figure_min_value[sub_figure] = max(float(plot_config.YMIN),
+                    if ymin_config is not None and not str(ymin_config) == 'None':
+                        sub_figure_min_value[sub_figure] = max(float(ymin_config),
                                                                sub_figure_min_value[sub_figure])
                     if y_data[-1] > sub_figure_max_value[sub_figure]:
                         sub_figure_max_value[sub_figure] = y_data[-1]
@@ -936,7 +1001,13 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
     for ind, used_ind_item in enumerate(used_ind):
         used_ind_dict[used_ind_item] = ind
     alg_to_ind_in_subfig = {k: used_ind_dict[alg_to_ind_in_subfig[k]] for k in alg_to_ind_in_subfig}
+    figure_plotting_record = dict()
     for sub_figure in sub_figure_content:
+        def _get_plot_config_all(attri):
+            return get_plot_config(attri, x_name=x_name, y_name=y_name, title=sub_figure)
+        sub_figure_str = title_tuple_to_str(sub_figure)
+        if sub_figure_str not in figure_plotting_record:
+            figure_plotting_record[sub_figure_str] = set()
         _col = fig_ind % fig_column
         _row = fig_ind // fig_column
         ax = axarr[_row][0]
@@ -949,7 +1020,7 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
         alg_count = 0
         algs, _, _ = sort_algs(data[sub_figure])
         alg_corresponding_mean_std = dict()
-        if str(plot_config.BAR_SORT_X) == 'True':
+        if str(_get_plot_config_all('BAR_SORT_X')) == 'True':
             if sub_figure in sub_figure_list_value:
                 alg_to_ind_in_subfig = {sub_figure_list_value[sub_figure][i][0]: i for i in
                                         range(len(sub_figure_list_value[sub_figure]))}
@@ -991,37 +1062,37 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
             if not bar_fill:
                 hatch = None
             line_idx = alg_to_ind_in_subfig[alg_name] if alg_name in alg_to_ind_in_subfig else color_idx
-            # curve, = ax.plot(x_data, y_data, color=line_color,
-            #                  linestyle=line_type, marker=marker, label=alg_name,
-            #                  linewidth=plot_config.LINE_WIDTH, markersize=plot_config.MARKER_SIZE,
-            #                  markevery=max(min_data_len // 8, 1))
-            bwidth = (1.0 - plot_config.BAR_INTERVAL) / len(alg_to_ind_in_subfig) if len(
+            bar_interval_config = _get_plot_config_xy('BAR_INTERVAL')
+            bwidth = (1.0 - bar_interval_config) / len(alg_to_ind_in_subfig) if len(
                 alg_to_ind_in_subfig) > 0 else 0.1
             if len(alg_to_ind_in_subfig) <= 1:
                 x_cord = _col
             else:
-                x_cord = _col + line_idx * (1 - plot_config.BAR_INTERVAL - bwidth) / (
-                            len(alg_to_ind_in_subfig) - 1) - 0.5 + 0.5 * plot_config.BAR_INTERVAL + bwidth * 0.5
+                x_cord = _col + line_idx * (1 - bar_interval_config - bwidth) / (
+                            len(alg_to_ind_in_subfig) - 1) - 0.5 + 0.5 * bar_interval_config + bwidth * 0.5
             error_params = dict(capsize=4, alpha=alpha)  # 设置误差标记参数
+            figure_plotting_record[sub_figure_str].add(alg_name)
+            ymin_config = _get_plot_config_all('YMIN')
 
-            if str(plot_config.BAR_NORMALIZE_VALUE) == 'True' and sub_figure in sub_figure_min_value:
+            if str(_get_plot_config_xy('BAR_NORMALIZE_VALUE')) == 'True' and sub_figure in sub_figure_min_value:
                 y_data_item = y_data[-1]
                 y_error_item = y_data_error[-1]
-                if not str(plot_config.YMIN) == 'None':
-                    if y_data_item < float(plot_config.YMIN):
-                        y_data_item = float(plot_config.YMIN)
+                if not str(ymin_config) == 'None':
+                    if y_data_item < float(ymin_config):
+                        y_data_item = float(ymin_config)
                         y_error_item = 0.0
                 if sub_figure_max_value[sub_figure] <= sub_figure_min_value[sub_figure]:
                     y_data_item = 1.0
                     y_error_item = 0.0
 
                 else:
+                    bar_normalize_minimum_value_config = _get_plot_config_xy('BAR_NORMALIZE_MINIMUM_VALUE')
                     y_data_item = (y_data_item - sub_figure_min_value[sub_figure]) / (
                             sub_figure_max_value[sub_figure] - sub_figure_min_value[sub_figure]) * (
-                                          1 - plot_config.BAR_NORMALIZE_MINIMUM_VALUE) + plot_config.BAR_NORMALIZE_MINIMUM_VALUE
+                                          1 - bar_normalize_minimum_value_config) + bar_normalize_minimum_value_config
                     y_error_item = y_error_item / (
                             sub_figure_max_value[sub_figure] - sub_figure_min_value[sub_figure]) * (
-                                           1 - plot_config.BAR_NORMALIZE_MINIMUM_VALUE)
+                                           1 - bar_normalize_minimum_value_config)
                 curve, = ax.bar(x_cord, y_data_item,
                                 bwidth, yerr=y_error_item, color=line_color,
                                 error_kw=error_params, hatch=hatch,
@@ -1031,38 +1102,39 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
             else:
                 y_data_item = y_data[-1]
                 y_error_item = y_data_error[-1]
-                if not str(plot_config.YMIN) == 'None':
-                    if y_data_item < float(plot_config.YMIN):
-                        y_data_item = float(plot_config.YMIN)
+
+                if not str(ymin_config) == 'None':
+                    if y_data_item < float(ymin_config):
+                        y_data_item = float(ymin_config)
                         y_error_item = 0.0
                 curve, = ax.bar(x_cord, y_data_item, bwidth, yerr=y_error_item, color=line_color, error_kw=error_params,
                                 hatch=hatch,
                                 edgecolor='black', linewidth=1.0, zorder=2.5, fill=bar_fill, alpha=alpha
                                 )
-            if str(plot_config.BAR_MARK_MAXIMUM) == 'True':
+            if str(_get_plot_config_all('BAR_MARK_MAXIMUM')) == 'True':
                 if sub_figure in sub_figure_max_alg_name and alg_name == sub_figure_max_alg_name[sub_figure][0]:
                     y_bottom, y_top = ax.get_ylim()
                     sign = np.sign(y_data_item)
                     ax.plot(x_cord, sign * min((np.abs(y_data_item) + y_error_item) * 1.06, np.abs(y_data_item) * 1.3),
                             color=line_color, marker='*',
-                            markersize=plot_config.MARKER_SIZE * 2.0)
-                    ax.plot(np.linspace(_col - 0.5 + 0.25 * plot_config.BAR_INTERVAL,
-                                        _col + (1 - plot_config.BAR_INTERVAL) - 0.5 + 0.75 * plot_config.BAR_INTERVAL,
+                            markersize=_get_plot_config_all('MARKER_SIZE') * 2.0)
+                    ax.plot(np.linspace(_col - 0.5 + 0.25 * bar_interval_config,
+                                        _col + (1 - bar_interval_config) - 0.5 + 0.75 * bar_interval_config,
                                         100),
                             y_data_item * np.ones(100, ), color='black', alpha=0.8, linestyle='-.', linewidth=1.0,
                             zorder=2.6)
-                    ax.plot(_col - 0.5 + 0.25 * plot_config.BAR_INTERVAL, y_data_item, color='black', alpha=1.0,
+                    ax.plot(_col - 0.5 + 0.25 * bar_interval_config, y_data_item, color='black', alpha=1.0,
                             marker='4',
-                            markersize=plot_config.MARKER_SIZE * 2.0)
-                    ax.plot(_col + (1 - plot_config.BAR_INTERVAL) - 0.5 + 0.75 * plot_config.BAR_INTERVAL, y_data_item,
+                            markersize=_get_plot_config_all('MARKER_SIZE') * 2.0)
+                    ax.plot(_col + (1 - bar_interval_config) - 0.5 + 0.75 * bar_interval_config, y_data_item,
                             color='black', alpha=1.0,
                             marker='3',
-                            markersize=plot_config.MARKER_SIZE * 2.0)
-            if str(plot_config.SHOW_BAR_SEED_NUM) == 'True':
+                            markersize=_get_plot_config_all('MARKER_SIZE') * 2.0)
+            if str(_get_plot_config_all('SHOW_BAR_SEED_NUM')) == 'True':
                 sign = np.sign(y_data_item)
                 ax.text(x_cord, sign * min((np.abs(y_data_item) + y_error_item) * 1.12, np.abs(y_data_item) * 1.5),
                         f'{seed_num}',
-                        horizontalalignment='center', verticalalignment='center', fontsize=plot_config.FONTSIZE_YTICK)
+                        horizontalalignment='center', verticalalignment='center', fontsize=_get_plot_config_xy('FONTSIZE_YTICK'))
             Logger.local_log('plotting', np.shape(x_data), np.shape(y_data), min_data_len)
             if alg_name not in alg_to_line_handler:
                 alg_to_line_handler[alg_name] = curve
@@ -1070,31 +1142,24 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
                 alg_to_seed_num_max[alg_name] = seed_num
             alg_to_seed_num[alg_name] = min(seed_num, alg_to_seed_num[alg_name])
             alg_to_seed_num_max[alg_name] = max(seed_num, alg_to_seed_num_max[alg_name])
-            # if len(data_len) > 1:
-            #     ax.fill_between(x_data, y_data - y_data_error, y_data + y_data_error, color=line_color,
-            #                     alpha=plot_config.SHADING_ALPHA)
-            if str(plot_config.FIXED_Y_LABEL) == 'None':
-                axarr[_row][_col].set_ylabel(y_name, fontsize=plot_config.FONTSIZE_LABEL)
+            if str(_get_plot_config_xy('FIXED_Y_LABEL')) == 'None':
+                axarr[_row][0].set_ylabel(y_name, fontsize=_get_plot_config_all('FONTSIZE_LABEL'))
             else:
-                axarr[_row][_col].set_ylabel(plot_config.FIXED_Y_LABEL, fontsize=plot_config.FONTSIZE_LABEL)
+                axarr[_row][0].set_ylabel(_get_plot_config_xy('FIXED_Y_LABEL'), fontsize=_get_plot_config_all('FONTSIZE_LABEL'))
 
-            # ax.set_xlabel(x_name, fontsize=plot_config.FONTSIZE_LABEL)
-            ax.tick_params(axis='x', labelsize=plot_config.FONTSIZE_XTICK)
-            ax.tick_params(axis='y', labelsize=plot_config.FONTSIZE_YTICK)
+            ax.tick_params(axis='x', labelsize=_get_plot_config_all('FONTSIZE_XTICK'))
+            ax.tick_params(axis='y', labelsize=_get_plot_config_xy('FONTSIZE_YTICK'))
             ax.yaxis.set_major_locator(matplotlib.ticker.MaxNLocator(5))
 
-            # if plot_config.X_AXIS_SCI_FORM:
-            #     ax.ticklabel_format(style='sci', scilimits=(-1, 2), axis='x')
-            #     ax.xaxis.offsetText.set_fontsize(plot_config.FONTSIZE_XTICK)
-            if plot_config.Y_AXIS_SCI_FORM:
+            if _get_plot_config_all('Y_AXIS_SCI_FORM'):
                 ax.ticklabel_format(style='sci', scilimits=(-1, 2), axis='y')
-                ax.yaxis.offsetText.set_fontsize(plot_config.FONTSIZE_YTICK)
+                ax.yaxis.offsetText.set_fontsize(_get_plot_config_xy('FONTSIZE_YTICK'))
             title_name = title_tuple_to_str(sub_figure)
-            if not plot_config.TITLE_SUFFIX == 'None':
-                title_name = f'{title_name}{plot_config.TITLE_SUFFIX}'
+            if not _get_plot_config_all('TITLE_SUFFIX') == 'None':
+                title_name = f'{title_name}{_get_plot_config_all("TITLE_SUFFIX")}'
             alg_corresponding_mean_std[alg_name] = (y_data[-1], y_data_std[-1], seed_num)
             alg_count += 1
-            if plot_config.REPORT_PCA_EVAL:
+            if _get_plot_config_xy('REPORT_PCA_EVAL'):
                 pca_eval = alg_discriminative_evaluation(alg_corresponding_mean_std)
                 fig_to_pca_evaluation[sub_figure] = pca_eval
                 if pca_eval >= 1e-3:
@@ -1102,28 +1167,21 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
                 else:
                     pca_eval = format(pca_eval, '.3e')
                 title_name = f'{title_name}-EVAL{pca_eval}'
-            ax.set_title(title_name, fontsize=plot_config.FONTSIZE_TITLE)
+            ax.set_title(title_name, fontsize=_get_plot_config_all('FONTSIZE_TITLE'))
             ax.grid(True)
-        if plot_config.YMIN is not None and not str(plot_config.YMIN) == 'None' and not str(
-                plot_config.BAR_NORMALIZE_VALUE) == 'True':
-            ymin = float(plot_config.YMIN)
-            # if str(plot_config.BAR_NORMALIZE_VALUE) == 'True':
-            #     ymin = plot_config.BAR_NORMALIZE_MINIMUM_VALUE
+        ymin_config = _get_plot_config_all('YMIN')
+        if ymin_config is not None and not str(ymin_config) == 'None' and not str(
+                _get_plot_config_xy('BAR_NORMALIZE_VALUE')) == 'True':
+            ymin = float(ymin_config)
             y_min_cur, y_max_cur = ax.set_ylim()
             if y_min_cur < ymin:
                 ax.set_ylim(bottom=ymin)
-            # if plot_config.XMAX is not None and not str(plot_config.XMAX) == 'None':
-            #     # if 'Humanoid' in str(sub_figure):
-            #     #     xmax = float(plot_config.XMAX) * 2.0
-            #     # else:
-            #     xmax = float(plot_config.XMAX)
-            #     ax.set_xlim(right=int(xmax))
 
         if alg_count == 0:
             title_name = title_tuple_to_str(sub_figure)
-            if not plot_config.TITLE_SUFFIX == 'None':
-                title_name = f'{title_name}{plot_config.TITLE_SUFFIX}'
-            ax.set_title(title_name, fontsize=plot_config.FONTSIZE_TITLE)
+            if not _get_plot_config_all('TITLE_SUFFIX') == 'None':
+                title_name = f'{title_name}{_get_plot_config_all("TITLE_SUFFIX")}'
+            ax.set_title(title_name, fontsize=_get_plot_config_all('FONTSIZE_TITLE'))
 
         fig_ind += 1
     names = [k for k in alg_to_line_handler]
@@ -1145,21 +1203,21 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
     curves = [alg_to_line_handler[k] for k in names]
     final_names = []
     for ind, name in enumerate(names):
-        if str(plot_config.SHOW_SEED_NUM) == 'True':
+        if str(_get_plot_config_xy('SHOW_SEED_NUM')) == 'True':
             if alg_to_seed_num[name] == alg_to_seed_num_max[name]:
                 final_names.append(name + f' ({alg_to_seed_num[name]})')
             else:
                 final_names.append(name + f' ({alg_to_seed_num[name]}-{alg_to_seed_num_max[name]})')
         else:
             final_names.append(name)
-    axarr[fig_row - 1][0].legend(handles=curves, labels=final_names, loc=plot_config.LEGEND_WHICH_POSITION,
-                                 bbox_to_anchor=(plot_config.LEGEND_POSITION_X, plot_config.LEGEND_POSITION_Y),
-                                 ncol=plot_config.LEGEND_COLUMN, fontsize=plot_config.FONTSIZE_LEGEND,
-                                 frameon=plot_config.USE_LEGEND_FRAME, bbox_transform=axarr[fig_row - 1][0].transAxes)
+    axarr[fig_row - 1][0].legend(handles=curves, labels=final_names, loc=_get_plot_config_xy('LEGEND_WHICH_POSITION'),
+                                 bbox_to_anchor=(_get_plot_config_xy('LEGEND_POSITION_X'), _get_plot_config_xy('LEGEND_POSITION_Y')),
+                                 ncol=_get_plot_config_xy('LEGEND_COLUMN'), fontsize=_get_plot_config_xy('FONTSIZE_LEGEND'),
+                                 frameon=_get_plot_config_xy('USE_LEGEND_FRAME'), bbox_transform=axarr[fig_row - 1][0].transAxes)
     sup_title_name = y_name
-    if plot_config.RECORD_DATE_TIME:
+    if _get_plot_config_xy('RECORD_DATE_TIME'):
         sup_title_name += ': {}'.format(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-    if plot_config.REPORT_PCA_EVAL:
+    if _get_plot_config_xy('REPORT_PCA_EVAL'):
         fig_pca_eval = [fig_to_pca_evaluation[k] for k in fig_to_pca_evaluation]
         if len(fig_pca_eval) > 0:
             fig_pca_eval = np.mean(fig_pca_eval)
@@ -1168,13 +1226,13 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
             else:
                 fig_pca_eval = format(fig_pca_eval, '.3e')
             sup_title_name += f' EVAL: {fig_pca_eval}'
-    if plot_config.NEED_SUP_TITLE:
-        plt.suptitle(sup_title_name, fontsize=plot_config.FONTSIZE_SUPTITLE, y=plot_config.SUPTITLE_Y)
+    if _get_plot_config_xy('NEED_SUP_TITLE'):
+        plt.suptitle(sup_title_name, fontsize=_get_plot_config_xy('FONTSIZE_SUPTITLE'), y=_get_plot_config_xy('SUPTITLE_Y'))
     saving_name = f'bar_{y_name}'
-    if not plot_config.OUTPUT_FILE_PREFIX == 'None':
+    if not _get_plot_config_xy('OUTPUT_FILE_PREFIX') == 'None':
         _saving_dir = os.path.dirname(saving_name)
         _saving_file = os.path.basename(saving_name)
-        _saving_file = plot_config.OUTPUT_FILE_PREFIX + _saving_file
+        _saving_file = _get_plot_config_xy('OUTPUT_FILE_PREFIX') + _saving_file
         saving_name = os.path.join(_saving_dir, _saving_file)
     os.makedirs(plot_config.PLOT_FIGURE_SAVING_PATH, exist_ok=True)
     png_saving_path = os.path.join(plot_config.PLOT_FIGURE_SAVING_PATH, f'{saving_name}.png')
@@ -1182,27 +1240,40 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
     os.makedirs(os.path.dirname(png_saving_path), exist_ok=True)
     Logger.local_log(f'saving PDF to file://{pdf_saving_path}')
     Logger.local_log(f'saving PNG to file://{png_saving_path}')
-    f.savefig(png_saving_path, bbox_inches='tight', dpi=plot_config.PNG_DPI)
+    f.savefig(png_saving_path, bbox_inches='tight', dpi=_get_plot_config_xy('PNG_DPI'))
     f.savefig(pdf_saving_path, bbox_inches='tight')
     plt.close(f)
-    return png_saving_path, x_name, y_name
+    for k in figure_plotting_record:
+        figure_plotting_record[k] = sorted(list(figure_plotting_record[k]))
+    return png_saving_path, x_name, y_name, figure_plotting_record
 
 
 def _make_subtable(data, x_name, y_name, at_x, plot_config_dict, iter, alg_as_row_header):
+
     for k in plot_config_dict:
         setattr(plot_config, k, plot_config_dict[k])
+    def _get_plot_config_xy(attri):
+        return get_plot_config(attri, x_name=x_name, y_name=y_name)
     sub_figure_content = [k for k in data]
     # sub_figure_content = sorted(sub_figure_content)
     sub_figure_content = _sub_figure_sorted(sub_figure_content)
     fig_ind = 0
     summary_dict = dict()
-    if plot_config.MIN_RELATIVE_PERFORMANCE > 0.0 or plot_config.SORT_BY_PERFORMANCE_ORDER:
+    min_rel_perf = _get_plot_config_xy('MIN_RELATIVE_PERFORMANCE')
+    if min_rel_perf > 0.0 or _get_plot_config_xy('SORT_BY_PERFORMANCE_ORDER'):
         averaged_sort_alg_list, valid_alg_dict = _preprocess_date(data, None, x_name, y_name)
     else:
         averaged_sort_alg_list, valid_alg_dict = None, None
+    figure_plotting_record = dict()
     for sub_figure in sub_figure_content:
+        sub_figure_str = title_tuple_to_str(sub_figure)
+        def _get_plot_config_all(attri):
+            return get_plot_config(attri, x_name=x_name, y_name=y_name, title=sub_figure)
+        if sub_figure_str not in figure_plotting_record:
+            figure_plotting_record[sub_figure_str] = set()
         algs, _, _ = sort_algs(data[sub_figure])
         for alg_name in algs:
+
             data_alg_list = data[sub_figure][alg_name]
             have_y_name = True
             if valid_alg_dict is not None and alg_name not in valid_alg_dict:
@@ -1228,23 +1299,26 @@ def _make_subtable(data, x_name, y_name, at_x, plot_config_dict, iter, alg_as_ro
             require_resample = False
             inteval_range = (np.max(x_intevals) - np.min(x_intevals)) / 2. / np.mean(x_intevals)
             Logger.local_log(f'inteval range: {inteval_range}')
-            if str(plot_config.REQUIRE_RESAMPLE) == 'True':
+            require_resample_config = _get_plot_config_all('REQUIRE_RESAMPLE')
+            if str(require_resample_config) == 'True':
                 require_resample = True
-            elif str(plot_config.REQUIRE_RESAMPLE) == 'None':
+            elif str(require_resample_config) == 'None':
                 if inteval_range > 0.05:
                     require_resample = True
 
             data_len = [len(item) for item in x_data]
             min_data_len = min(data_len)
             seed_num = len(data_len)
+            figure_plotting_record[sub_figure_str].add(alg_name)
+            plot_for_every_config = _get_plot_config_all('PLOT_FOR_EVERY')
             if not require_resample:
-                x_data = [np.array(data[:min_data_len:plot_config.PLOT_FOR_EVERY]) for data in x_data]
-                y_data = [np.array(data[:min_data_len:plot_config.PLOT_FOR_EVERY]) for data in y_data]
+                x_data = [np.array(data[:min_data_len:plot_for_every_config]) for data in x_data]
+                y_data = [np.array(data[:min_data_len:plot_for_every_config]) for data in y_data]
                 x_data = x_data[0]
             else:
                 min_x = np.max([np.min(item) for item in x_data])
                 max_x = np.min([np.max(item) for item in x_data])
-                sample_num = min_data_len // plot_config.PLOT_FOR_EVERY
+                sample_num = min_data_len // plot_for_every_config
                 x_data_new = np.linspace(min_x, max_x, sample_num)
                 for i in range(len(y_data)):
                     try:
@@ -1256,19 +1330,19 @@ def _make_subtable(data, x_name, y_name, at_x, plot_config_dict, iter, alg_as_ro
                 x_data = x_data_new
             min_data_len = np.shape(x_data)[0]
             # x_data, y_data = _remove_nan(x_data, y_data)
-            if not str(plot_config.XMAX) == 'None':
-                # if 'Humanoid' in str(sub_figure):
-                #     xmax = float(plot_config.XMAX) * 2.0
-                # else:
-                xmax = float(plot_config.XMAX)
+            xmax_config = _get_plot_config_all('XMAX')
+            if not str(xmax_config) == 'None':
+                xmax = float(xmax_config)
                 final_ind = np.argmin(np.square(np.array(x_data) - float(xmax))) + 1
                 x_data = x_data[:final_ind]
                 y_data = [data[:final_ind] for data in y_data]
 
             y_data, y_data_error, y_data_std = stat_data(y_data)
             y_data_error = np.array(y_data_error)
-            if plot_config.USE_SMOOTH:
-                y_data = smooth(y_data, radius=plot_config.SMOOTH_RADIUS)
+            if _get_plot_config_all('USE_SMOOTH'):
+                y_data = smooth(y_data, radius=_get_plot_config_all('SMOOTH_RADIUS'))
+            if at_x is None:
+                at_x = float(xmax_config)
             if at_x is not None:
                 idx = np.argmin(np.square(x_data.astype(np.float) - at_x))
                 selected_mean = y_data[idx]
@@ -1296,7 +1370,9 @@ def _make_subtable(data, x_name, y_name, at_x, plot_config_dict, iter, alg_as_ro
                     summary_dict_transpose[k2] = dict()
                 summary_dict_transpose[k2][k1] = summary_dict[k1][k2]
         summary_dict = summary_dict_transpose
-    return summary_dict, x_name, y_name
+    for k in figure_plotting_record:
+        figure_plotting_record[k] = sorted(list(figure_plotting_record[k]))
+    return summary_dict, x_name, y_name, figure_plotting_record
 
 
 def _plotting(data):
@@ -1401,9 +1477,11 @@ def _plotting(data):
                                                 fig_column, figsize, alg_to_color_idx, x_name, y_name,
                                                 plot_config_dict))
     config_to_png_path = dict()
+    figure_recording_dict = dict()
     for future in as_completed(futures):
-        png_path, x_name, y_name = future.result()
+        png_path, x_name, y_name, figure_plotting_record = future.result()
         config_to_png_path[x_name + y_name] = png_path
+        figure_recording_dict[f'{x_name}-{y_name}'] = figure_plotting_record
     for x_name, y_name in plot_config.PLOTTING_XY:
         total_png.append(config_to_png_path[x_name + y_name])
     # 汇总图
@@ -1430,7 +1508,7 @@ def _plotting(data):
     total_png_output_path = os.path.join(plot_config.PLOT_FIGURE_SAVING_PATH, f"{plot_config.FINAL_OUTPUT_NAME}.png")
     merge_png.save(total_png_output_path, "PNG")
     Logger.local_log(f'saved png to file://{total_png_output_path} cost: {time.time() - start_merge_time}')
-
+    return figure_recording_dict
 
 def key_func(sub_figure):
     ret = []
@@ -1551,9 +1629,11 @@ def _bar_plotting(data):
                                                 fig_column, figsize, alg_to_color_idx, x_name, y_name,
                                                 plot_config_dict))
     config_to_png_path = dict()
+    figure_recording_dict = dict()
     for future in as_completed(futures):
-        png_path, x_name, y_name = future.result()
+        png_path, x_name, y_name, figure_plotting_record = future.result()
         config_to_png_path[x_name + y_name] = png_path
+        figure_recording_dict[f'{x_name}-{y_name}'] = figure_plotting_record
     for x_name, y_name in plot_config.PLOTTING_XY:
         total_png.append(config_to_png_path[x_name + y_name])
     # 汇总图
@@ -1581,6 +1661,7 @@ def _bar_plotting(data):
                                          f"bar_{plot_config.FINAL_OUTPUT_NAME}.png")
     merge_png.save(total_png_output_path, "PNG")
     Logger.local_log(f'saved png to file://{total_png_output_path} cost: {time.time() - start_merge_time}')
+    return figure_recording_dict
 
 
 def _to_table(data, atx, iter, privileged_col_idx=None, placeholder=None, md=True):
@@ -1633,9 +1714,11 @@ def _to_table(data, atx, iter, privileged_col_idx=None, placeholder=None, md=Tru
         futures.append(plotting_executor.submit(_make_subtable, data_it, x_name, y_name, atx, plot_config_dict, iter,
                                                 alg_as_row_header))
     summary_dict_buffer = dict()
+    figure_recording_dict = dict()
     for future in as_completed(futures):
-        summary_dict, x_name, y_name = future.result()
+        summary_dict, x_name, y_name, figure_plotting_record = future.result()
         summary_dict_buffer[y_name] = summary_dict
+        figure_recording_dict[f'{x_name}-{y_name}'] = figure_plotting_record
     if md:
         result_editor = summary_buffer_to_output_md(summary_dict_buffer, privileged_col_idx, placeholder,
                                                     alg_as_row_header)
@@ -1643,7 +1726,7 @@ def _to_table(data, atx, iter, privileged_col_idx=None, placeholder=None, md=Tru
         result_editor = summary_buffer_to_output(summary_dict_buffer, privileged_col_idx, placeholder,
                                                  alg_as_row_header)
     result = summary_buffer_to_output_html(summary_dict_buffer, privileged_col_idx, placeholder, alg_as_row_header)
-    return result, result_editor
+    return result, result_editor, figure_recording_dict
 
 
 def standardize_row_and_col(item_name, row_header, alg_as_row_header):
@@ -1673,6 +1756,7 @@ def format_float_to_str(num, valid_bit):
 def summary_buffer_to_output(summary_dict_buffer, privileged_col_idx=None, placeholder=None, alg_as_row_header=False):
     final_str = ''
     for table_name in summary_dict_buffer:
+
         final_str = final_str + '\n\n' + '=' * 15 + f'Table: {table_name}' + '=' * 15 + '\n'
         summary_dict = summary_dict_buffer[table_name]
         row_id_list = [k for k in summary_dict.keys()]
@@ -1953,7 +2037,8 @@ def overwrite_config(config_json_path):
 def plot(config_json_path=None):
     overwrite_config(config_json_path)
     data = collect_data()
-    _plotting(data)
+    figure_recording_dict = _plotting(data)
+    return figure_recording_dict
 
 
 def _make_table(latex=None):
@@ -1962,24 +2047,25 @@ def _make_table(latex=None):
     )
     placeholder = dict(
     )
-    xmax = float(plot_config.XMAX) if not str(plot_config.XMAX) == 'None' else None
-    result, result_source = _to_table(data, xmax, None, privileged_col_idx, placeholder=placeholder,
+    result, result_source, figure_recording_dict = _to_table(data, None, None, privileged_col_idx, placeholder=placeholder,
                                       md=False if latex else True)
     if latex is None:
-        return result
+        return result, figure_recording_dict
     else:
-        return result_source
+        return result_source, figure_recording_dict
 
 
 def make_table(config_json_path=None):
     overwrite_config(config_json_path)
-    return _make_table()
+    result, figure_recording_dict = _make_table()
+    return result
 
 
 def bar(config_json_path=None):
     overwrite_config(config_json_path)
     data = collect_data()
-    _bar_plotting(data)
+    figure_recording_dict = _bar_plotting(data)
+    return figure_recording_dict
 
 
 if __name__ == '__main__':

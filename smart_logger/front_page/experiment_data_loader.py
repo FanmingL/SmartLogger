@@ -7,12 +7,24 @@ from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from pathlib import Path
 
 import pandas as pd
-
+import shutil
 import smart_logger.common.page_config as page_config
 import smart_logger.common.plot_config as plot_config
 from smart_logger.report.plotting import merger_to_short_name, list_embedding, standardize_string, make_merger_feature
 from smart_logger.util_logger.logger import Logger
 
+def safe_dump(obj, file_name):
+    cache_filename = f'{file_name}____cache'
+    try:
+        with open(cache_filename, 'w') as f:
+            json.dump(obj, f)
+        shutil.move(cache_filename, file_name)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+    if os.path.exists(cache_filename):
+        Logger.logger(f'Error: {cache_filename} existing!!!!')
+        os.remove(cache_filename)
 
 def get_config_path(config_name, user_name=None):
     if user_name is None:
@@ -46,14 +58,25 @@ def save_config(config, file_name):
     Logger.logger(f'save config to {full_file_name}')
     try:
         os.makedirs(os.path.dirname(full_file_name), exist_ok=True)
-        with open(full_file_name, 'w') as f:
-            json.dump(config, f)
+        safe_dump(config, full_file_name)
         Logger.logger(f'config save to {full_file_name} OK!')
         return True
     except Exception as e:
         Logger.logger(f'config save to {full_file_name} failed. Exception is {e}')
     return False
 
+def load_data_cache(config_name):
+    local_data_path = os.path.join(page_config.WEB_RAM_PATH, 'data_cache', config_name)
+    if not os.path.exists(local_data_path):
+        data = dict()
+    else:
+        data = json.load(open(local_data_path, 'r'))
+    return data
+
+def save_data_cache(data, config_name):
+    local_data_path = os.path.join(page_config.WEB_RAM_PATH, 'data_cache', config_name)
+    os.makedirs(os.path.dirname(local_data_path), exist_ok=True)
+    safe_dump(data, local_data_path)
 
 def _load_config(file_name):
     full_file_name = get_config_path(file_name)
@@ -672,4 +695,5 @@ def record_config_for_user(user, config_name):
         os.makedirs(os.path.dirname(user_history_data_path), exist_ok=True)
         user_data = dict(config=config_name)
 
-    json.dump(user_data, open(user_history_data_path, 'w'))
+    safe_dump(user_data, user_history_data_path)
+

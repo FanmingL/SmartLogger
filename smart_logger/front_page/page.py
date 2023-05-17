@@ -17,7 +17,7 @@ import smart_logger.common.plot_config as plot_config
 from smart_logger.front_page.experiment_data_loader import default_config, load_config, list_current_experiment, \
     get_parameter, reformat_dict, reformat_str, legal_path, save_config, list_current_configs, \
     make_config_type, analyze_experiment, delete_config_file, has_config, standardize_merger_item, get_record_data_item, \
-    get_config_path, record_config_for_user, get_config_modified_timestamp
+    get_config_path, record_config_for_user, get_config_modified_timestamp, load_data_cache, save_data_cache
 from smart_logger.report.plotting import _make_table
 from smart_logger.report.plotting import _overwrite_config, _str_to_short_name
 from smart_logger.report.plotting import bar as local_bar
@@ -405,6 +405,7 @@ def experiment_zip_and_download(folder_name):
 def plot():
     config_name = query_cookie('used_config')
     config = load_config(config_name)
+    plot_config_dict = config
     _overwrite_config(config)
     config_ordered = {k: config[k] for k in plot_config.global_plot_configs() if k in config}
     added_key = []
@@ -429,7 +430,9 @@ def plot():
                                 'DATA_SELECT_GARBAGE', 'DATA_IGNORE_PROPERTY_GARBAGE',
                                 'DATA_SELECT_PROPERTY_GARBAGE',
                                 'SHORT_NAME_FROM_CONFIG_PROPERTY', 'AUTO_PLOTTING_TURN_ON_TIME',
-                                'MAX_AUTO_PLOTTING_NUM']}
+                                'MAX_AUTO_PLOTTING_NUM', 'FOCUS_IMAGE_CONFIG_GROUP',
+                                'FOCUS_IMAGE_CONFIG_SAME_CONTENT_GROUP',
+                                'FOCUS_IMAGE_CONFIG_SUB_IMAGE_TITLE', 'ADDITIONAL_PLOT_CONFIGS', 'FLEXIBLE_CONFIG']}
     config = config_ordered
     config_description = plot_config.DESCRIPTION
     for k in config:
@@ -465,9 +468,71 @@ def plot():
                     file_list.append(os.path.relpath(full_name, figure_saving_path))
     file_list = sorted(file_list, key=lambda x: x.split('.')[-1])
     file_list_encode = [base64.urlsafe_b64encode(os.path.join(item).encode()).decode() for item in file_list]
+    image_config_group_choose = 'default'
+    if 'FOCUS_IMAGE_CONFIG_GROUP' in plot_config_dict and plot_config_dict['FOCUS_IMAGE_CONFIG_GROUP'] in ['default', 'pair_image', 'sole_image', 'same_title']:
+        image_config_group_choose = plot_config_dict['FOCUS_IMAGE_CONFIG_GROUP']
+    plotting_xy = plot_config_dict['PLOTTING_XY']
+    total_same_paired_images_x = [item[0] for item in plotting_xy]
+    total_same_paired_images_y = [item[1] for item in plotting_xy]
+    total_same_paired_images = [f'{item[0]}-{item[1]}' for item in plotting_xy]
+    image_content_choose = total_same_paired_images[0]
+    image_content_choose_idx = 0
+    if 'FOCUS_IMAGE_CONFIG_SAME_CONTENT_GROUP' in plot_config_dict:
+        if plot_config_dict['FOCUS_IMAGE_CONFIG_SAME_CONTENT_GROUP'] in total_same_paired_images:
+            image_content_choose = plot_config_dict['FOCUS_IMAGE_CONFIG_SAME_CONTENT_GROUP']
+            image_content_choose_idx= total_same_paired_images.index(image_content_choose)
+    cache_data = load_data_cache(config_name)
+    image_information = dict()
+    if 'FIGURE_RECORDING' in cache_data:
+        image_information = cache_data['FIGURE_RECORDING']
+    image_inform_title_dict = {k: [k1 for k1 in v] for k, v in image_information.items()}
+    total_title = []
+    for k in image_inform_title_dict:
+        total_title = total_title + image_inform_title_dict[k]
+    total_title = sorted(list(set(total_title)))
+    if not plot_config_dict['FOCUS_IMAGE_CONFIG_GROUP'] == 'same_title':
+        sub_image_list = []
+        if image_content_choose in image_inform_title_dict:
+            sub_image_list = image_inform_title_dict[image_content_choose]
 
+    else:
+        sub_image_list = total_title
+
+    sub_image_title_choose = plot_config_dict['FOCUS_IMAGE_CONFIG_SUB_IMAGE_TITLE'] if \
+        'FOCUS_IMAGE_CONFIG_SUB_IMAGE_TITLE' in plot_config_dict else 'None'
+    sub_image_title_choose_idx = -1
+    if len(sub_image_list) > 0:
+        if sub_image_title_choose in sub_image_list:
+            sub_image_title_choose_idx = sub_image_list.index(sub_image_title_choose)
+    print('flexible config:', plot_config.FLEXIBLE_CONFIG)
+    xy_choose = plot_config_dict['FOCUS_IMAGE_CONFIG_SAME_CONTENT_GROUP']
+    title_choose = plot_config_dict['FOCUS_IMAGE_CONFIG_SUB_IMAGE_TITLE']
+    additional_configs = plot_config_dict['ADDITIONAL_PLOT_CONFIGS']
+    config_presented_mode = plot_config_dict['FOCUS_IMAGE_CONFIG_GROUP']
+    additional_config_cur_setting = dict()
+    if config_presented_mode == 'pair_image':
+        config = {k: v for k, v in config.items() if k in plot_config.FLEXIBLE_CONFIG and 'SAME_XY' in plot_config.FLEXIBLE_CONFIG[k]}
+        if config_presented_mode in additional_configs and xy_choose in additional_configs[config_presented_mode]:
+            additional_config_cur_setting = additional_configs[config_presented_mode][xy_choose]
+    elif config_presented_mode == 'same_title':
+        config = {k: v for k, v in config.items() if k in plot_config.FLEXIBLE_CONFIG and 'SAME_TITLE' in plot_config.FLEXIBLE_CONFIG[k]}
+        if config_presented_mode in additional_configs and title_choose in additional_configs[config_presented_mode]:
+            additional_config_cur_setting = additional_configs[config_presented_mode][title_choose]
+    elif config_presented_mode == 'sole_image':
+        config = {k: v for k, v in config.items() if k in plot_config.FLEXIBLE_CONFIG and 'SUB_IMAGE' in plot_config.FLEXIBLE_CONFIG[k]}
+        if config_presented_mode in additional_configs and xy_choose in additional_configs[config_presented_mode]:
+            if title_choose in additional_configs[config_presented_mode][xy_choose]:
+                additional_config_cur_setting = additional_configs[config_presented_mode][xy_choose][title_choose]
+    for k, v in additional_config_cur_setting.items():
+        if k in config:
+            config[k] = v
+    config_list = [(k, v)for k,v in config.items()]
+
+    if not config_presented_mode == 'default':
+        config_list = [(k, v)for k,v in config.items() if k in additional_config_cur_setting]
+        config_list = config_list + [(k, v)for k,v in config.items() if k not in additional_config_cur_setting]
     return render_template('t_plot.html',
-                           plot_config=config,  # plot_config list list
+                           plot_config=config_list,  # plot_config list list
                            config_type=config_type,
                            config_name=config_name,
                            description=config_description,
@@ -475,7 +540,16 @@ def plot():
                            initial_figure_url=initial_figure_url,
                            file_list=file_list,
                            file_list_encode=file_list_encode,
-                           title_prefix=f'{page_config.PAGE_TITLE_PREFIX}-' if page_config.PAGE_TITLE_PREFIX is not None else ''
+                           title_prefix=f'{page_config.PAGE_TITLE_PREFIX}-' if page_config.PAGE_TITLE_PREFIX is not None else '',
+                           image_config_group_choose=image_config_group_choose,
+                           total_same_paired_images_x=total_same_paired_images_x,
+                           total_same_paired_images_y=total_same_paired_images_y,
+                           image_content_choose=image_content_choose,
+                           image_content_choose_idx=image_content_choose_idx,
+                           image_inform_title_dict=image_inform_title_dict,
+                           sub_image_list=sub_image_list,
+                           sub_image_title_choose_idx=sub_image_title_choose_idx,
+                           additional_config_cur_setting=additional_config_cur_setting
                            )
 
 
@@ -517,7 +591,12 @@ def query_table():
     config_name = query_cookie('used_config')
     config = load_config(config_name)
     _overwrite_config(config)
-    result = _make_table()
+    result, figure_recording_dict = _make_table()
+
+
+    data = load_data_cache(config_name)
+    data['FIGURE_RECORDING'] = figure_recording_dict
+    save_data_cache(data, config_name)
     return result
 
 
@@ -527,7 +606,7 @@ def query_table_source(use_latex):
     config_name = query_cookie('used_config')
     config = load_config(config_name)
     _overwrite_config(config)
-    result = _make_table(True if str(use_latex) == 'True' else False)
+    result, figure_recording_dict = _make_table(True if str(use_latex) == 'True' else False)
     # result = result.replace('\n', '<br/>')
     result = f'<br/><pre><code>\n{result}</code></pre>\n<br/>'
     Logger.logger(f'source code {use_latex}: {result}')
@@ -548,34 +627,81 @@ def data_convert(data, origin_data):
     return data
 
 
+
 @app.route("/plot_config_update", methods=['POST'])
 @require_login(source_name='plot_config_update', allow_guest=True)
 def plot_config_update():
     config_name = query_cookie('used_config')
     config = load_config(config_name)
+    config_presented_mode = config['FOCUS_IMAGE_CONFIG_GROUP']
+    xy_choose = config['FOCUS_IMAGE_CONFIG_SAME_CONTENT_GROUP']
+    title_choose = config['FOCUS_IMAGE_CONFIG_SUB_IMAGE_TITLE']
+    current_additional_config = dict()
+    if config_presented_mode not in config['ADDITIONAL_PLOT_CONFIGS']:
+        config['ADDITIONAL_PLOT_CONFIGS'][config_presented_mode] = dict()
+    additional_configs_cur_mode = config['ADDITIONAL_PLOT_CONFIGS'][config_presented_mode]
+    if config_presented_mode=='pair_image':
+        if xy_choose in additional_configs_cur_mode:
+            current_additional_config = additional_configs_cur_mode[xy_choose]
+        else:
+            additional_configs_cur_mode[xy_choose] = current_additional_config
+    elif config_presented_mode=='same_title':
+        if title_choose in additional_configs_cur_mode:
+            current_additional_config = additional_configs_cur_mode[title_choose]
+        else:
+            additional_configs_cur_mode[title_choose] = current_additional_config
+    elif config_presented_mode=='sole_image':
+        if xy_choose in additional_configs_cur_mode:
+            if title_choose in additional_configs_cur_mode[xy_choose]:
+                current_additional_config = additional_configs_cur_mode[xy_choose][title_choose]
+            else:
+                additional_configs_cur_mode[xy_choose][title_choose] = current_additional_config
+        else:
+            additional_configs_cur_mode[xy_choose] = {title_choose: current_additional_config}
+    else:
+        current_additional_config = config
+
     config_type = make_config_type(config)
-    pre_auto_plotting =  config['AUTO_PLOTTING'] if 'AUTO_PLOTTING' in config else False
+    pre_auto_plotting = config['AUTO_PLOTTING'] if 'AUTO_PLOTTING' in config else False
+    checkbox_dict = dict()
+    if config_presented_mode == 'default':
+        figure_specific_items = []
+    else:
+        figure_specific_items = [k for k in current_additional_config]
+    total_key_list = []
     for k, v in request.form.items():
+        if k.startswith('checkbox') and k.endswith('checkbox'):
+            k = '_'.join(k.split('_')[1:-1])
+            checkbox_dict[k] = v
+            continue
+        total_key_list.append(k)
         k_split = k.split(':')
         if len(k_split) == 1:
             _type = config_type[k]
-            if not str(v) == str(config[k]):
+            current_config = current_additional_config
+            if k in current_config:
+                current_value = str(current_config[k])
+            else:
+                current_value = str(config[k])
+            if not str(v) == current_value:
                 if _type == 'bool':
-                    config[k] = True if str(v) == 'True' else False
+                    current_config[k] = True if str(v) == 'True' else False
                 elif _type == 'float':
-                    config[k] = float(v)
+                    current_config[k] = float(v)
                 elif _type == 'int':
-                    config[k] = int(v)
+                    current_config[k] = int(v)
                 elif _type == 'str':
                     if k == 'PLOT_LOG_PATH':
                         v_ = str(v)
                         while v_[-1] == '/':
                             v_ = v_[:-1]
                         v = v_
-                    config[k] = str(v)
+                    current_config[k] = str(v)
                 else:
                     raise NotImplementedError(f'type {_type} not implemented!')
         else:
+            # not used now
+            Logger.logger(f'Error: This function is desired to be not used but still used!!!!')
             k_main = k_split[0]
             _type = config_type[k_main]
             if _type == 'list':
@@ -591,6 +717,22 @@ def plot_config_update():
             else:
                 raise NotImplementedError(f'type {_type} not implemented')
         Logger.logger(f'plot config update: {k} {v}')
+    if config_presented_mode == 'default':
+        post_figure_specific_items = []
+    else:
+        post_figure_specific_items = [k for k in current_additional_config]
+    figure_specific_items = set(figure_specific_items)
+    post_figure_specific_items = set(post_figure_specific_items)
+    follow_default_dict = {k: 'set_default' for k in total_key_list if k not in checkbox_dict}
+    if not config_presented_mode == 'default':
+        for item in post_figure_specific_items:
+            if item in follow_default_dict and item in figure_specific_items:
+                current_additional_config.pop(item)
+
+        for item in total_key_list:
+            if item not in follow_default_dict and item not in current_additional_config:
+                current_additional_config[item] = config[item]
+
     post_auto_plotting = config['AUTO_PLOTTING'] if 'AUTO_PLOTTING' in config else False
     if not pre_auto_plotting and post_auto_plotting:
         config['AUTO_PLOTTING_TURN_ON_TIME'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -609,7 +751,75 @@ def plot_config_update():
                 save_config(cur_config, item['config_name'])
     else:
         save_config(config, config_name)
-    return redirect('/plot', code=204)
+    if config_presented_mode == 'default':
+        return redirect('/plot', code=204)
+    else:
+        return redirect('/plot')
+
+
+@app.route("/plot_config_focus_update", methods=['POST'])
+@require_login(source_name='plot_config_focus_update', allow_guest=True)
+def plot_config_focus_update():
+    config_name = query_cookie('used_config')
+    config = load_config(config_name)
+
+    for k, v in json.loads(request.data.decode()).items():
+        if k == 'selected_value':
+            config['FOCUS_IMAGE_CONFIG_GROUP'] = v
+    save_config(config, config_name)
+    return redirect('/plot')
+
+@app.route("/plot_config_content_focus_update", methods=['POST'])
+@require_login(source_name='plot_config_content_focus_update', allow_guest=True)
+def plot_config_content_focus_update():
+    config_name = query_cookie('used_config')
+    config = load_config(config_name)
+
+    for k, v in json.loads(request.data.decode()).items():
+        if k == 'selected_value':
+            config['FOCUS_IMAGE_CONFIG_SAME_CONTENT_GROUP'] = v
+    save_config(config, config_name)
+    return redirect('/plot')
+
+@app.route("/plot_config_following_default/<following_type>", methods=['GET'])
+@require_login(source_name='plot_config_following_default', allow_guest=True)
+def plot_config_following_default(following_type):
+    config_name = query_cookie('used_config')
+    config = load_config(config_name)
+    config_presented_mode = config['FOCUS_IMAGE_CONFIG_GROUP']
+    xy_choose = config['FOCUS_IMAGE_CONFIG_SAME_CONTENT_GROUP']
+    title_choose = config['FOCUS_IMAGE_CONFIG_SUB_IMAGE_TITLE']
+    if config_presented_mode == 'default':
+        if following_type == 'reset':
+            config['ADDITIONAL_PLOT_CONFIGS'] = dict()
+    elif config_presented_mode in config['ADDITIONAL_PLOT_CONFIGS']:
+        if following_type == 'all':
+            config['ADDITIONAL_PLOT_CONFIGS'].pop(config_presented_mode)
+        elif following_type == 'xy':
+            if title_choose in config['ADDITIONAL_PLOT_CONFIGS'][config_presented_mode]:
+                config['ADDITIONAL_PLOT_CONFIGS'][config_presented_mode].pop(title_choose)
+        elif following_type == 'title':
+            if config_presented_mode == 'sole_image':
+                if xy_choose in config['ADDITIONAL_PLOT_CONFIGS'][config_presented_mode] and title_choose in config['ADDITIONAL_PLOT_CONFIGS'][config_presented_mode][xy_choose]:
+                    config['ADDITIONAL_PLOT_CONFIGS'][config_presented_mode][xy_choose].pop(title_choose)
+            else:
+                if xy_choose in config['ADDITIONAL_PLOT_CONFIGS'][config_presented_mode]:
+                    config['ADDITIONAL_PLOT_CONFIGS'][config_presented_mode].pop(xy_choose)
+    save_config(config, config_name)
+    return redirect('/plot')
+
+
+@app.route("/plot_config_sub_image_update", methods=['POST'])
+@require_login(source_name='plot_config_sub_image_update', allow_guest=True)
+def plot_config_sub_image_update():
+    config_name = query_cookie('used_config')
+    config = load_config(config_name)
+
+    for k, v in json.loads(request.data.decode()).items():
+        if k == 'selected_value':
+            config['FOCUS_IMAGE_CONFIG_SUB_IMAGE_TITLE'] = v
+    save_config(config, config_name)
+    return redirect('/plot')
 
 def _plot_experiment_figure(config_name, user_name):
     if config_name.endswith('.json'):
@@ -626,9 +836,9 @@ def _plot_experiment_figure(config_name, user_name):
     plot_mode = config['PLOT_MODE'].lower()
     plot_curve = plot_mode == 'curve'
     if plot_curve:
-        local_plot(config_path)
+        figure_recording_dict = local_plot(config_path)
     else:
-        local_bar(config_path)
+        figure_recording_dict = local_bar(config_path)
     final_output_name = plot_config.FINAL_OUTPUT_NAME
     target_file_name = f'{config_name}.png'
 
@@ -645,14 +855,10 @@ def _plot_experiment_figure(config_name, user_name):
     os.makedirs(os.path.dirname(target_folder_tmp), exist_ok=True)
     os.system(f'cp \"{saving_png}\" \"{target_folder}\"')
     os.system(f'cp \"{saving_png}\" \"{target_folder_tmp}\"')
-    local_data_path = os.path.join(page_config.WEB_RAM_PATH, 'data_cache', config_name)
-    if not os.path.exists(local_data_path):
-        os.makedirs(os.path.dirname(local_data_path), exist_ok=True)
-        data = dict()
-    else:
-        data = json.load(open(local_data_path, 'r'))
+    data = load_data_cache(config_name)
     data['LST_PLOTTING_TIMESTAMP'] = time.time()
-    json.dump(data, open(local_data_path, 'w'))
+    data['FIGURE_RECORDING'] = figure_recording_dict
+    save_data_cache(data, config_name)
     return output_path, final_output_name
 
 @app.route("/exp_figure", methods=['GET'])
@@ -1438,15 +1644,11 @@ def schedule_iter():
             config_content_dict[config_name] = load_config(config_name)
         if 'AUTO_PLOTTING' in config_content_dict[config_name] and config_content_dict[config_name]['AUTO_PLOTTING']:
             plotting_interval = config_content_dict[config_name]['AUTO_PLOTTING_INTERVAL']
-            local_data_path = os.path.join(page_config.WEB_RAM_PATH, 'data_cache', config_name)
-            if not os.path.exists(local_data_path):
+            local_data = load_data_cache(config_name)
+            if 'LST_PLOTTING_TIMESTAMP' not in local_data:
                 auto_plotting_candidates.append(config_name)
-            else:
-                local_data = json.load(open(local_data_path, 'r'))
-                if 'LST_PLOTTING_TIMESTAMP' not in local_data:
-                    auto_plotting_candidates.append(config_name)
-                elif cur_timestamp - local_data['LST_PLOTTING_TIMESTAMP'] > plotting_interval:
-                    auto_plotting_candidates.append(config_name)
+            elif cur_timestamp - local_data['LST_PLOTTING_TIMESTAMP'] > plotting_interval:
+                auto_plotting_candidates.append(config_name)
     for candidate_config_name in auto_plotting_candidates:
         try:
             _plot_experiment_figure(candidate_config_name, page_config.USER_NAME)
