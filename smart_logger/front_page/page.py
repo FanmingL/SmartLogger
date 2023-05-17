@@ -17,7 +17,7 @@ import smart_logger.common.plot_config as plot_config
 from smart_logger.front_page.experiment_data_loader import default_config, load_config, list_current_experiment, \
     get_parameter, reformat_dict, reformat_str, legal_path, save_config, list_current_configs, \
     make_config_type, analyze_experiment, delete_config_file, has_config, standardize_merger_item, get_record_data_item, \
-    get_config_path, record_config_for_user
+    get_config_path, record_config_for_user, get_config_modified_timestamp
 from smart_logger.report.plotting import _make_table
 from smart_logger.report.plotting import _overwrite_config, _str_to_short_name
 from smart_logger.report.plotting import bar as local_bar
@@ -260,7 +260,7 @@ def csv_to_html(dataframe):
 
 def rfilesize(filesize_byte):
     if filesize_byte < 1024:
-        return f'{fsize}B'
+        return f'{filesize_byte}B'
     elif filesize_byte < 1024 * 1024:
         return f'{round(filesize_byte / 1024, 3)}KB'
     elif filesize_byte < 1024 * 1024 * 1024:
@@ -428,7 +428,8 @@ def plot():
                                 'DATA_SELECT_PROPERTY', 'DATA_IGNORE_GARBAGE',
                                 'DATA_SELECT_GARBAGE', 'DATA_IGNORE_PROPERTY_GARBAGE',
                                 'DATA_SELECT_PROPERTY_GARBAGE',
-                                'SHORT_NAME_FROM_CONFIG_PROPERTY']}
+                                'SHORT_NAME_FROM_CONFIG_PROPERTY', 'AUTO_PLOTTING_TURN_ON_TIME',
+                                'MAX_AUTO_PLOTTING_NUM']}
     config = config_ordered
     config_description = plot_config.DESCRIPTION
     for k in config:
@@ -553,6 +554,7 @@ def plot_config_update():
     config_name = query_cookie('used_config')
     config = load_config(config_name)
     config_type = make_config_type(config)
+    pre_auto_plotting =  config['AUTO_PLOTTING'] if 'AUTO_PLOTTING' in config else False
     for k, v in request.form.items():
         k_split = k.split(':')
         if len(k_split) == 1:
@@ -589,23 +591,36 @@ def plot_config_update():
             else:
                 raise NotImplementedError(f'type {_type} not implemented')
         Logger.logger(f'plot config update: {k} {v}')
-    save_config(config, config_name)
+    post_auto_plotting = config['AUTO_PLOTTING'] if 'AUTO_PLOTTING' in config else False
+    if not pre_auto_plotting and post_auto_plotting:
+        config['AUTO_PLOTTING_TURN_ON_TIME'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        save_config(config, config_name)
+        total_turned_on = []
+        for cur_config_name in list_current_configs():
+            cur_config = load_config(cur_config_name)
+            if 'AUTO_PLOTTING' in cur_config and cur_config['AUTO_PLOTTING']:
+                total_turned_on.append(dict(config_name=cur_config_name,
+                                            turn_on_datetime_str=cur_config['AUTO_PLOTTING_TURN_ON_TIME']))
+        total_turned_on = sorted(total_turned_on, key=lambda x: x['turn_on_datetime_str'], reverse=True)
+        if len(total_turned_on) > config['MAX_AUTO_PLOTTING_NUM']:
+            for item in total_turned_on[config['MAX_AUTO_PLOTTING_NUM']:]:
+                cur_config = load_config(item['config_name'])
+                cur_config['AUTO_PLOTTING'] = False
+                save_config(cur_config, item['config_name'])
+    else:
+        save_config(config, config_name)
     return redirect('/plot', code=204)
 
-
-@app.route("/exp_figure", methods=['GET'])
-@require_login(source_name='exp_figure', allow_guest=True)
-def exp_figure():
-    start_time = time.time()
-    config_name = query_cookie('used_config')
+def _plot_experiment_figure(config_name, user_name):
     if config_name.endswith('.json'):
-        output_path = os.path.join(page_config.FIGURE_PATH, query_cookie('user_name'), config_name[:-5])
+        output_path = os.path.join(page_config.FIGURE_PATH, user_name, config_name[:-5])
     else:
-        output_path = os.path.join(page_config.FIGURE_PATH, query_cookie('user_name'), config_name)
+        output_path = os.path.join(page_config.FIGURE_PATH, user_name, config_name)
     output_path = os.path.abspath(output_path)
     config = load_config(config_name)
-    config['PLOT_FIGURE_SAVING_PATH'] = output_path
-    save_config(config, config_name)
+    if 'PLOT_FIGURE_SAVING_PATH' not in config or not config['PLOT_FIGURE_SAVING_PATH'] == output_path:
+        config['PLOT_FIGURE_SAVING_PATH'] = output_path
+        save_config(config, config_name)
     config_path = get_config_path(config_name)
     Logger.logger(f'plot figure according to {config_path}, figure save to {output_path}')
     plot_mode = config['PLOT_MODE'].lower()
@@ -621,7 +636,6 @@ def exp_figure():
         final_output_name = f'bar_{final_output_name}'
         target_file_name = f'bar_{target_file_name}'
     saving_png = f'{os.path.join(output_path, final_output_name)}.png'
-    Logger.logger(f'return figure {saving_png}, drawing cost {time.time() - start_time}')
     target_folder = os.path.join(page_config.WEB_RAM_PATH, page_config.TOTAL_FIGURE_FOLDER, f'{final_output_name}.png')
     target_folder_tmp = os.path.join(page_config.WEB_RAM_PATH, page_config.TOTAL_FIGURE_FOLDER + "_tmp",
                                      target_file_name)
@@ -631,6 +645,24 @@ def exp_figure():
     os.makedirs(os.path.dirname(target_folder_tmp), exist_ok=True)
     os.system(f'cp \"{saving_png}\" \"{target_folder}\"')
     os.system(f'cp \"{saving_png}\" \"{target_folder_tmp}\"')
+    local_data_path = os.path.join(page_config.WEB_RAM_PATH, 'data_cache', config_name)
+    if not os.path.exists(local_data_path):
+        os.makedirs(os.path.dirname(local_data_path), exist_ok=True)
+        data = dict()
+    else:
+        data = json.load(open(local_data_path, 'r'))
+    data['LST_PLOTTING_TIMESTAMP'] = time.time()
+    json.dump(data, open(local_data_path, 'w'))
+    return output_path, final_output_name
+
+@app.route("/exp_figure", methods=['GET'])
+@require_login(source_name='exp_figure', allow_guest=True)
+def exp_figure():
+    start_time = time.time()
+    config_name = query_cookie('used_config')
+    user_name = query_cookie('user_name')
+    output_path, final_output_name = _plot_experiment_figure(config_name, user_name)
+    Logger.logger(f'return figure {final_output_name}.png, drawing cost {time.time() - start_time}')
     return send_from_directory(output_path, f'{final_output_name}.png', as_attachment=False)
 
 
@@ -843,6 +875,8 @@ def create_config():
     config_name = 'config-{}-{}-{}.json'.format(query_cookie('user_name'),
                                                 datetime.now().strftime('%Y-%m-%d-%H-%M-%S'),
                                                 generate_code(10))
+    if 'AUTO_PLOTTING' in config:
+        config['AUTO_PLOTTING'] = False
     save_config(config, config_name)
     response = make_response(redirect('param_adjust'))
     outdate_config_path = datetime.now() + timedelta(hours=page_config.COOKIE_PERIOD)
@@ -912,6 +946,8 @@ def merge_config():
     for k in config_target:
         if k not in config_current:
             config_current[k] = config_target[k]
+    if 'AUTO_PLOTTING' in config_current:
+        config_current['AUTO_PLOTTING'] = False
     save_config(config_current, config_name)
     return redirect('param_adjust')
 
@@ -1390,6 +1426,44 @@ def flush_loop():
         time.sleep(1)
 
 
+config_file_mdate_dict = dict()
+config_content_dict = dict()
+def schedule_iter():
+    cur_timestamp = time.time()
+    auto_plotting_candidates = []
+    for config_name in list_current_configs():
+        lst_mtime = get_config_modified_timestamp(config_name)
+        if config_name not in config_content_dict or lst_mtime > config_file_mdate_dict[config_name]:
+            config_file_mdate_dict[config_name] = lst_mtime
+            config_content_dict[config_name] = load_config(config_name)
+        if 'AUTO_PLOTTING' in config_content_dict[config_name] and config_content_dict[config_name]['AUTO_PLOTTING']:
+            plotting_interval = config_content_dict[config_name]['AUTO_PLOTTING_INTERVAL']
+            local_data_path = os.path.join(page_config.WEB_RAM_PATH, 'data_cache', config_name)
+            if not os.path.exists(local_data_path):
+                auto_plotting_candidates.append(config_name)
+            else:
+                local_data = json.load(open(local_data_path, 'r'))
+                if 'LST_PLOTTING_TIMESTAMP' not in local_data:
+                    auto_plotting_candidates.append(config_name)
+                elif cur_timestamp - local_data['LST_PLOTTING_TIMESTAMP'] > plotting_interval:
+                    auto_plotting_candidates.append(config_name)
+    for candidate_config_name in auto_plotting_candidates:
+        try:
+            _plot_experiment_figure(candidate_config_name, page_config.USER_NAME)
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+
+def schedule_loop():
+    while True:
+        try:
+            schedule_iter()
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+        time.sleep(5)
+
+
 def start_page_server(port_num=None):
     Logger.init_global_logger(base_path=page_config.WEB_RAM_PATH, log_name="web_logs")
     _default_config = default_config()
@@ -1399,6 +1473,8 @@ def start_page_server(port_num=None):
     save_config(_default_config, 'default_config.json')
     flush_th = threading.Thread(target=flush_loop)
     flush_th.start()
+    schedule_th = threading.Thread(target=schedule_loop)
+    schedule_th.start()
     port_num = port_num if port_num is not None else page_config.PORT
     Logger.logger(f'copy http://{page_config.WEB_NAME}:{port_num} to the explorer')
     if not page_config.REQUIRE_RELOGIN:

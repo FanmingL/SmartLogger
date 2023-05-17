@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use('Agg')
 import fnmatch
 import json
 import os
@@ -770,6 +772,7 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
     Logger.local_log(f'saving PNG to file://{png_saving_path}')
     f.savefig(png_saving_path, bbox_inches='tight', dpi=plot_config.PNG_DPI)
     f.savefig(pdf_saving_path, bbox_inches='tight')
+    plt.close(f)
     return png_saving_path, x_name, y_name
 
 
@@ -1181,6 +1184,7 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
     Logger.local_log(f'saving PNG to file://{png_saving_path}')
     f.savefig(png_saving_path, bbox_inches='tight', dpi=plot_config.PNG_DPI)
     f.savefig(pdf_saving_path, bbox_inches='tight')
+    plt.close(f)
     return png_saving_path, x_name, y_name
 
 

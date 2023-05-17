@@ -79,6 +79,13 @@ def load_config(file_name):
     config = _load_config(file_name)
     return config_post_process(config)
 
+def get_config_modified_timestamp(file_name):
+    full_file_name = get_config_path(file_name)
+    if not os.path.exists(full_file_name):
+        return -1
+    else:
+        return os.path.getmtime(full_file_name)
+
 
 def delete_config_file(file_name):
     path_name = get_config_path(file_name)
