@@ -16,6 +16,7 @@ import seaborn as sns
 
 import smart_logger.common.plot_config as plot_config
 from smart_logger.util_logger.logger import Logger
+from PIL import Image
 
 sns.set_theme()
 
@@ -1374,6 +1375,8 @@ def _make_subtable(data, x_name, y_name, at_x, plot_config_dict, iter, alg_as_ro
         figure_plotting_record[k] = sorted(list(figure_plotting_record[k]))
     return summary_dict, x_name, y_name, figure_plotting_record
 
+def _load_image_PIL(file_name):
+    return dict(file_name=file_name, img=Image.open(file_name))
 
 def _plotting(data):
     sub_figure_content = [k for k in data]
@@ -1492,12 +1495,17 @@ def _plotting(data):
     # 汇总png
     # merge png
     Logger.local_log(f'start to merge PNG')
-    png_images = []
     start_merge_time = time.time()
-    from PIL import Image
+    futures = []
+    image_loading_executor = ThreadPoolExecutor(max_workers=plot_config.THREAD_NUM)
     for png_file in total_png:
         Logger.local_log('load image from {}'.format(png_file))
-        png_images.append(Image.open(png_file))
+        futures.append(image_loading_executor.submit(_load_image_PIL, png_file))
+    png_images = dict()
+    for future in as_completed(futures):
+        res = future.result()
+        png_images[res['file_name']] = res['img']
+    png_images = [png_images[file_name] for file_name in total_png]
     cols = [image.size[0] for image in png_images]
     rows = [image.size[1] for image in png_images]
     max_col = max(cols)
