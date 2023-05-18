@@ -17,7 +17,8 @@ import smart_logger.common.plot_config as plot_config
 from smart_logger.front_page.experiment_data_loader import default_config, load_config, list_current_experiment, \
     get_parameter, reformat_dict, reformat_str, legal_path, save_config, list_current_configs, \
     make_config_type, analyze_experiment, delete_config_file, has_config, standardize_merger_item, get_record_data_item, \
-    get_config_path, record_config_for_user, get_config_modified_timestamp, load_data_cache, save_data_cache
+    get_config_path, record_config_for_user, get_config_modified_timestamp, load_data_cache, save_data_cache, \
+    load_config_cache, save_config_cache
 from smart_logger.report.plotting import _make_table
 from smart_logger.report.plotting import _overwrite_config, _str_to_short_name
 from smart_logger.report.plotting import bar as local_bar
@@ -912,8 +913,10 @@ def param_adjust():
         'SHORT_NAME_FROM_CONFIG_PROPERTY']
     Logger.local_log(f'start analyze_experiment')
     start_time = time.time()
-    user_data = load_data_cache(config_name)
-
+    user_data = load_config_cache(config_name)
+    empty_user_data = True
+    if 'all_folders' in user_data and 'all_folders_data' in user_data:
+        empty_user_data = False
     exp_data, exp_data_ignores, selected_choices, possible_config_ignore, selected_choices_ignore, alg_idxs_ignore, \
         folder_ignore, nick_name_ignore_list, alg_idx, possible_config, \
         short_name_to_ind, nick_name_list = analyze_experiment(need_ignore=config['USE_IGNORE_RULE'],
@@ -927,8 +930,8 @@ def param_adjust():
                                                                data_short_name_property=data_short_name_property,
                                                                user_data=user_data,
                                                                use_cache=use_cache)
-    if not use_cache:
-        save_data_cache(user_data, config_name)
+    if not use_cache or empty_user_data:
+        save_config_cache(user_data, config_name)
     Logger.local_log(f'finish analyze_experiment {time.time() - start_time}')
 
     exp_data_encoded = [base64.urlsafe_b64encode(item.encode()).decode() for item in exp_data]
@@ -1538,8 +1541,7 @@ def update_cache():
     data_short_name_property = {} if 'SHORT_NAME_FROM_CONFIG_PROPERTY' not in config else config[
         'SHORT_NAME_FROM_CONFIG_PROPERTY']
     Logger.local_log(f'start analyze_experiment')
-    user_data = load_data_cache(config_name)
-
+    user_data = load_config_cache(config_name)
     exp_data, exp_data_ignores, selected_choices, possible_config_ignore, selected_choices_ignore, alg_idxs_ignore, \
         folder_ignore, nick_name_ignore_list, alg_idx, possible_config, \
         short_name_to_ind, nick_name_list = analyze_experiment(need_ignore=config['USE_IGNORE_RULE'],
@@ -1553,7 +1555,7 @@ def update_cache():
                                                                data_short_name_property=data_short_name_property,
                                                                user_data=user_data,
                                                                use_cache=False)
-    save_data_cache(user_data, config_name)
+    save_config_cache(user_data, config_name)
     return redirect('/param_adjust')
 
 

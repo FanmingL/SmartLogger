@@ -85,6 +85,19 @@ def save_data_cache(data, config_name):
     os.makedirs(os.path.dirname(local_data_path), exist_ok=True)
     safe_dump(data, local_data_path)
 
+def load_config_cache(config_name):
+    local_data_path = os.path.join(page_config.WEB_RAM_PATH, 'data_config_cache', config_name)
+    if not os.path.exists(local_data_path):
+        data = dict()
+    else:
+        data = json.load(open(local_data_path, 'r'))
+    return data
+
+def save_config_cache(data, config_name):
+    local_data_path = os.path.join(page_config.WEB_RAM_PATH, 'data_config_cache', config_name)
+    os.makedirs(os.path.dirname(local_data_path), exist_ok=True)
+    safe_dump(data, local_data_path)
+
 def _load_config(file_name):
     full_file_name = get_config_path(file_name)
     if os.path.exists(full_file_name):
