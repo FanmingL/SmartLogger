@@ -432,7 +432,8 @@ def plot():
                                 'SHORT_NAME_FROM_CONFIG_PROPERTY', 'AUTO_PLOTTING_TURN_ON_TIME',
                                 'MAX_AUTO_PLOTTING_NUM', 'FOCUS_IMAGE_CONFIG_GROUP',
                                 'FOCUS_IMAGE_CONFIG_SAME_CONTENT_GROUP',
-                                'FOCUS_IMAGE_CONFIG_SUB_IMAGE_TITLE', 'ADDITIONAL_PLOT_CONFIGS', 'FLEXIBLE_CONFIG']}
+                                'FOCUS_IMAGE_CONFIG_SUB_IMAGE_TITLE', 'ADDITIONAL_PLOT_CONFIGS', 'FLEXIBLE_CONFIG',
+                                'PARAMETER_ADJUST_USE_CACHE']}
     config = config_ordered
     config_description = plot_config.DESCRIPTION
     for k in config:
@@ -898,6 +899,7 @@ def param_adjust():
     config_name = query_cookie('used_config')
     config = load_config(config_name)
     _overwrite_config(config)
+    use_cache = plot_config.PARAMETER_ADJUST_USE_CACHE
     data_ignore = [] if 'DATA_IGNORE' not in config else config['DATA_IGNORE']
     data_ignore_garbage = [] if 'DATA_IGNORE_GARBAGE' not in config else config['DATA_IGNORE_GARBAGE']
     data_ignore_property = [] if 'DATA_IGNORE_PROPERTY' not in config else config['DATA_IGNORE_PROPERTY']
@@ -910,6 +912,8 @@ def param_adjust():
         'SHORT_NAME_FROM_CONFIG_PROPERTY']
     Logger.local_log(f'start analyze_experiment')
     start_time = time.time()
+    user_data = load_data_cache(config_name)
+
     exp_data, exp_data_ignores, selected_choices, possible_config_ignore, selected_choices_ignore, alg_idxs_ignore, \
         folder_ignore, nick_name_ignore_list, alg_idx, possible_config, \
         short_name_to_ind, nick_name_list = analyze_experiment(need_ignore=config['USE_IGNORE_RULE'],
@@ -920,7 +924,11 @@ def param_adjust():
                                                                data_short_name_dict=data_short_name_dict,
                                                                data_ignore_property=data_ignore_property,
                                                                data_select_property=data_choose_property,
-                                                               data_short_name_property=data_short_name_property)
+                                                               data_short_name_property=data_short_name_property,
+                                                               user_data=user_data,
+                                                               use_cache=use_cache)
+    if not use_cache:
+        save_data_cache(user_data, config_name)
     Logger.local_log(f'finish analyze_experiment {time.time() - start_time}')
 
     exp_data_encoded = [base64.urlsafe_b64encode(item.encode()).decode() for item in exp_data]
@@ -1020,7 +1028,8 @@ def param_adjust():
                            selected_config_list=selected_config_list,
                            data_ignore_garbage=data_ignore_garbage,
                            data_choose_garbage=data_choose_garbage,
-                           title_prefix=f'{page_config.PAGE_TITLE_PREFIX}-' if page_config.PAGE_TITLE_PREFIX is not None else ''
+                           title_prefix=f'{page_config.PAGE_TITLE_PREFIX}-' if page_config.PAGE_TITLE_PREFIX is not None else '',
+                           use_cache=use_cache
                            )
 
 
@@ -1495,6 +1504,56 @@ def add_rename():
     config['SHORT_NAME_FROM_CONFIG_PROPERTY'][request.form['added_rule_rename_long']] = {
         'manual': 'change_mannual_rename' in request.form}
     save_config(config, config_name)
+    return redirect('/param_adjust')
+
+@app.route("/change_use_cache", methods=['POST'])
+@require_login(source_name='change_use_cache', allow_guest=True)
+def change_use_cache():
+    config_name = query_cookie('used_config')
+    config = load_config(config_name)
+    use_cache = False
+    for k, v in request.form.items():
+        if k == 'use_cache':
+            use_cache = True
+    config['PARAMETER_ADJUST_USE_CACHE'] = use_cache
+    save_config(config, config_name)
+    return redirect('/param_adjust')
+
+@app.route("/update_cache", methods=['GET'])
+@require_login(source_name='update_cache', allow_guest=True)
+def update_cache():
+    Logger.local_log(f'update cache!!!')
+    config_name = query_cookie('used_config')
+    config = load_config(config_name)
+    _overwrite_config(config)
+    use_cache = plot_config.PARAMETER_ADJUST_USE_CACHE
+    data_ignore = [] if 'DATA_IGNORE' not in config else config['DATA_IGNORE']
+    data_ignore_garbage = [] if 'DATA_IGNORE_GARBAGE' not in config else config['DATA_IGNORE_GARBAGE']
+    data_ignore_property = [] if 'DATA_IGNORE_PROPERTY' not in config else config['DATA_IGNORE_PROPERTY']
+    data_choose = [] if 'DATA_SELECT' not in config else config['DATA_SELECT']
+    data_choose_garbage = [] if 'DATA_SELECT_GARBAGE' not in config else config['DATA_SELECT_GARBAGE']
+    data_choose_property = [] if 'DATA_SELECT_PROPERTY' not in config else config['DATA_SELECT_PROPERTY']
+    data_merge = [] if 'DATA_MERGER' not in config else config['DATA_MERGER']
+    data_short_name_dict = {} if 'SHORT_NAME_FROM_CONFIG' not in config else config['SHORT_NAME_FROM_CONFIG']
+    data_short_name_property = {} if 'SHORT_NAME_FROM_CONFIG_PROPERTY' not in config else config[
+        'SHORT_NAME_FROM_CONFIG_PROPERTY']
+    Logger.local_log(f'start analyze_experiment')
+    user_data = load_data_cache(config_name)
+
+    exp_data, exp_data_ignores, selected_choices, possible_config_ignore, selected_choices_ignore, alg_idxs_ignore, \
+        folder_ignore, nick_name_ignore_list, alg_idx, possible_config, \
+        short_name_to_ind, nick_name_list = analyze_experiment(need_ignore=config['USE_IGNORE_RULE'],
+                                                               data_ignore=data_ignore,
+                                                               need_select=not config['USE_IGNORE_RULE'],
+                                                               data_select=data_choose,
+                                                               data_merge=data_merge,
+                                                               data_short_name_dict=data_short_name_dict,
+                                                               data_ignore_property=data_ignore_property,
+                                                               data_select_property=data_choose_property,
+                                                               data_short_name_property=data_short_name_property,
+                                                               user_data=user_data,
+                                                               use_cache=False)
+    save_data_cache(user_data, config_name)
     return redirect('/param_adjust')
 
 

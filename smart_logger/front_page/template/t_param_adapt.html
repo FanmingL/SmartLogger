@@ -134,6 +134,17 @@
             }
 
         }
+        function update_cache_now(){
+        let httpRequest = new XMLHttpRequest();
+                httpRequest.onreadystatechange = function () {
+              if (httpRequest.readyState === 4 && httpRequest.status === 200) {
+                  console.log('success!')
+                  location.href="{{url_for('param_adjust')}}";
+              }
+              };
+            httpRequest.open('GET', "{{url_for('update_cache')}}", false);
+            httpRequest.send();
+        }
         function delete_config(){
 
             var r=confirm("删除该配置文件?");
@@ -410,14 +421,20 @@
         .choose_config {
                         font-family:monospace;
             position: absolute;
-            left: 10%;
-            top: 10%;
+            left: 8%;
+            top:8.5%;
         }
         .merge_config {
                         font-family:monospace;
             position: absolute;
-            left: 45%;
-            top: 10%;
+            left: 38%;
+            top: 8.5%;
+        }
+        .use_cache {
+                        font-family:monospace;
+            position: absolute;
+            left: 75%;
+            top: 9.0%;
         }
 
         .grid_config {
@@ -429,8 +446,8 @@
         .rename_config {
                         font-family:monospace;
             position: absolute;
-            left: 70%;
-            top: 10%;
+            left: 58%;
+            top: 9.1%;
         }
 
         .draw_box li a{
@@ -758,7 +775,7 @@
     <form name="frm_rename_config_choose_select" id="frm_rename_config_choose_select" action="{{url_for('choose_config', source='adapt')}}" method="POST">
         <div align="left" style="margin: 20px">
         <p>
-            <label for="choose_config_cb" style="font-family: monospace">选择设定:</label>
+            <label for="choose_config_cb" style="font-family: monospace">选择设定</label><br/>
             <select id="choose_config_cb" name="chosen_config" onchange="change_config_cb()">
                 {% for item in config_file_list %}
                   <option value ="{{item}}" {% if item == config_name %} selected {% endif %}>{{item}}</option>
@@ -777,7 +794,7 @@
     <form name="frm_merge_config_choose_select" id="frm_merge_config_choose_select" action="{{url_for('merge_config')}}" method="POST">
         <div align="left" style="margin: 20px">
         <p>
-            <label for="choose_target_config_cb" style="font-family: monospace">目标配置:</label>
+            <label for="choose_target_config_cb" style="font-family: monospace">目标配置</label><br/>
             <select id="choose_target_config_cb" name="target_config">
                 {% for item in config_file_list %}
                 {% if item == config_name %}
@@ -794,10 +811,17 @@
 
     </form>
 </div>
+<div class="use_cache">
+    <form name="use_cache_form" id="use_cache_form_id" action="{{url_for('change_use_cache')}}" method="POST" style="margin: 15px">
+    <input type="checkbox" name="use_cache" id="use_cache_id" value="use_cache" {% if use_cache %} checked="checked" {% endif %} onchange="document.use_cache_form.submit()">
+        <label for="use_cache_id" style="font-family: monospace">使用缓存数据</label><br/>
+        <button type="button" style="width:80px;height:30px" onclick="update_cache_now()" >更新缓存</button>
+    </form>
+</div>
 <div class="rename_config">
     <form name="frm_rename_config_choose" action="{{url_for('rename_config')}}" method="POST">
 <p>
-            <label for="rename_cb" style="font-family: monospace">重命名设定:</label>
+            <label for="rename_cb" style="font-family: monospace">重命名设定</label><br/>
             <input id="rename_cb" name="rename" value=""/>
             <button type="submit" style="width:60px;height:30px">修改</button>
         </p>

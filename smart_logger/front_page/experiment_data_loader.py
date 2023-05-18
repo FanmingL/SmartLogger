@@ -139,9 +139,7 @@ def list_current_experiment():
                 if os.path.exists(os.path.join(root, 'parameter.json')) or \
                         os.path.exists(os.path.join(root, 'config', 'parameter.json')) or \
                         os.path.exists(os.path.join(root, 'config', 'running_config.json')):
-                    folder_name = root[len(base_path) + 1:]
                     total_folders.append(root[len(base_path) + 1:])
-                    # Logger.logger(f'append {folder_name}')
                     break
     return sorted(total_folders)
 
@@ -560,10 +558,23 @@ def can_preserve(config, data_select, data_merger, data_select_property):
 def analyze_experiment(need_ignore=False, data_ignore=None, need_select=False,
                        data_select=None, data_merge=None, data_short_name_dict=None,
                        data_ignore_property=None, data_select_property=None,
-                       data_short_name_property=None):
+                       data_short_name_property=None, user_data=None, use_cache=False):
     Logger.local_log(f'start listing experiment...')
     start_time = time.time()
-    all_folders = list_current_experiment()
+    if user_data is None:
+        use_cache = False
+    if use_cache and user_data is not None and isinstance(user_data, dict):
+        if 'all_folders' in user_data and isinstance(user_data['all_folders'], list) \
+                and 'all_folders_data' in user_data and isinstance(user_data['all_folders_data'], list):
+            pass
+        else:
+            use_cache = False
+    if use_cache:
+        all_folders = user_data['all_folders']
+    else:
+        all_folders = list_current_experiment()
+        if user_data is not None and isinstance(user_data, dict):
+            user_data['all_folders'] = all_folders
     Logger.local_log(f'finish listing experiment, cost {time.time() - start_time}')
     folder_ignore = []
     if need_ignore:
@@ -597,7 +608,12 @@ def analyze_experiment(need_ignore=False, data_ignore=None, need_select=False,
     short_name_to_ind_ignore = dict()
     Logger.local_log(f'start loading all configs...')
     start_time = time.time()
-    all_folders_data = _load_data_multi_process(1, 50, all_folders)
+    if use_cache:
+        all_folders_data = user_data['all_folders_data']
+    else:
+        all_folders_data = _load_data_multi_process(plot_config.PROCESS_NUM_LOAD_DATA, plot_config.THREAD_NUM, all_folders)
+        if user_data is not None and isinstance(user_data, dict):
+            user_data['all_folders_data'] = all_folders_data
     Logger.local_log(f'finish loading configs, cost {time.time() - start_time}')
     start_time = time.time()
     for folder_ind, (config, important_config) in enumerate(all_folders_data):
