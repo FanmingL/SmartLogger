@@ -2,6 +2,7 @@ import os
 import fnmatch
 import json
 import os
+import random
 import time
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from pathlib import Path
@@ -13,8 +14,14 @@ import smart_logger.common.plot_config as plot_config
 from smart_logger.report.plotting import merger_to_short_name, list_embedding, standardize_string, make_merger_feature
 from smart_logger.util_logger.logger import Logger
 
+
+def generate_random_string(length):
+    ascii_letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    random_string = ''.join(random.choice(ascii_letters) for _ in range(length))
+    return random_string
+
 def safe_dump(obj, file_name):
-    cache_filename = f'{file_name}____cache'
+    cache_filename = f'{file_name}____{generate_random_string(10)}'
     try:
         with open(cache_filename, 'w') as f:
             json.dump(obj, f)
