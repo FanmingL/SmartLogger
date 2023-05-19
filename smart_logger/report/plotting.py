@@ -752,11 +752,11 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
                 ax.set_xlim(right=int(xmax))
             ymin_config = _get_plot_config_all('YMIN')
             if ymin_config is not None and not str(ymin_config) == 'None':
-                ymin = ymin_config
+                ymin = float(ymin_config)
                 ax.set_ylim(bottom=ymin)
             ymax_config = _get_plot_config_all('YMAX')
             if ymax_config is not None and not str(ymax_config) == 'None':
-                ymax = ymax_config
+                ymax = float(ymax_config)
                 ax.set_ylim(top=ymax)
         if alg_count == 0:
             title_name = title_tuple_to_str(sub_figure)
