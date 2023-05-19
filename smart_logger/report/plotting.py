@@ -630,7 +630,6 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
             x_intevals = [(np.max(item) - np.min(item)) / max(np.shape(item)[0], 1) for item in x_data]
             require_resample = False
             inteval_range = (np.max(x_intevals) - np.min(x_intevals)) / 2. / np.mean(x_intevals)
-            Logger.local_log(f'inteval range: {inteval_range}')
             require_resample_config = _get_plot_config_all('REQUIRE_RESAMPLE')
             if str(require_resample_config) == 'True':
                 require_resample = True
@@ -843,7 +842,6 @@ def _bar_data_process(x_name, y_name, sub_figure, alg_name, data_alg_list):
     x_intevals = [(np.max(item) - np.min(item)) / max(np.shape(item)[0], 1) for item in x_data]
     require_resample = False
     inteval_range = (np.max(x_intevals) - np.min(x_intevals)) / 2. / np.mean(x_intevals)
-    Logger.local_log(f'inteval range: {inteval_range}')
     require_resample_config = _get_plot_config_all('REQUIRE_RESAMPLE')
     if str(require_resample_config) == 'True':
         require_resample = True
@@ -1299,7 +1297,6 @@ def _make_subtable(data, x_name, y_name, at_x, plot_config_dict, iter, alg_as_ro
             x_intevals = [(np.max(item) - np.min(item)) / max(np.shape(item)[0], 1) for item in x_data]
             require_resample = False
             inteval_range = (np.max(x_intevals) - np.min(x_intevals)) / 2. / np.mean(x_intevals)
-            Logger.local_log(f'inteval range: {inteval_range}')
             require_resample_config = _get_plot_config_all('REQUIRE_RESAMPLE')
             if str(require_resample_config) == 'True':
                 require_resample = True
