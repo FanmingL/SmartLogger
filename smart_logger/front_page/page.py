@@ -18,7 +18,7 @@ from smart_logger.front_page.experiment_data_loader import default_config, load_
     get_parameter, reformat_dict, reformat_str, legal_path, save_config, list_current_configs, \
     make_config_type, analyze_experiment, delete_config_file, has_config, standardize_merger_item, get_record_data_item, \
     get_config_path, record_config_for_user, get_config_modified_timestamp, load_data_cache, save_data_cache, \
-    load_config_cache, save_config_cache
+    load_config_cache, save_config_cache, load_table_cache, save_table_cache
 from smart_logger.report.plotting import _make_table
 from smart_logger.report.plotting import _overwrite_config, _str_to_short_name
 from smart_logger.report.plotting import bar as local_bar
@@ -578,12 +578,28 @@ def table():
     config_name = query_cookie('used_config')
     config = load_config(config_name)
     config_file_list = list_current_configs()
+    table_data = load_table_cache(config_name)
+    table_text = ''
+    fast_code = ''
+    if 'table' in table_data:
+        table_text = table_data['table']
+    if 'latex' in table_data and 'md' in table_data:
+        if table_data['latex_update_timestamp'] > table_data['md_update_timestamp']:
+            fast_code = table_data['latex']
+        else:
+            fast_code = table_data['md']
+    elif 'latex' in table_data:
+        fast_code = table_data['latex']
+    elif 'md' in table_data:
+        fast_code = table_data['md']
     return render_template('t_table.html',
                            plot_config=config,  # plot_config list list
                            config_name=config_name,
                            config_file_list=config_file_list,
                            bold_max=config['TABLE_BOLD_MAX'],
-                           title_prefix=f'{page_config.PAGE_TITLE_PREFIX}-' if page_config.PAGE_TITLE_PREFIX is not None else ''
+                           title_prefix=f'{page_config.PAGE_TITLE_PREFIX}-' if page_config.PAGE_TITLE_PREFIX is not None else '',
+                           table_text=table_text,
+                           fast_code=fast_code
                            )
 
 
@@ -593,12 +609,14 @@ def query_table():
     config_name = query_cookie('used_config')
     config = load_config(config_name)
     _overwrite_config(config)
+    table_data = load_table_cache(config_name)
     result, figure_recording_dict = _make_table()
-
-
+    table_data['table'] = result
+    table_data['table_update_timestamp'] = time.time()
     data = load_data_cache(config_name)
     data['FIGURE_RECORDING'] = figure_recording_dict
     save_data_cache(data, config_name)
+    save_table_cache(table_data, config_name)
     return result
 
 
@@ -608,10 +626,17 @@ def query_table_source(use_latex):
     config_name = query_cookie('used_config')
     config = load_config(config_name)
     _overwrite_config(config)
+    table_data = load_table_cache(config_name)
     result, figure_recording_dict = _make_table(True if str(use_latex) == 'True' else False)
-    # result = result.replace('\n', '<br/>')
     result = f'<br/><pre><code>\n{result}</code></pre>\n<br/>'
+    if str(use_latex) == 'True':
+        table_data['latex'] = result
+        table_data['latex_update_timestamp'] = time.time()
+    else:
+        table_data['md'] = result
+        table_data['md_update_timestamp'] = time.time()
     Logger.logger(f'source code {use_latex}: {result}')
+    save_table_cache(table_data, config_name)
     return result
 
 

@@ -36,8 +36,6 @@
         function finish_query(data){
             var button = document.getElementById('table_loading_button_id')
             button.innerHTML = "更新表格";
-            localStorage.setItem("{{config_name}}" + "table_win_data", data);
-            localStorage.setItem("{{config_name}}" + "table_win_data_config", "{{config_name}}");
 
         }
         function submit_change_table_bold(){
@@ -91,9 +89,6 @@
             button.innerHTML = "LaTex生成";
             button = document.getElementById('source_loading_button_md')
             button.innerHTML = "MD生成";
-            localStorage.setItem("{{config_name}}" + "source_win_data", data);
-            localStorage.setItem("{{config_name}}" + "source_win_data_config", "{{config_name}}");
-
         }
 
         function scroll_to_history_element(element, name){
@@ -114,21 +109,7 @@
             return scrollTop;
         }
         function windows_onload(){
-            if (localStorage.hasOwnProperty("{{config_name}}" + 'source_win_data')){
-               let data = localStorage.getItem("{{config_name}}" + "source_win_data");
-               let table = document.getElementById('source_div_id');
-               if (localStorage.getItem("{{config_name}}" + "source_win_data_config") === "{{config_name}}") {
-                   table.innerHTML = data;
-               }
-            }
-            if (localStorage.hasOwnProperty("{{config_name}}" + 'table_win_data')){
-               let data = localStorage.getItem("{{config_name}}" + "table_win_data");
-               let table = document.getElementById('table_html_id');
-               if (localStorage.getItem("{{config_name}}" + "table_win_data_config") === "{{config_name}}") {
-                   table.innerHTML = data;
-               }
-               MathJax.Hub.Queue(["Typeset", MathJax.Hub]);
-            }
+            MathJax.Hub.Queue(["Typeset", MathJax.Hub]);
         }
         function change_config_cb(){
             let form_rename = document.getElementById('frm_rename_config_choose_select');
@@ -286,7 +267,11 @@
 </ul>
 <h3>表格绘制</h3>
 <div id="table_html_id" class="main_images" style="overflow-x:auto;">
+    {% if table_text|length > 0 %}
+    {{table_text | safe}}
+    {% else %}
     请点击 构建表格 按钮...
+    {% endif %}
 </div>
 <div class="for_button2">
             <button type="button" style="width:80px;height:30px" id="source_loading_button_latex" onclick="load_source_latex()">LaTex生成</button>
@@ -296,6 +281,9 @@
 </div>
 <div class="bottom_image" id="source_div_id">
     <h3>快捷代码</h3>
+    {% if fast_code|length > 0 %}
+    {{fast_code|safe}}
+    {% endif %}
 </div>
 <div class="choose_config">
     <form name="frm_rename_config_choose_select" id="frm_rename_config_choose_select" action="{{url_for('choose_config', source='table')}}" method="POST">
