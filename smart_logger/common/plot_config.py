@@ -3,6 +3,7 @@ from smart_logger.common.common_config import LOG_DIR_BACKING_NAME
 # 绘图相关
 DESCRIPTION = dict()
 FLEXIBLE_CONFIG = dict()
+FIXED_PARAMETER = {'FLEXIBLE_CONFIG', 'FIXED_PARAMETER'}
 # 数据目录
 DATA_PATH = "/home/luofm/Data"
 # 在绘图的时候，从哪里加载数据绘制
@@ -230,6 +231,7 @@ FLEXIBLE_CONFIG['PNG_DPI'] = dict(SAME_XY=True)
 # 表格有效位数
 TABLE_VALID_BITS = 2
 DESCRIPTION['TABLE_VALID_BITS'] = '表格中有效位数 (0, 1, ...)'
+FLEXIBLE_CONFIG['TABLE_VALID_BITS'] = dict(SAME_XY=True, SAME_TITLE=True, SUB_IMAGE=True)
 
 # 算法最低相对性能
 MIN_RELATIVE_PERFORMANCE = 0.0
@@ -381,7 +383,7 @@ DESCRIPTION['ADDITIONAL_PLOT_CONFIGS'] = '针对性绘图配置'
 def get_global_plot_configs(things):
     res = dict()
     for k, v in things:
-        if not k.startswith('__') and not hasattr(v, '__call__') and 'module' not in str(type(v)):
+        if not k.startswith('__') and not hasattr(v, '__call__') and 'module' not in str(type(v)) and k not in FIXED_PARAMETER:
             res[k] = v
     return res
 

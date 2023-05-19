@@ -1357,21 +1357,22 @@ def _make_subtable(data, x_name, y_name, at_x, plot_config_dict, iter, alg_as_ro
                 selected_error = y_data_error[-1]
             if len(data_len) <= 1:
                 selected_error = 0
+            valid_bit = _get_plot_config_all('TABLE_VALID_BITS')
             if sub_figure not in summary_dict:
                 summary_dict[sub_figure] = dict()
-            summary_dict[sub_figure][alg_name] = (selected_mean, selected_error)
+            summary_dict[sub_figure][alg_name] = (selected_mean, selected_error, valid_bit)
             Logger.local_log(
                 f'table: {sub_figure}, alg: {alg_name}, x-y: {x_name}-{y_name}, data_len: {data_len}, min len: {min(data_len)}, selected mean: {selected_mean}, selected error: {selected_error}')
 
         fig_ind += 1
-    if alg_as_row_header:
-        summary_dict_transpose = dict()
-        for k1 in summary_dict:
-            for k2 in summary_dict[k1]:
-                if k2 not in summary_dict_transpose:
-                    summary_dict_transpose[k2] = dict()
-                summary_dict_transpose[k2][k1] = summary_dict[k1][k2]
-        summary_dict = summary_dict_transpose
+    # if alg_as_row_header:
+    #     summary_dict_transpose = dict()
+    #     for k1 in summary_dict:
+    #         for k2 in summary_dict[k1]:
+    #             if k2 not in summary_dict_transpose:
+    #                 summary_dict_transpose[k2] = dict()
+    #             summary_dict_transpose[k2][k1] = summary_dict[k1][k2]
+    #     summary_dict = summary_dict_transpose
     for k in figure_plotting_record:
         figure_plotting_record[k] = sorted(list(figure_plotting_record[k]))
     return summary_dict, x_name, y_name, figure_plotting_record
@@ -1799,12 +1800,12 @@ def summary_buffer_to_output(summary_dict_buffer, privileged_col_idx=None, place
                 final_str += ' & '
         final_str = final_str + '\\\\\\midrule' + '\n'
         try:
-            valid_bit = int(plot_config.TABLE_VALID_BITS)
+            valid_bit_default = int(plot_config.TABLE_VALID_BITS)
         except Exception as e:
             import traceback
             Logger.local_log(f'[WARNING] unexpected Exception!!!! {e}')
             traceback.print_exc()
-            valid_bit = 2
+            valid_bit_default = 2
         for row_name in row_id_list:
             row_content = summary_dict[row_name]
             max_performance_ind, max_performance = 0, -10000000
@@ -1814,7 +1815,7 @@ def summary_buffer_to_output(summary_dict_buffer, privileged_col_idx=None, place
                                                             alg_as_row_header=alg_as_row_header) + ' & '
             for ind_task, task in enumerate(task_list):
                 if task in row_content:
-                    data_mean, data_error = row_content[task]
+                    data_mean, data_error, valid_bit = row_content[task]
                     if plot_config.TABLE_BOLD_MAX:
                         if data_mean > max_performance:
                             max_performance = data_mean
@@ -1826,9 +1827,9 @@ def summary_buffer_to_output(summary_dict_buffer, privileged_col_idx=None, place
             for ind_task, task in enumerate(task_list):
 
                 if task in row_content:
-                    data_mean, data_error = row_content[task]
+                    data_mean, data_error, valid_bit = row_content[task]
                 else:
-                    data_mean, data_error = 0, 0
+                    data_mean, data_error, valid_bit = 0, 0, valid_bit_default
 
                 if max_performance_ind == ind_task:
                     final_str = final_str + '$ \\mathbf{' + f"{format_float_to_str(data_mean, valid_bit)}" + '} $ & ' + '$ \\mathbf{' + f"{format_float_to_str(data_error, valid_bit)}" + '} $'
@@ -1885,12 +1886,12 @@ def summary_buffer_to_output_md(summary_dict_buffer, privileged_col_idx=None, pl
             final_str = final_str + f':{length_placeholder}:|'
         final_str += '\n'
         try:
-            valid_bit = int(plot_config.TABLE_VALID_BITS)
+            valid_bit_default = int(plot_config.TABLE_VALID_BITS)
         except Exception as e:
             import traceback
             Logger.local_log(f'[WARNING] unexpected Exception!!!! {e}')
             traceback.print_exc()
-            valid_bit = 2
+            valid_bit_default = 2
         for row_name in row_id_list:
             row_content = summary_dict[row_name]
             max_performance_ind, max_performance = 0, -10000000
@@ -1900,7 +1901,7 @@ def summary_buffer_to_output_md(summary_dict_buffer, privileged_col_idx=None, pl
                                                                   alg_as_row_header=alg_as_row_header) + ' | '
             for ind_task, task in enumerate(task_list):
                 if task in row_content:
-                    data_mean, data_error = row_content[task]
+                    data_mean, data_error, valid_bit = row_content[task]
                     if plot_config.TABLE_BOLD_MAX:
                         if data_mean > max_performance:
                             max_performance = data_mean
@@ -1912,9 +1913,9 @@ def summary_buffer_to_output_md(summary_dict_buffer, privileged_col_idx=None, pl
             for ind_task, task in enumerate(task_list):
 
                 if task in row_content:
-                    data_mean, data_error = row_content[task]
+                    data_mean, data_error, valid_bit = row_content[task]
                 else:
-                    data_mean, data_error = 0, 0
+                    data_mean, data_error, valid_bit = 0, 0, valid_bit_default
 
                 if max_performance_ind == ind_task:
                     final_str = final_str + '$ \\mathbf{'
@@ -1972,12 +1973,12 @@ def summary_buffer_to_output_html(summary_dict_buffer, privileged_col_idx=None, 
             final_str = final_str + '<th>' + '{}'.format(task_safe) + '</th>\n'
         final_str += '</tr>\n'
         try:
-            valid_bit = int(plot_config.TABLE_VALID_BITS)
+            valid_bit_default = int(plot_config.TABLE_VALID_BITS)
         except Exception as e:
             import traceback
             Logger.local_log(f'[WARNING] unexpected Exception!!!! {e}')
             traceback.print_exc()
-            valid_bit = 2
+            valid_bit_default = 2
         for row_name in row_id_list:
             row_content = summary_dict[row_name]
             max_performance_ind, max_performance = 0, -10000000
@@ -1989,7 +1990,7 @@ def summary_buffer_to_output_html(summary_dict_buffer, privileged_col_idx=None, 
                                                                                                alg_as_row_header=alg_as_row_header) + '</td>\n'
             for ind_task, task in enumerate(task_list):
                 if task in row_content:
-                    data_mean, data_error = row_content[task]
+                    data_mean, data_error, valid_bit = row_content[task]
                     if plot_config.TABLE_BOLD_MAX:
                         if data_mean > max_performance:
                             max_performance = data_mean
@@ -2001,9 +2002,9 @@ def summary_buffer_to_output_html(summary_dict_buffer, privileged_col_idx=None, 
             for ind_task, task in enumerate(task_list):
                 final_str = final_str + '<td>'
                 if task in row_content:
-                    data_mean, data_error = row_content[task]
+                    data_mean, data_error, valid_bit = row_content[task]
                 else:
-                    data_mean, data_error = 0, 0
+                    data_mean, data_error, valid_bit = 0, 0, valid_bit_default
 
                 if max_performance_ind == ind_task:
 

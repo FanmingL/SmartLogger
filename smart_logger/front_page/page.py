@@ -434,7 +434,7 @@ def plot():
                                 'MAX_AUTO_PLOTTING_NUM', 'FOCUS_IMAGE_CONFIG_GROUP',
                                 'FOCUS_IMAGE_CONFIG_SAME_CONTENT_GROUP',
                                 'FOCUS_IMAGE_CONFIG_SUB_IMAGE_TITLE', 'ADDITIONAL_PLOT_CONFIGS', 'FLEXIBLE_CONFIG',
-                                'PARAMETER_ADJUST_USE_CACHE']}
+                                'PARAMETER_ADJUST_USE_CACHE', 'FIXED_PARAMETER']}
     config = config_ordered
     config_description = plot_config.DESCRIPTION
     for k in config:
@@ -835,8 +835,8 @@ def plot_config_following_default(following_type):
                 if xy_choose in config['ADDITIONAL_PLOT_CONFIGS'][config_presented_mode] and title_choose in config['ADDITIONAL_PLOT_CONFIGS'][config_presented_mode][xy_choose]:
                     config['ADDITIONAL_PLOT_CONFIGS'][config_presented_mode][xy_choose].pop(title_choose)
             else:
-                if xy_choose in config['ADDITIONAL_PLOT_CONFIGS'][config_presented_mode]:
-                    config['ADDITIONAL_PLOT_CONFIGS'][config_presented_mode].pop(xy_choose)
+                if title_choose in config['ADDITIONAL_PLOT_CONFIGS'][config_presented_mode]:
+                    config['ADDITIONAL_PLOT_CONFIGS'][config_presented_mode].pop(title_choose)
     save_config(config, config_name)
     return redirect('/plot')
 
