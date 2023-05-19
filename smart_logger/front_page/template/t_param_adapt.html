@@ -614,6 +614,54 @@
         <li><a href="{{url_for('logout')}}" style="width: 80px">下线</a></li>
     </ul>
 </div>
+<div class="choose_config">
+    <form name="frm_rename_config_choose_select" id="frm_rename_config_choose_select" action="{{url_for('choose_config', source='adapt')}}" method="POST">
+        <div align="left" style="margin: 20px">
+        <p>
+            <label for="choose_config_cb" style="font-family: monospace">选择设定</label><br/>
+            <select id="choose_config_cb" name="chosen_config" onchange="change_config_cb()">
+                {% for item in config_file_list %}
+                  <option value ="{{item}}" {% if item == config_name %} selected {% endif %}>{{item}}</option>
+                {% endfor %}
+            </select>
+            <button type="button" style="width:80px;height:30px" onclick="create_config()">新建配置</button>
+            <button type="button" style="width:80px;height:30px" onclick="delete_config()">删除配置</button>
+            <button type="button" style="width:100px;height:30px" onclick="create_grid_config()">分析配置生成</button>
+        </p>
+
+        </div>
+    </form>
+</div>
+
+<div class="merge_config">
+
+    <form name="frm_merge_config_choose_select" id="frm_merge_config_choose_select" action="{{url_for('merge_config')}}" method="POST">
+        <div align="left" style="margin: 20px">
+        <p>
+            <label for="choose_target_config_cb" style="font-family: monospace">目标配置</label><br/>
+            <select id="choose_target_config_cb" name="target_config">
+                {% for item in config_file_list %}
+                {% if item == config_name %}
+                <option value ="{{item}}" selected >{{item}}</option>
+                {% else %}
+                  <option value ="{{item}}" >{{item}}</option>
+                {% endif %}
+                {% endfor %}
+            </select>
+            <button type="submit" style="width:80px;height:30px">合并配置</button>
+        </p>
+
+        </div>
+
+    </form>
+</div>
+<div class="use_cache">
+    <form name="use_cache_form" id="use_cache_form_id" action="{{url_for('change_use_cache')}}" method="POST" style="margin: 15px">
+    <input type="checkbox" name="use_cache" id="use_cache_id" value="use_cache" {% if use_cache %} checked="checked" {% endif %} onchange="document.use_cache_form.submit()">
+        <label for="use_cache_id" style="font-family: monospace">使用缓存数据</label><br/>
+        <button type="button" id="update_cache_button_id" style="width:80px;height:30px" onclick="update_cache_now()" >更新缓存</button>
+    </form>
+</div>
 <ul>
     <li><a href="{{url_for('hello')}}">实验列表</a></li>
     <li><a href="{{url_for('param_adjust')}}">绘图参数</a></li>
@@ -779,53 +827,7 @@
         {% endif %}
     </p>
 </div>
-<div class="choose_config">
-    <form name="frm_rename_config_choose_select" id="frm_rename_config_choose_select" action="{{url_for('choose_config', source='adapt')}}" method="POST">
-        <div align="left" style="margin: 20px">
-        <p>
-            <label for="choose_config_cb" style="font-family: monospace">选择设定</label><br/>
-            <select id="choose_config_cb" name="chosen_config" onchange="change_config_cb()">
-                {% for item in config_file_list %}
-                  <option value ="{{item}}" {% if item == config_name %} selected {% endif %}>{{item}}</option>
-                {% endfor %}
-            </select>
-            <button type="button" style="width:80px;height:30px" onclick="create_config()">新建配置</button>
-            <button type="button" style="width:80px;height:30px" onclick="delete_config()">删除配置</button>
-            <button type="button" style="width:100px;height:30px" onclick="create_grid_config()">分析配置生成</button>
-        </p>
 
-        </div>
-    </form>
-</div>
-<div class="merge_config">
-
-    <form name="frm_merge_config_choose_select" id="frm_merge_config_choose_select" action="{{url_for('merge_config')}}" method="POST">
-        <div align="left" style="margin: 20px">
-        <p>
-            <label for="choose_target_config_cb" style="font-family: monospace">目标配置</label><br/>
-            <select id="choose_target_config_cb" name="target_config">
-                {% for item in config_file_list %}
-                {% if item == config_name %}
-                <option value ="{{item}}" selected >{{item}}</option>
-                {% else %}
-                  <option value ="{{item}}" >{{item}}</option>
-                {% endif %}
-                {% endfor %}
-            </select>
-            <button type="submit" style="width:80px;height:30px">合并配置</button>
-        </p>
-
-        </div>
-
-    </form>
-</div>
-<div class="use_cache">
-    <form name="use_cache_form" id="use_cache_form_id" action="{{url_for('change_use_cache')}}" method="POST" style="margin: 15px">
-    <input type="checkbox" name="use_cache" id="use_cache_id" value="use_cache" {% if use_cache %} checked="checked" {% endif %} onchange="document.use_cache_form.submit()">
-        <label for="use_cache_id" style="font-family: monospace">使用缓存数据</label><br/>
-        <button type="button" id="update_cache_button_id" style="width:80px;height:30px" onclick="update_cache_now()" >更新缓存</button>
-    </form>
-</div>
 <div class="rename_config">
     <form name="frm_rename_config_choose" action="{{url_for('rename_config')}}" method="POST">
 <p>
