@@ -754,6 +754,10 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
             if ymin_config is not None and not str(ymin_config) == 'None':
                 ymin = ymin_config
                 ax.set_ylim(bottom=ymin)
+            ymax_config = _get_plot_config_all('YMAX')
+            if ymax_config is not None and not str(ymax_config) == 'None':
+                ymax = ymax_config
+                ax.set_ylim(top=ymax)
         if alg_count == 0:
             title_name = title_tuple_to_str(sub_figure)
             if not _get_plot_config_all('TITLE_SUFFIX') == 'None':
@@ -1247,7 +1251,7 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
     return png_saving_path, x_name, y_name, figure_plotting_record
 
 
-def _make_subtable(data, x_name, y_name, at_x, plot_config_dict, iter, alg_as_row_header):
+def _make_subtable(data, x_name, y_name, at_x, plot_config_dict, iter, alg_as_row_header, bold_max):
 
     for k in plot_config_dict:
         setattr(plot_config, k, plot_config_dict[k])
@@ -1371,10 +1375,10 @@ def _make_subtable(data, x_name, y_name, at_x, plot_config_dict, iter, alg_as_ro
         row_content = summary_dict[row_name]
         max_performance = -10000000
         max_col_name = None
-        if not plot_config.TABLE_BOLD_MAX:
+        if not bold_max:
             max_performance = -max_performance
         for col_name, col_value in row_content.items():
-            if plot_config.TABLE_BOLD_MAX:
+            if bold_max:
                 if col_value[0] > max_performance:
                     max_performance = col_value[0]
                     max_col_name = col_name
@@ -1737,7 +1741,8 @@ def _to_table(data, atx, iter, privileged_col_idx=None, placeholder=None, md=Tru
                         data_it[k1][k2].append(data_candidate)
         plot_config_dict = {k: getattr(plot_config, k) for k in plot_config.global_plot_configs()}
         futures.append(plotting_executor.submit(_make_subtable, data_it, x_name, y_name, atx, plot_config_dict, iter,
-                                                _get_plot_config_xy('TABLE_ALG_SORT_BY_ROW')))
+                                                _get_plot_config_xy('TABLE_ALG_SORT_BY_ROW'),
+                                                _get_plot_config_xy('BOLD_MAX')))
     summary_dict_buffer = dict()
     summary_dict_config = dict()
 

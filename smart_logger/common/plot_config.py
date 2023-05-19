@@ -115,10 +115,15 @@ XMAX = 'None'
 DESCRIPTION['XMAX'] = 'X轴的最大值 (None, 1, 2, ...)'
 FLEXIBLE_CONFIG['XMAX'] = dict(SAME_XY=True, SAME_TITLE=True, SUB_IMAGE=True)
 
-# Y轴最小值的最大值
+# Y轴最小值
 YMIN = 'None'
 DESCRIPTION['YMIN'] = 'Y轴的最小值 (None, 1, 2, ...)'
 FLEXIBLE_CONFIG['YMIN'] = dict(SAME_XY=True, SAME_TITLE=True, SUB_IMAGE=True)
+
+# Y轴最大值
+YMAX = 'None'
+DESCRIPTION['YMAX'] = 'Y轴的最大值 (None, 1, 2, ...)'
+FLEXIBLE_CONFIG['YMAX'] = dict(SAME_XY=True, SAME_TITLE=True, SUB_IMAGE=True)
 
 # 最少允许的有效数据点个数
 MINIMUM_DATA_POINT_NUM = 'None'
@@ -342,6 +347,7 @@ DESCRIPTION['USE_IGNORE_RULE'] = '是否使用过滤规则'
 
 TABLE_BOLD_MAX = True
 DESCRIPTION['TABLE_BOLD_MAX'] = '表格是否加粗最高值'
+FLEXIBLE_CONFIG['TABLE_BOLD_MAX'] = dict(SAME_XY=True)
 
 AUTO_PLOTTING = False
 DESCRIPTION['AUTO_PLOTTING'] = '是否自动刷新绘图'
