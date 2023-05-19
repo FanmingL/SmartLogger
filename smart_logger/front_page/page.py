@@ -476,12 +476,21 @@ def plot():
     total_same_paired_images_x = [item[0] for item in plotting_xy]
     total_same_paired_images_y = [item[1] for item in plotting_xy]
     total_same_paired_images = [f'{item[0]}-{item[1]}' for item in plotting_xy]
-    image_content_choose = total_same_paired_images[0]
-    image_content_choose_idx = 0
-    if 'FOCUS_IMAGE_CONFIG_SAME_CONTENT_GROUP' in plot_config_dict:
-        if plot_config_dict['FOCUS_IMAGE_CONFIG_SAME_CONTENT_GROUP'] in total_same_paired_images:
-            image_content_choose = plot_config_dict['FOCUS_IMAGE_CONFIG_SAME_CONTENT_GROUP']
-            image_content_choose_idx= total_same_paired_images.index(image_content_choose)
+    need_resaving_config = False
+    if len(total_same_paired_images[0]) > 0:
+        image_content_choose = total_same_paired_images[0]
+        image_content_choose_idx = 0
+        if 'FOCUS_IMAGE_CONFIG_SAME_CONTENT_GROUP' in plot_config_dict:
+            if plot_config_dict['FOCUS_IMAGE_CONFIG_SAME_CONTENT_GROUP'] in total_same_paired_images:
+                image_content_choose = plot_config_dict['FOCUS_IMAGE_CONFIG_SAME_CONTENT_GROUP']
+                image_content_choose_idx= total_same_paired_images.index(image_content_choose)
+            else:
+                plot_config_dict['FOCUS_IMAGE_CONFIG_SAME_CONTENT_GROUP'] = image_content_choose
+                need_resaving_config = True
+    else:
+        image_content_choose = 'None'
+        image_content_choose_idx = -1
+
     cache_data = load_data_cache(config_name)
     image_information = dict()
     if 'FIGURE_RECORDING' in cache_data:
@@ -501,10 +510,14 @@ def plot():
 
     sub_image_title_choose = plot_config_dict['FOCUS_IMAGE_CONFIG_SUB_IMAGE_TITLE'] if \
         'FOCUS_IMAGE_CONFIG_SUB_IMAGE_TITLE' in plot_config_dict else 'None'
-    sub_image_title_choose_idx = -1
+    sub_image_title_choose_idx = 0
     if len(sub_image_list) > 0:
         if sub_image_title_choose in sub_image_list:
             sub_image_title_choose_idx = sub_image_list.index(sub_image_title_choose)
+        else:
+            sub_image_title_choose = sub_image_list[0]
+            plot_config_dict['FOCUS_IMAGE_CONFIG_SUB_IMAGE_TITLE'] = sub_image_title_choose
+            need_resaving_config = True
     xy_choose = plot_config_dict['FOCUS_IMAGE_CONFIG_SAME_CONTENT_GROUP']
     title_choose = plot_config_dict['FOCUS_IMAGE_CONFIG_SUB_IMAGE_TITLE']
     additional_configs = plot_config_dict['ADDITIONAL_PLOT_CONFIGS']
@@ -531,6 +544,8 @@ def plot():
     if not config_presented_mode == 'default':
         config_list = [(k, v)for k,v in config.items() if k in additional_config_cur_setting]
         config_list = config_list + [(k, v)for k,v in config.items() if k not in additional_config_cur_setting]
+    if need_resaving_config:
+        save_config(plot_config_dict, config_name)
     return render_template('t_plot.html',
                            plot_config=config_list,  # plot_config list list
                            config_type=config_type,
