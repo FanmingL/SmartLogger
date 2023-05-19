@@ -1742,7 +1742,7 @@ def _to_table(data, atx, iter, privileged_col_idx=None, placeholder=None, md=Tru
         plot_config_dict = {k: getattr(plot_config, k) for k in plot_config.global_plot_configs()}
         futures.append(plotting_executor.submit(_make_subtable, data_it, x_name, y_name, atx, plot_config_dict, iter,
                                                 _get_plot_config_xy('TABLE_ALG_SORT_BY_ROW'),
-                                                _get_plot_config_xy('BOLD_MAX')))
+                                                _get_plot_config_xy('TABLE_BOLD_MAX')))
     summary_dict_buffer = dict()
     summary_dict_config = dict()
 
