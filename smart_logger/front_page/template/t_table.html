@@ -118,21 +118,44 @@
             form_rename.submit();
         }
         async function copy_function() {
-          let copyText = document.getElementById("source_div_id");
+            let copyText = document.getElementById("source_div_id");
             let message = document.getElementById("message");
 
-          try {
-            await navigator.clipboard.writeText(copyText.innerText);
-            /* 显示提示框 */
-            message.style.display = "block";
-            /* 2秒后隐藏提示框 */
-            setTimeout(() => {
-              message.style.display = "none";
-            }, 2000);
-          } catch (err) {
-            console.log('Failed to copy text: ', err);
-          }
+            if (navigator.clipboard) {
+                try {
+                    await navigator.clipboard.writeText(copyText.innerText);
+                    /* 显示提示框 */
+                    message.style.display = "block";
+                    /* 2秒后隐藏提示框 */
+                    setTimeout(() => {
+                        message.style.display = "none";
+                    }, 2000);
+                } catch (err) {
+                    console.log('Failed to copy text: ', err);
+                }
+            } else {
+                let textarea = document.createElement("textarea");
+                textarea.textContent = copyText.innerText;
+                document.body.appendChild(textarea);
+                textarea.select();
+
+                try {
+                    if (document.execCommand("copy")) {
+                        /* 显示提示框 */
+                        message.style.display = "block";
+                        /* 2秒后隐藏提示框 */
+                        setTimeout(() => {
+                            message.style.display = "none";
+                        }, 2000);
+                    }
+                } catch (err) {
+                    console.log('Failed to copy text: ', err);
+                } finally {
+                    document.body.removeChild(textarea);
+                }
+            }
         }
+
     </script>
     <style>
         table {
