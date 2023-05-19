@@ -3,7 +3,7 @@ from smart_logger.common.common_config import LOG_DIR_BACKING_NAME
 # 绘图相关
 DESCRIPTION = dict()
 FLEXIBLE_CONFIG = dict()
-FIXED_PARAMETER = {'FLEXIBLE_CONFIG', 'FIXED_PARAMETER'}
+FIXED_PARAMETER = {'FLEXIBLE_CONFIG', 'FIXED_PARAMETER', 'DESCRIPTION'}
 # 数据目录
 DATA_PATH = "/home/luofm/Data"
 # 在绘图的时候，从哪里加载数据绘制

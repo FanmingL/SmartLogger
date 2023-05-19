@@ -65,6 +65,9 @@ def save_config(config, file_name):
     Logger.logger(f'save config to {full_file_name}')
     try:
         os.makedirs(os.path.dirname(full_file_name), exist_ok=True)
+        for k in plot_config.FIXED_PARAMETER:
+            if k in config:
+                config.pop(k)
         safe_dump(config, full_file_name)
         Logger.logger(f'config save to {full_file_name} OK!')
         return True
@@ -133,6 +136,10 @@ def has_config(file_name):
 def load_config(file_name):
     _choose_config(config_name=file_name)
     config = _load_config(file_name)
+    if isinstance(config, dict):
+        for k in plot_config.FIXED_PARAMETER:
+            if k in config:
+                config.pop(k)
     return config_post_process(config)
 
 def get_config_modified_timestamp(file_name):
@@ -489,10 +496,10 @@ def _choose_config(config_name):
     if len(deleted_keys) > 0:
         k_set_mismatch = True
         config_new = {k: v for k, v in config_new.items() if k not in deleted_keys}
-    for k, v in _default_config['DESCRIPTION'].items():
-        if k not in config_new['DESCRIPTION'] or not config_new['DESCRIPTION'][k] == v:
-            config_new['DESCRIPTION'][k] = v
-            k_set_mismatch = True
+    # for k, v in _default_config['DESCRIPTION'].items():
+    #     if k not in config_new['DESCRIPTION'] or not config_new['DESCRIPTION'][k] == v:
+    #         config_new['DESCRIPTION'][k] = v
+    #         k_set_mismatch = True
     if not len(config_new['DATA_IGNORE_PROPERTY']) == len(config_new['DATA_IGNORE']):
         print(f'DATA_IGNORE_PROPERTY does not valid, reinit it')
         config_new['DATA_IGNORE_PROPERTY'] = []
