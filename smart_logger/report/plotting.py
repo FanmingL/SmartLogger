@@ -1343,7 +1343,8 @@ def _make_subtable(data, x_name, y_name, at_x, plot_config_dict, iter, alg_as_ro
             if _get_plot_config_all('USE_SMOOTH'):
                 y_data = smooth(y_data, radius=_get_plot_config_all('SMOOTH_RADIUS'))
             if at_x is None:
-                at_x = float(xmax_config)
+                if not str(xmax_config) == 'None':
+                    at_x = float(xmax_config)
             if at_x is not None:
                 idx = np.argmin(np.square(x_data.astype(np.float) - at_x))
                 selected_mean = y_data[idx]
