@@ -1843,7 +1843,6 @@ def summary_buffer_to_output(summary_dict_buffer, privileged_col_idx=None, place
             final_str = final_str + '\\\\' + '\n'
         final_str = final_str + '\\bottomrule' + '\n'
         final_str = final_str + '=' * 15 + f'End Table: {table_name}' + '=' * 15 + '\n'
-    Logger.local_log(final_str)
     return final_str
 
 
@@ -1932,8 +1931,6 @@ def summary_buffer_to_output_md(summary_dict_buffer, privileged_col_idx=None, pl
                 final_str = final_str + ' | '
             final_str = final_str + '\n'
         final_str = final_str + '\n'
-
-    Logger.local_log(final_str)
     return final_str
 
 
@@ -2022,7 +2019,6 @@ def summary_buffer_to_output_html(summary_dict_buffer, privileged_col_idx=None, 
                 final_str = final_str + ' </td> \n'
             final_str = final_str + ' </tr> \n'
         final_str = final_str + '</table>'
-    Logger.local_log(final_str)
     return final_str
 
 

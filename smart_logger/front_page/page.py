@@ -506,7 +506,6 @@ def plot():
     if len(sub_image_list) > 0:
         if sub_image_title_choose in sub_image_list:
             sub_image_title_choose_idx = sub_image_list.index(sub_image_title_choose)
-    print('flexible config:', plot_config.FLEXIBLE_CONFIG)
     xy_choose = plot_config_dict['FOCUS_IMAGE_CONFIG_SAME_CONTENT_GROUP']
     title_choose = plot_config_dict['FOCUS_IMAGE_CONFIG_SUB_IMAGE_TITLE']
     additional_configs = plot_config_dict['ADDITIONAL_PLOT_CONFIGS']
