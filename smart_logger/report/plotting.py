@@ -1729,6 +1729,7 @@ def _to_table(data, atx, iter, privileged_col_idx=None, placeholder=None, md=Tru
         summary_dict, x_name, y_name, figure_plotting_record = future.result()
         summary_dict_buffer[y_name] = summary_dict
         figure_recording_dict[f'{x_name}-{y_name}'] = figure_plotting_record
+    summary_dict_buffer = {y_name: summary_dict_buffer[y_name] for x_name, y_name in plot_config.PLOTTING_XY}
     if md:
         result_editor = summary_buffer_to_output_md(summary_dict_buffer, privileged_col_idx, placeholder,
                                                     alg_as_row_header)
