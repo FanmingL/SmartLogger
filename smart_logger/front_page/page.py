@@ -603,10 +603,7 @@ def table():
                            )
 
 
-@app.route("/query_table", methods=['GET'])
-@require_login(source_name='query_table', allow_guest=True)
-def query_table():
-    config_name = query_cookie('used_config')
+def _query_table_for_config(config_name):
     config = load_config(config_name)
     _overwrite_config(config)
     table_data = load_table_cache(config_name)
@@ -617,6 +614,14 @@ def query_table():
     data['FIGURE_RECORDING'] = figure_recording_dict
     save_data_cache(data, config_name)
     save_table_cache(table_data, config_name)
+    return result
+
+
+@app.route("/query_table", methods=['GET'])
+@require_login(source_name='query_table', allow_guest=True)
+def query_table():
+    config_name = query_cookie('used_config')
+    result = _query_table_for_config(config_name)
     return result
 
 
@@ -1738,6 +1743,11 @@ def schedule_iter():
     for candidate_config_name in auto_plotting_candidates:
         try:
             _plot_experiment_figure(candidate_config_name, page_config.USER_NAME)
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+        try:
+            _query_table_for_config(candidate_config_name)
         except Exception as e:
             import traceback
             traceback.print_exc()
