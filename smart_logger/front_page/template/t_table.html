@@ -48,7 +48,7 @@
               if (httpRequest.readyState === 4 && httpRequest.status === 200) {
                   console.log('success!');
                   var table = document.getElementById('source_div_id');
-                  table.innerHTML = "<h3>快捷代码</h3><br/>"+httpRequest.responseText;
+                  table.innerHTML = httpRequest.responseText;
                   finish_source(table.innerHTML);
               }
               };
@@ -61,7 +61,7 @@
               if (httpRequest.readyState === 4 && httpRequest.status === 200) {
                   console.log('success!');
                   var table = document.getElementById('source_div_id');
-                  table.innerHTML = "<h3>快捷代码</h3><br/>"+httpRequest.responseText;
+                  table.innerHTML = httpRequest.responseText;
                   finish_source(table.innerHTML);
               }
               };
@@ -116,6 +116,22 @@
             let config_selection = document.getElementById("choose_config_cb");
             let selected_config = config_selection.options[config_selection.selectedIndex].value;
             form_rename.submit();
+        }
+        async function copy_function() {
+          let copyText = document.getElementById("source_div_id");
+            let message = document.getElementById("message");
+
+          try {
+            await navigator.clipboard.writeText(copyText.innerText);
+            /* 显示提示框 */
+            message.style.display = "block";
+            /* 2秒后隐藏提示框 */
+            setTimeout(() => {
+              message.style.display = "none";
+            }, 2000);
+          } catch (err) {
+            console.log('Failed to copy text: ', err);
+          }
         }
     </script>
     <style>
@@ -192,6 +208,13 @@
         .for_button3{
             position: absolute;
             left: 10%;
+            width: 10%;
+            height: 10%;
+            top: 99%;
+        }
+        .for_button4{
+            position: absolute;
+            left: 18%;
             width: 10%;
             height: 10%;
             top: 99%;
@@ -279,11 +302,18 @@
 <div class="for_button3">
 <button type="button" style="width:80px;height:30px" id="source_loading_button_md" onclick="load_source_md()">MD生成</button>
 </div>
+<div class="for_button4">
+<button type="button" style="width:80px;height:30px" id="copy_button_id" onclick="copy_function()" >复制代码</button>
+</div>
 <div class="bottom_image" id="source_div_id">
-    <h3>快捷代码</h3>
     {% if fast_code|length > 0 %}
     {{fast_code|safe}}
+    {%else%}
+    <h3>快捷代码</h3>
     {% endif %}
+</div>
+<div id="message" style="display: none; position: fixed; bottom: 20px; right: 20px; padding: 10px; background-color: #4CAF50; color: white;">
+    已经成功复制到剪贴板
 </div>
 <div class="choose_config">
     <form name="frm_rename_config_choose_select" id="frm_rename_config_choose_select" action="{{url_for('choose_config', source='table')}}" method="POST">

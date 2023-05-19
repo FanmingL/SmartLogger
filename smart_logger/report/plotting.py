@@ -1258,6 +1258,7 @@ def _make_subtable(data, x_name, y_name, at_x, plot_config_dict, iter, alg_as_ro
     sub_figure_content = _sub_figure_sorted(sub_figure_content)
     fig_ind = 0
     summary_dict = dict()
+    summary_dict_transpose = dict()
     min_rel_perf = _get_plot_config_xy('MIN_RELATIVE_PERFORMANCE')
     if min_rel_perf > 0.0 or _get_plot_config_xy('SORT_BY_PERFORMANCE_ORDER'):
         averaged_sort_alg_list, valid_alg_dict = _preprocess_date(data, None, x_name, y_name)
@@ -1357,21 +1358,36 @@ def _make_subtable(data, x_name, y_name, at_x, plot_config_dict, iter, alg_as_ro
             valid_bit = _get_plot_config_all('TABLE_VALID_BITS')
             if sub_figure not in summary_dict:
                 summary_dict[sub_figure] = dict()
-            summary_dict[sub_figure][alg_name] = (selected_mean, selected_error, valid_bit)
+            if alg_name not in summary_dict_transpose:
+                summary_dict_transpose[alg_name] = dict()
+            summary_dict[sub_figure][alg_name] = [selected_mean, selected_error, valid_bit, False]
+            summary_dict_transpose[alg_name][sub_figure] = summary_dict[sub_figure][alg_name]
             Logger.local_log(
                 f'table: {sub_figure}, alg: {alg_name}, x-y: {x_name}-{y_name}, data_len: {data_len}, min len: {min(data_len)}, selected mean: {selected_mean}, selected error: {selected_error}')
 
         fig_ind += 1
-    # if alg_as_row_header:
-    #     summary_dict_transpose = dict()
-    #     for k1 in summary_dict:
-    #         for k2 in summary_dict[k1]:
-    #             if k2 not in summary_dict_transpose:
-    #                 summary_dict_transpose[k2] = dict()
-    #             summary_dict_transpose[k2][k1] = summary_dict[k1][k2]
-    #     summary_dict = summary_dict_transpose
+
+    for row_name in summary_dict:
+        row_content = summary_dict[row_name]
+        max_performance = -10000000
+        max_col_name = None
+        if not plot_config.TABLE_BOLD_MAX:
+            max_performance = -max_performance
+        for col_name, col_value in row_content.items():
+            if plot_config.TABLE_BOLD_MAX:
+                if col_value[0] > max_performance:
+                    max_performance = col_value[0]
+                    max_col_name = col_name
+            else:
+                if col_value[0] < max_performance:
+                    max_performance = col_value[0]
+                    max_col_name = col_name
+        if max_col_name is not None:
+            summary_dict[row_name][max_col_name][3] = True
     for k in figure_plotting_record:
         figure_plotting_record[k] = sorted(list(figure_plotting_record[k]))
+    if alg_as_row_header:
+        summary_dict = summary_dict_transpose
     return summary_dict, x_name, y_name, figure_plotting_record
 
 def _load_image_PIL(file_name):
@@ -1698,8 +1714,10 @@ def _to_table(data, atx, iter, privileged_col_idx=None, placeholder=None, md=Tru
                     continue
     plotting_executor = ProcessPoolExecutor(max_workers=plot_config.PROCESS_NUM)
     futures = []
-    alg_as_row_header = False
+
     for x_name, y_name in plot_config.PLOTTING_XY:
+        def _get_plot_config_xy(attri):
+            return get_plot_config(attri, x_name=x_name, y_name=y_name)
         data_it = {}
         for k1 in data:
             for k2 in data[k1]:
@@ -1719,21 +1737,24 @@ def _to_table(data, atx, iter, privileged_col_idx=None, placeholder=None, md=Tru
                         data_it[k1][k2].append(data_candidate)
         plot_config_dict = {k: getattr(plot_config, k) for k in plot_config.global_plot_configs()}
         futures.append(plotting_executor.submit(_make_subtable, data_it, x_name, y_name, atx, plot_config_dict, iter,
-                                                alg_as_row_header))
+                                                _get_plot_config_xy('TABLE_ALG_SORT_BY_ROW')))
     summary_dict_buffer = dict()
+    summary_dict_config = dict()
+
     figure_recording_dict = dict()
     for future in as_completed(futures):
         summary_dict, x_name, y_name, figure_plotting_record = future.result()
         summary_dict_buffer[y_name] = summary_dict
+        summary_dict_config[y_name] = {'alg_as_row_header': get_plot_config('TABLE_ALG_SORT_BY_ROW', x_name=x_name, y_name=y_name)}
         figure_recording_dict[f'{x_name}-{y_name}'] = figure_plotting_record
     summary_dict_buffer = {y_name: summary_dict_buffer[y_name] for x_name, y_name in plot_config.PLOTTING_XY}
     if md:
         result_editor = summary_buffer_to_output_md(summary_dict_buffer, privileged_col_idx, placeholder,
-                                                    alg_as_row_header)
+                                                    summary_dict_config)
     else:
         result_editor = summary_buffer_to_output(summary_dict_buffer, privileged_col_idx, placeholder,
-                                                 alg_as_row_header)
-    result = summary_buffer_to_output_html(summary_dict_buffer, privileged_col_idx, placeholder, alg_as_row_header)
+                                                 summary_dict_config)
+    result = summary_buffer_to_output_html(summary_dict_buffer, privileged_col_idx, placeholder, summary_dict_config)
     return result, result_editor, figure_recording_dict
 
 
@@ -1761,10 +1782,13 @@ def format_float_to_str(num, valid_bit):
     return f'{int(num)}'
 
 
-def summary_buffer_to_output(summary_dict_buffer, privileged_col_idx=None, placeholder=None, alg_as_row_header=False):
+def summary_buffer_to_output(summary_dict_buffer, privileged_col_idx=None, placeholder=None, summary_dict_config=None):
     final_str = ''
     for table_name in summary_dict_buffer:
-
+        alg_as_row_header = False
+        if isinstance(summary_dict_config, dict) and table_name in summary_dict_config and 'alg_as_row_header' in \
+                summary_dict_config[table_name]:
+            alg_as_row_header = summary_dict_config[table_name]['alg_as_row_header']
         final_str = final_str + '\n\n' + '=' * 15 + f'Table: {table_name}' + '=' * 15 + '\n'
         summary_dict = summary_dict_buffer[table_name]
         row_id_list = [k for k in summary_dict.keys()]
@@ -1806,30 +1830,17 @@ def summary_buffer_to_output(summary_dict_buffer, privileged_col_idx=None, place
             valid_bit_default = 2
         for row_name in row_id_list:
             row_content = summary_dict[row_name]
-            max_performance_ind, max_performance = 0, -10000000
-            if not plot_config.TABLE_BOLD_MAX:
-                max_performance = -max_performance
             final_str = final_str + standardize_row_and_col(item_name=row_name, row_header=True,
                                                             alg_as_row_header=alg_as_row_header) + ' & '
-            for ind_task, task in enumerate(task_list):
-                if task in row_content:
-                    data_mean, data_error, valid_bit = row_content[task]
-                    if plot_config.TABLE_BOLD_MAX:
-                        if data_mean > max_performance:
-                            max_performance = data_mean
-                            max_performance_ind = ind_task
-                    else:
-                        if data_mean < max_performance:
-                            max_performance = data_mean
-                            max_performance_ind = ind_task
+
             for ind_task, task in enumerate(task_list):
 
                 if task in row_content:
-                    data_mean, data_error, valid_bit = row_content[task]
+                    data_mean, data_error, valid_bit, bold_flag = row_content[task]
                 else:
-                    data_mean, data_error, valid_bit = 0, 0, valid_bit_default
+                    data_mean, data_error, valid_bit, bold_flag = 0, 0, valid_bit_default, False
 
-                if max_performance_ind == ind_task:
+                if bold_flag:
                     final_str = final_str + '$ \\mathbf{' + f"{format_float_to_str(data_mean, valid_bit)}" + '} $ & ' + '$ \\mathbf{' + f"{format_float_to_str(data_error, valid_bit)}" + '} $'
                 else:
                     final_str = final_str + f"${format_float_to_str(data_mean, valid_bit)}$" + '& ' + f"${format_float_to_str(data_error, valid_bit)}$"
@@ -1844,9 +1855,13 @@ def summary_buffer_to_output(summary_dict_buffer, privileged_col_idx=None, place
 
 
 def summary_buffer_to_output_md(summary_dict_buffer, privileged_col_idx=None, placeholder=None,
-                                alg_as_row_header=False):
+                                summary_dict_config=None):
     final_str = ''
     for table_name in summary_dict_buffer:
+        alg_as_row_header = False
+        if isinstance(summary_dict_config, dict) and table_name in summary_dict_config and 'alg_as_row_header' in summary_dict_config[table_name]:
+            alg_as_row_header = summary_dict_config[table_name]['alg_as_row_header']
+
         final_str = final_str + '## ' + f'Table: {table_name}' + '\n'
         summary_dict = summary_dict_buffer[table_name]
         row_id_list = [k for k in summary_dict.keys()]
@@ -1891,30 +1906,16 @@ def summary_buffer_to_output_md(summary_dict_buffer, privileged_col_idx=None, pl
             valid_bit_default = 2
         for row_name in row_id_list:
             row_content = summary_dict[row_name]
-            max_performance_ind, max_performance = 0, -10000000
-            if not plot_config.TABLE_BOLD_MAX:
-                max_performance = -max_performance
             final_str = final_str + '|' + standardize_row_and_col(row_name, row_header=True,
                                                                   alg_as_row_header=alg_as_row_header) + ' | '
             for ind_task, task in enumerate(task_list):
-                if task in row_content:
-                    data_mean, data_error, valid_bit = row_content[task]
-                    if plot_config.TABLE_BOLD_MAX:
-                        if data_mean > max_performance:
-                            max_performance = data_mean
-                            max_performance_ind = ind_task
-                    else:
-                        if data_mean < max_performance:
-                            max_performance = data_mean
-                            max_performance_ind = ind_task
-            for ind_task, task in enumerate(task_list):
 
                 if task in row_content:
-                    data_mean, data_error, valid_bit = row_content[task]
+                    data_mean, data_error, valid_bit, bold_flag = row_content[task]
                 else:
-                    data_mean, data_error, valid_bit = 0, 0, valid_bit_default
+                    data_mean, data_error, valid_bit, bold_flag = 0, 0, valid_bit_default, False
 
-                if max_performance_ind == ind_task:
+                if bold_flag:
                     final_str = final_str + '$ \\mathbf{'
                     final_str = final_str + f"{format_float_to_str(data_mean, valid_bit)}"
                     final_str = final_str + '} \\pm'
@@ -1932,9 +1933,14 @@ def summary_buffer_to_output_md(summary_dict_buffer, privileged_col_idx=None, pl
 
 
 def summary_buffer_to_output_html(summary_dict_buffer, privileged_col_idx=None, placeholder=None,
-                                  alg_as_row_header=False):
+                                  summary_dict_config=None):
     final_str = ''
+
     for table_name in summary_dict_buffer:
+        alg_as_row_header = False
+        if isinstance(summary_dict_config, dict) and table_name in summary_dict_config and 'alg_as_row_header' in \
+                summary_dict_config[table_name]:
+            alg_as_row_header = summary_dict_config[table_name]['alg_as_row_header']
         final_str = final_str + '<h3> ' + f'Table: {table_name}' + '</h3>' + '\n'
         final_str = final_str + '<table border="1" align="center" frame="hsides" rules="rows">'
         summary_dict = summary_dict_buffer[table_name]
@@ -1976,33 +1982,18 @@ def summary_buffer_to_output_html(summary_dict_buffer, privileged_col_idx=None, 
             valid_bit_default = 2
         for row_name in row_id_list:
             row_content = summary_dict[row_name]
-            max_performance_ind, max_performance = 0, -10000000
-            if not plot_config.TABLE_BOLD_MAX:
-                max_performance = -max_performance
             final_str = final_str + '<tr>'
             final_str = final_str + '<td style="text-align: left;">' + standardize_row_and_col(row_name,
                                                                                                row_header=True,
                                                                                                alg_as_row_header=alg_as_row_header) + '</td>\n'
             for ind_task, task in enumerate(task_list):
-                if task in row_content:
-                    data_mean, data_error, valid_bit = row_content[task]
-                    if plot_config.TABLE_BOLD_MAX:
-                        if data_mean > max_performance:
-                            max_performance = data_mean
-                            max_performance_ind = ind_task
-                    else:
-                        if data_mean < max_performance:
-                            max_performance = data_mean
-                            max_performance_ind = ind_task
-            for ind_task, task in enumerate(task_list):
                 final_str = final_str + '<td>'
                 if task in row_content:
-                    data_mean, data_error, valid_bit = row_content[task]
+                    data_mean, data_error, valid_bit, bold_flag = row_content[task]
                 else:
-                    data_mean, data_error, valid_bit = 0, 0, valid_bit_default
+                    data_mean, data_error, valid_bit, bold_flag = 0, 0, valid_bit_default, False
 
-                if max_performance_ind == ind_task:
-
+                if bold_flag:
                     final_str = final_str + '$ \\mathbf{'
                     final_str = final_str + f"{format_float_to_str(data_mean, valid_bit)}"
                     final_str = final_str + '} \\pm'

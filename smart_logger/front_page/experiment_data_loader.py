@@ -496,10 +496,6 @@ def _choose_config(config_name):
     if len(deleted_keys) > 0:
         k_set_mismatch = True
         config_new = {k: v for k, v in config_new.items() if k not in deleted_keys}
-    # for k, v in _default_config['DESCRIPTION'].items():
-    #     if k not in config_new['DESCRIPTION'] or not config_new['DESCRIPTION'][k] == v:
-    #         config_new['DESCRIPTION'][k] = v
-    #         k_set_mismatch = True
     if not len(config_new['DATA_IGNORE_PROPERTY']) == len(config_new['DATA_IGNORE']):
         print(f'DATA_IGNORE_PROPERTY does not valid, reinit it')
         config_new['DATA_IGNORE_PROPERTY'] = []
