@@ -827,8 +827,8 @@ def plot_config_following_default(following_type):
         if following_type == 'all':
             config['ADDITIONAL_PLOT_CONFIGS'].pop(config_presented_mode)
         elif following_type == 'xy':
-            if title_choose in config['ADDITIONAL_PLOT_CONFIGS'][config_presented_mode]:
-                config['ADDITIONAL_PLOT_CONFIGS'][config_presented_mode].pop(title_choose)
+            if xy_choose in config['ADDITIONAL_PLOT_CONFIGS'][config_presented_mode]:
+                config['ADDITIONAL_PLOT_CONFIGS'][config_presented_mode].pop(xy_choose)
         elif following_type == 'title':
             if config_presented_mode == 'sole_image':
                 if xy_choose in config['ADDITIONAL_PLOT_CONFIGS'][config_presented_mode] and title_choose in config['ADDITIONAL_PLOT_CONFIGS'][config_presented_mode][xy_choose]:
