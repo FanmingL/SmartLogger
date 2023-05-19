@@ -115,6 +115,10 @@ XMAX = 'None'
 DESCRIPTION['XMAX'] = 'X轴的最大值 (None, 1, 2, ...)'
 FLEXIBLE_CONFIG['XMAX'] = dict(SAME_XY=True, SAME_TITLE=True, SUB_IMAGE=True)
 
+XMIN = 'None'
+DESCRIPTION['XMIN'] = 'X轴的最小值 (None, 1, 2, ...)'
+FLEXIBLE_CONFIG['XMIN'] = dict(SAME_XY=True, SAME_TITLE=True, SUB_IMAGE=True)
+
 # Y轴最小值
 YMIN = 'None'
 DESCRIPTION['YMIN'] = 'Y轴的最小值 (None, 1, 2, ...)'

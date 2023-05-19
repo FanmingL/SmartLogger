@@ -749,7 +749,11 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
 
             if xmax_config is not None and not str(xmax_config) == 'None':
                 xmax = float(xmax_config)
-                ax.set_xlim(right=int(xmax))
+                ax.set_xlim(right=xmax)
+            xmin_config = _get_plot_config_all('XMIN')
+            if xmin_config is not None and not str(xmin_config) == 'None':
+                xmin = float(xmin_config)
+                ax.set_xlim(left=xmin)
             ymin_config = _get_plot_config_all('YMIN')
             if ymin_config is not None and not str(ymin_config) == 'None':
                 ymin = float(ymin_config)
