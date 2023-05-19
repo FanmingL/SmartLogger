@@ -64,6 +64,11 @@
             // console.log(totop)
         }
         function www_onload() {
+
+
+        }
+
+        window.addEventListener('DOMContentLoaded', (event) => {
             document.getElementById('config_div_id').addEventListener('scroll', (event) => {
                 localStorage.setItem("scroll_top_config_div", getScrollTopElement(document.getElementById('config_div_id')));
             })
@@ -74,7 +79,10 @@
             scroll_to_history_element(document.getElementById('config_div_id'), 'scroll_top_config_div');
             scroll_to_history_element(document.getElementById('file_list_div_id'), 'scroll_top_file_list_div');
             scroll_to_history();
-        }
+          var largeImage = document.getElementById('ret_image');
+          largeImage.src = "{{initial_figure_url}}" ; // 设置图片url开始加载图片
+        });
+
         function change_config_cb(){
             let form_rename = document.getElementById('frm_rename_config_choose_select');
             let config_selection = document.getElementById("choose_config_cb");
@@ -402,7 +410,7 @@
     </form>
 </div>
 <div class="right_image">
-		<img id="ret_image" src="{{initial_figure_url}}" alt="plotting" {% if initial_figure_url == "#" %} style="display:none;" {% endif %} onload="finish_figure()"  onerror="error_figure()"><br/>
+		<img id="ret_image" alt="plotting" {% if initial_figure_url == "#" %} style="display:none;" {% endif %} onload="finish_figure()"  onerror="error_figure()"><br/>
 	</div>
 <div class="file_list" id="file_list_div_id">
     <b>

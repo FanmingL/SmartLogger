@@ -269,6 +269,9 @@
       });
 
         function www_onload(){
+
+        }
+        window.addEventListener('DOMContentLoaded', (event) => {
             try {
                 set_option();
             } catch (e) {
@@ -293,7 +296,8 @@
             scroll_to_history_element(document.getElementById('rename_box_id'), 'scroll_top_rename');
             scroll_to_history_element(document.getElementById('merge_box_id'), 'scroll_top_merge');
             scroll_to_history_element(document.getElementById('plotting_order_id'), 'scroll_top_plot');
-        }
+        });
+
     </script>
     <style>
         .main_images {
