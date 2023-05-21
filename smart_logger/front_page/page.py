@@ -24,7 +24,7 @@ from smart_logger.report.plotting import _overwrite_config, _str_to_short_name
 from smart_logger.report.plotting import bar as local_bar
 from smart_logger.report.plotting import plot as local_plot
 from smart_logger.util_logger.logger import Logger
-
+from multiprocessing import Process, Manager
 
 def get_project_path():
     return os.path.dirname(os.path.abspath(__file__))
@@ -1736,9 +1736,7 @@ def flush_loop():
         time.sleep(1)
 
 
-config_file_mdate_dict = dict()
-config_content_dict = dict()
-def schedule_iter():
+def schedule_iter(config_file_mdate_dict, config_content_dict):
     cur_timestamp = time.time()
     auto_plotting_candidates = []
     for config_name in list_current_configs():
@@ -1766,13 +1764,21 @@ def schedule_iter():
             traceback.print_exc()
 
 def schedule_loop():
-    while True:
-        try:
-            schedule_iter()
-        except Exception as e:
-            import traceback
-            traceback.print_exc()
-        time.sleep(5)
+    with Manager() as manager:
+        config_file_mdate_dict = manager.dict()
+        config_content_dict = manager.dict()
+
+        while True:
+            proc = Process(target=schedule_iter, args=(config_file_mdate_dict, config_content_dict))
+            proc.start()
+            proc.join(timeout=120)  # Set timeout
+
+            if proc.is_alive():
+                Logger.local_log("schedule_iter is running too long, terminating...")
+                proc.terminate()
+                proc.join()
+
+            time.sleep(5)
 
 
 def start_page_server(port_num=None):
