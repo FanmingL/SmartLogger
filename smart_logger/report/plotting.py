@@ -241,18 +241,27 @@ def _load_data(folder_name):
         running_config_data = os.path.join(folder_name, 'config', 'running_config.json')
         param = dict()
 
-        if os.path.exists(parameter_data):
+        try:
             with open(parameter_data, 'r') as f:
                 param1 = json.load(f)
-            param.update(param1)
-        if os.path.exists(parameter_data_possible):
+                param.update(param1)
+        except FileNotFoundError:
+            pass
+
+        try:
             with open(parameter_data_possible, 'r') as f:
                 param_possible = json.load(f)
             param.update(param_possible)
-        if os.path.exists(running_config_data):
+        except FileNotFoundError:
+            pass
+
+        try:
             with open(running_config_data, 'r') as f:
                 param2 = json.load(f)
             param.update(param2)
+        except FileNotFoundError:
+            pass
+
         assert len(param) > 0, f"at least one parameter should exist!!!! {folder_name} {param}"
         data_merger_feature = []
         for merger in plot_config.DATA_MERGER:
@@ -321,15 +330,25 @@ def _load_data(folder_name):
             data = pd.read_csv(progress_data, on_bad_lines='skip')
         else:
             data = pd.read_csv(progress_data)
-        if len(data.keys()) == 1:
+        keys = data.keys()
+        if len(keys) == 1:
             data = pd.read_table(progress_data)
-        for k, v in plot_config.DATA_KEY_RENAME_CONFIG.items():
-            if k in data and v not in data:
-                data[v] = data[k]
+
         Logger.local_log(f'[ {len(data)} ] data rows for {folder_name}: {len(data)}')
-        if not plot_config.MINIMUM_DATA_POINT_NUM == 'None' and float(plot_config.MINIMUM_DATA_POINT_NUM) > len(data):
+        if not str(plot_config.MINIMUM_DATA_POINT_NUM) == 'None' and float(plot_config.MINIMUM_DATA_POINT_NUM) > len(data):
             Logger.local_log(f'{folder_name} is too short, skip it!!!')
             return None
+        for k, v in plot_config.DATA_KEY_RENAME_CONFIG.items():
+            if k in keys and v not in keys:
+                data[v] = data[k]
+        keys = data.keys()
+        xy_list = plot_config.PLOTTING_XY
+        total_xy = []
+        for item in xy_list:
+            total_xy.extend(item)
+        total_xy = list(set(total_xy))
+        total_xy = [item for item in total_xy if item in keys]
+        data = data[total_xy]
         data_str = data.select_dtypes(include=['object'])
         if len(list(data_str.keys())) > 0:
             Logger.local_log(f'invalid keys (not numerical value): {list(data_str.keys())}')
