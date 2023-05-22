@@ -605,6 +605,8 @@ def analyze_experiment(need_ignore=False, data_ignore=None, need_select=False,
         all_folders = user_data['all_folders']
     else:
         all_folders = list_current_experiment()
+        random.seed(1)
+        random.shuffle(all_folders)
         if user_data is not None and isinstance(user_data, dict):
             user_data['all_folders'] = all_folders
     Logger.local_log(f'finish listing experiment, cost {time.time() - start_time}')
