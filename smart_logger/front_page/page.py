@@ -1770,7 +1770,7 @@ def schedule_loop():
     with Manager() as manager:
         config_file_mdate_dict = manager.dict()
         config_content_dict = manager.dict()
-        page_config_dict = {k: v for k, v in page_config.__dict__().items() if not k.startswith('__')}
+        page_config_dict = {k: v for k, v in page_config.__dict__.items() if not k.startswith('__')}
 
         while True:
             proc = Process(target=schedule_iter, args=(config_file_mdate_dict, config_content_dict, page_config_dict))
