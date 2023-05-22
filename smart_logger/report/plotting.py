@@ -17,7 +17,8 @@ import seaborn as sns
 import smart_logger.common.plot_config as plot_config
 from smart_logger.util_logger.logger import Logger
 from PIL import Image
-
+from smart_logger.scripts.timer import Timer, TimerCaller
+import threading
 sns.set_theme()
 
 # '/', '\', '|', '-', '+', 'x', 'o', 'O', '.', '*'
@@ -408,6 +409,8 @@ def _load_data_multi_thread(thread_num, path_list, task_ind_list, plot_config_di
 
 
 def _load_data_multi_process(process_num, thread_num, path_list):
+    random.seed(2)
+    random.shuffle(path_list)
     process_num = min(process_num, len(path_list))
     process_num = max(1, process_num)
     result_dict = dict()

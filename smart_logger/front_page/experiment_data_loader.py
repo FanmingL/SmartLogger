@@ -30,7 +30,7 @@ def safe_dump(obj, file_name):
         import traceback
         traceback.print_exc()
     if os.path.exists(cache_filename):
-        Logger.logger(f'Error: {cache_filename} existing!!!!')
+        Logger.local_log(f'Error: {cache_filename} existing!!!!')
         os.remove(cache_filename)
 
 def get_config_path(config_name, user_name=None):
@@ -60,19 +60,19 @@ def default_config():
 def save_config(config, file_name):
     full_file_name = get_config_path(file_name)
     # if os.path.exists(full_file_name):
-    #     Logger.logger(f'file exists, you should remove it first!')
+    #     Logger.local_log(f'file exists, you should remove it first!')
     #     return False
-    Logger.logger(f'save config to {full_file_name}')
+    Logger.local_log(f'save config to {full_file_name}')
     try:
         os.makedirs(os.path.dirname(full_file_name), exist_ok=True)
         for k in plot_config.FIXED_PARAMETER:
             if k in config:
                 config.pop(k)
         safe_dump(config, full_file_name)
-        Logger.logger(f'config save to {full_file_name} OK!')
+        Logger.local_log(f'config save to {full_file_name} OK!')
         return True
     except Exception as e:
-        Logger.logger(f'config save to {full_file_name} failed. Exception is {e}')
+        Logger.local_log(f'config save to {full_file_name} failed. Exception is {e}')
     return False
 
 def load_data_cache(config_name):
@@ -122,10 +122,10 @@ def _load_config(file_name):
                 config = json.load(f)
             return config
         except Exception as e:
-            Logger.logger(f"load from {full_file_name} failed, exception is {e}. The default config will be returned.")
+            Logger.local_log(f"load from {full_file_name} failed, exception is {e}. The default config will be returned.")
             return None
     else:
-        Logger.logger(f'file {full_file_name} not exists. The default config will be returned')
+        Logger.local_log(f'file {full_file_name} not exists. The default config will be returned')
         return None
 
 
@@ -192,7 +192,7 @@ def _get_parameter(folder_name):
     base_path = plot_config.PLOT_LOG_PATH
     full_folder = os.path.join(base_path, folder_name)
     if not os.path.exists(full_folder) or not legal_path(full_folder):
-        Logger.logger(f'{full_folder} not exists!')
+        Logger.local_log(f'{full_folder} not exists!')
         return None, None
     parameter_data = os.path.join(full_folder, 'config', 'parameter.json')
     running_config_data = os.path.join(full_folder, 'config', 'running_config.json')
@@ -207,7 +207,7 @@ def _get_parameter(folder_name):
                 Logger.local_log(f'load param1: {parameter_data} fail')
                 param1 = dict()
         if len(param1) == 0:
-            Logger.logger(f'{parameter_data} not exists')
+            Logger.local_log(f'{parameter_data} not exists')
         param.update(param1)
     if os.path.exists(parameter_data_possible):
         with open(parameter_data_possible, 'r') as f:
@@ -215,7 +215,7 @@ def _get_parameter(folder_name):
         param.update(param_possible)
     else:
         pass
-        # Logger.logger(f'{parameter_data_possible} not founded')
+        # Logger.local_log(f'{parameter_data_possible} not founded')
     if os.path.exists(running_config_data):
         with open(running_config_data, 'r') as f:
             try:
@@ -224,12 +224,12 @@ def _get_parameter(folder_name):
                 Logger.local_log(f'load param2: {running_config_data} fail')
                 param2 = dict()
         if len(param2) == 0:
-            Logger.logger(f'{running_config_data} not exists')
+            Logger.local_log(f'{running_config_data} not exists')
         for k in page_config.CONSIDERED_RUNNING_CONFIG:
             if k in param2:
                 param.update({k: param2[k]})
     if len(param) == 0:
-        Logger.logger(f'no parameter found in {full_folder}')
+        Logger.local_log(f'no parameter found in {full_folder}')
         return None, None
     important_configs_dict = dict()
 
@@ -238,7 +238,7 @@ def _get_parameter(folder_name):
         for iconfig in important_configs:
             if iconfig in param:
                 important_configs_dict[iconfig] = param[iconfig]
-    # Logger.logger(f'important params: {important_configs_dict}')
+    # Logger.local_log(f'important params: {important_configs_dict}')
     return param, important_configs_dict
 
 
@@ -400,8 +400,8 @@ def generate_path_tree(folder):
     dtree = DirectionTree(full_folder)
     dtree.generate_tree()
 
-    # Logger.logger(dtree.tree)
-    # Logger.logger(dtree.full_path)
+    # Logger.local_log(dtree.tree)
+    # Logger.local_log(dtree.full_path)
     return dtree.tree, dtree.full_path, dtree.name, dtree.filesize, dtree.filesize_bytes
 
 
@@ -440,7 +440,7 @@ def make_config_type(config: dict):
             config_type[k] = "str"
         else:
             config_type[k] = "str"
-        # Logger.logger(f'{v} is classified to {config_type[k]}')
+        # Logger.local_log(f'{v} is classified to {config_type[k]}')
     return config_type
 
 
@@ -458,7 +458,7 @@ def get_record_data_item(folder_name):
 
         return value_list, len(data), data
     except Exception as e:
-        Logger.logger(f'read csv from {data_path} failed, because {e}')
+        Logger.local_log(f'read csv from {data_path} failed, because {e}')
     return [], 0, None
 
 
@@ -501,16 +501,19 @@ def _choose_config(config_name):
         config_new['DATA_IGNORE_PROPERTY'] = []
         for item in config_new['DATA_IGNORE']:
             config_new['DATA_IGNORE_PROPERTY'].append({k: {} for k in item})
+        k_set_mismatch = True
     if not len(config_new['DATA_SELECT_PROPERTY']) == len(config_new['DATA_SELECT']):
         print(f'DATA_SELECT_PROPERTY does not valid, reinit it')
         config_new['DATA_SELECT_PROPERTY'] = []
         for item in config_new['DATA_SELECT']:
             config_new['DATA_SELECT_PROPERTY'].append({k: {} for k in item})
+        k_set_mismatch = True
     if not len(config_new['SHORT_NAME_FROM_CONFIG_PROPERTY']) == len(config_new['SHORT_NAME_FROM_CONFIG']):
         config_new['SHORT_NAME_FROM_CONFIG_PROPERTY'] = dict()
         print(f'SHORT_NAME_FROM_CONFIG_PROPERTY does not valid, reinit it')
         for k in config_new['SHORT_NAME_FROM_CONFIG']:
             config_new['SHORT_NAME_FROM_CONFIG_PROPERTY'][k] = dict()
+        k_set_mismatch = True
     if k_set_mismatch:
         save_config(config_new, config_name)
 
@@ -699,7 +702,7 @@ def analyze_experiment(need_ignore=False, data_ignore=None, need_select=False,
 
     possible_config, selected_choices = stat_config(config_list)
     possible_config_ignore, selected_choices_ignore = stat_config(config_list_ignore)
-    Logger.logger(f'short name to ind: {short_name_to_ind}')
+    Logger.local_log(f'short name to ind: {short_name_to_ind}')
     sorted_res = [*zip(*sorted([*zip(alg_idxs, folder_list, nick_name_list)], key=lambda x: x[0]))]
     sorted_res_ignore = [
         *zip(*sorted([*zip(alg_idxs_ignore, folder_ignore, nick_name_ignore_list)], key=lambda x: x[0]))]

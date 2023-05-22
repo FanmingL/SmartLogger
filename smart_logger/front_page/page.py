@@ -78,9 +78,9 @@ def require_login(source_name='', allow_guest=False):
         def wrapper(*args, **kwargs):
             user_data = make_user_data()
             check_flag = check_user(user_data, allow_guest=allow_guest)
-            Logger.logger(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: check done')
+            Logger.local_log(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: check done')
             if not check_flag:
-                Logger.logger(f'user is not valid, redirect from {source_name} to login page')
+                Logger.local_log(f'user is not valid, redirect from {source_name} to login page')
                 return redirect_login_page(source_name)
             return func_in(*args, **kwargs)
 
@@ -104,10 +104,10 @@ def make_user_data():
 
 
 def check_user(user_data, allow_guest=False):
-    Logger.logger(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: check user {user_data}')
+    Logger.local_log(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: check user {user_data}')
     if in_cookie('user_name') and in_cookie('cookie_code') and in_cookie('used_config'):
         if not has_config(query_cookie('used_config')):
-            Logger.logger(f'config file {query_cookie("used_config")} not exists!!!')
+            Logger.local_log(f'config file {query_cookie("used_config")} not exists!!!')
             return False
         _user_name = query_cookie('user_name')
         _code = query_cookie('cookie_code')
@@ -115,7 +115,7 @@ def check_user(user_data, allow_guest=False):
             user_data['name'] = _user_name
         return True
     else:
-        Logger.logger(f'cookies do not exist or cookies are not complete: {request.cookies}!')
+        Logger.local_log(f'cookies do not exist or cookies are not complete: {request.cookies}!')
         return False
 
 
@@ -146,7 +146,7 @@ def start_page():
     args = dict()
     for item in request.args:
         args[item] = request.args[item]
-    Logger.logger(f'start args: {args}!!')
+    Logger.local_log(f'start args: {args}!!')
     source = args['from_page'] if 'from' in args else ''
     return render_template('t_hello.html', source=source)
 
@@ -167,7 +167,7 @@ def _choose_config_init(user_name, check_valid=True):
     candidate_config = []
     for item in list_current_configs():
         candidate_config.append(item)
-    Logger.logger(f'found configs: {candidate_config}')
+    Logger.local_log(f'found configs: {candidate_config}')
 
     if len(candidate_config) == 0:
         if load_config('default_config.json') is None:
@@ -203,7 +203,7 @@ def login_post_direct():
     user_data = dict()
     for k, v in request.form.items():
         user_data[k] = v
-    Logger.logger(f'user_data: {user_data}')
+    Logger.local_log(f'user_data: {user_data}')
     if 'nm' not in user_data or 'passwd' not in user_data or 'from' not in user_data:
         return redirect_login_page()
     if '.' in user_data['nm'] or '/' in user_data['nm']:
@@ -222,7 +222,7 @@ def login_post_direct():
             target_page = source_page
         else:
             target_page = 'experiment'
-        Logger.logger(f'redirect to {target_page}')
+        Logger.local_log(f'redirect to {target_page}')
         outdate = datetime.now() + timedelta(hours=page_config.COOKIE_PERIOD)
         response = make_response(redirect(target_page))
         response.set_cookie('user_name', user_name, expires=outdate)
@@ -233,7 +233,7 @@ def login_post_direct():
         response.set_cookie('used_config', config_name, expires=outdate_config_path)
         return response
     else:
-        Logger.logger(f'validate failed: {user_data}')
+        Logger.local_log(f'validate failed: {user_data}')
     return redirect_login_page()
 
 
@@ -330,10 +330,10 @@ def experiment_data_download(folder_name, attach):
     folder_name = base64.urlsafe_b64decode(folder_name.encode()).decode()
     file_name = os.path.join(plot_config.PLOT_LOG_PATH, folder_name)
     if not legal_path(file_name):
-        Logger.logger(f'file {file_name} is not legal')
+        Logger.local_log(f'file {file_name} is not legal')
         return render_template('404.html')
     if os.path.exists(file_name):
-        Logger.logger(f'file {file_name} exists')
+        Logger.local_log(f'file {file_name} exists')
         file_name = os.path.abspath(file_name)
         filename = os.path.basename(file_name)
         dirname = os.path.dirname(file_name)
@@ -345,7 +345,7 @@ def experiment_data_download(folder_name, attach):
         return send_from_directory(dirname, filename, as_attachment=as_attachment)
 
     else:
-        Logger.logger(f'file {file_name} does not exist')
+        Logger.local_log(f'file {file_name} does not exist')
         return render_template('404.html')
 
 
@@ -356,16 +356,16 @@ def experiment_zip_and_download(folder_name):
     folder_name = base64.urlsafe_b64decode(folder_name.encode()).decode()
     _, _, _, _, _, filesize_bytes, _ = get_parameter(folder_name)
     if filesize_bytes is None:
-        Logger.logger(f'{folder_name} not found')
+        Logger.local_log(f'{folder_name} not found')
         return render_template('404.html')
     filesize_bytes = sum(filesize_bytes)
-    Logger.logger(f'filesize: {filesize_bytes / 1024 / 1024 / 1024} GB.')
+    Logger.local_log(f'filesize: {filesize_bytes / 1024 / 1024 / 1024} GB.')
     if filesize_bytes > 1024 * 1024 * 1024:
-        Logger.logger(f'{folder_name} filesize is {filesize_bytes / 1024 / 1024 / 1024} GB, which is too large.')
+        Logger.local_log(f'{folder_name} filesize is {filesize_bytes / 1024 / 1024 / 1024} GB, which is too large.')
         return render_template('404.html')
     file_name = os.path.join(plot_config.PLOT_LOG_PATH, folder_name)
     if os.path.exists(file_name):
-        Logger.logger(f'file {file_name} exists')
+        Logger.local_log(f'file {file_name} exists')
         base_name = os.path.basename(file_name)
         now = datetime.now()
         now_str = now.strftime('%Y-%m-%d')
@@ -378,7 +378,7 @@ def experiment_zip_and_download(folder_name):
                     date = datetime.strptime(item, '%Y-%m-%d')
                     if (now - date).days >= 2:
                         _cmd = f'rm -rf \'{os.path.join(z_folder_base, item)}\''
-                        Logger.logger(_cmd)
+                        Logger.local_log(_cmd)
                         os.system(_cmd)
             except Exception as e:
                 pass
@@ -387,15 +387,15 @@ def experiment_zip_and_download(folder_name):
             z_file_name = os.path.join(z_folder, f'{base_name}')
             archive_data = shutil.make_archive(z_file_name, 'zip', base_dir=os.path.basename(file_name),
                                                root_dir=os.path.dirname(file_name))
-            Logger.logger(f'zip file to {archive_data}')
+            Logger.local_log(f'zip file to {archive_data}')
             z_file_name = archive_data
         except Exception as e:
             z_file_name = os.path.join(z_folder, f'{base_name}.zip')
-            Logger.logger(f'fail to archive {file_name}')
+            Logger.local_log(f'fail to archive {file_name}')
         if os.path.exists(z_file_name):
             return send_from_directory(os.path.dirname(z_file_name), os.path.basename(z_file_name), as_attachment=True)
         else:
-            Logger.logger(f'file {z_file_name} not exists')
+            Logger.local_log(f'file {z_file_name} not exists')
             return render_template('404.html')
     else:
         return render_template('404.html')
@@ -449,12 +449,12 @@ def plot():
                                    f'bar_{config_name}.png')
     initial_figure_url = '#'
     if os.path.exists(target_file):
-        Logger.logger(f'{target_file} exists, return it first')
+        Logger.local_log(f'{target_file} exists, return it first')
         file_name = os.path.basename(target_file)
         initial_figure_url = url_for('lst_output_figure')
         initial_figure_url = initial_figure_url + f'?rand={random.random()}&file_name={file_name}'
     else:
-        Logger.logger(f'{target_file} does not exist, leave it EMPTY.')
+        Logger.local_log(f'{target_file} does not exist, leave it EMPTY.')
     file_list = []
     if config_name.endswith('.json'):
         figure_saving_path = os.path.join(page_config.FIGURE_PATH, query_cookie('user_name'), config_name[:-5])
@@ -653,7 +653,7 @@ def query_table_source(use_latex):
     else:
         table_data['md'] = result
         table_data['md_update_timestamp'] = time.time()
-    Logger.logger(f'source code {use_latex}: {result}')
+    Logger.local_log(f'source code {use_latex}: {result}')
     save_table_cache(table_data, config_name)
     return result
 
@@ -746,7 +746,7 @@ def plot_config_update():
                     raise NotImplementedError(f'type {_type} not implemented!')
         else:
             # not used now
-            Logger.logger(f'Error: This function is desired to be not used but still used!!!!')
+            Logger.local_log(f'Error: This function is desired to be not used but still used!!!!')
             k_main = k_split[0]
             _type = config_type[k_main]
             if _type == 'list':
@@ -761,7 +761,7 @@ def plot_config_update():
                 config[k_main] = data
             else:
                 raise NotImplementedError(f'type {_type} not implemented')
-        Logger.logger(f'plot config update: {k} {v}')
+        Logger.local_log(f'plot config update: {k} {v}')
     if config_presented_mode == 'default':
         post_figure_specific_items = []
     else:
@@ -877,7 +877,7 @@ def _plot_experiment_figure(config_name, user_name):
         config['PLOT_FIGURE_SAVING_PATH'] = output_path
         save_config(config, config_name)
     config_path = get_config_path(config_name)
-    Logger.logger(f'plot figure according to {config_path}, figure save to {output_path}')
+    Logger.local_log(f'plot figure according to {config_path}, figure save to {output_path}')
     plot_mode = config['PLOT_MODE'].lower()
     plot_curve = plot_mode == 'curve'
     if plot_curve:
@@ -895,7 +895,7 @@ def _plot_experiment_figure(config_name, user_name):
     target_folder_tmp = os.path.join(page_config.WEB_RAM_PATH, page_config.TOTAL_FIGURE_FOLDER + "_tmp",
                                      target_file_name)
 
-    Logger.logger(f'cp \"{saving_png}\" \"{target_folder}\"')
+    Logger.local_log(f'cp \"{saving_png}\" \"{target_folder}\"')
     os.makedirs(os.path.dirname(target_folder), exist_ok=True)
     os.makedirs(os.path.dirname(target_folder_tmp), exist_ok=True)
     os.system(f'cp \"{saving_png}\" \"{target_folder}\"')
@@ -913,7 +913,7 @@ def exp_figure():
     config_name = query_cookie('used_config')
     user_name = query_cookie('user_name')
     output_path, final_output_name = _plot_experiment_figure(config_name, user_name)
-    Logger.logger(f'return figure {final_output_name}.png, drawing cost {time.time() - start_time}')
+    Logger.local_log(f'return figure {final_output_name}.png, drawing cost {time.time() - start_time}')
     return send_from_directory(output_path, f'{final_output_name}.png', as_attachment=False)
 
 
@@ -933,7 +933,7 @@ def lst_output_figure():
     target_file = os.path.abspath(target_file)
     target_dir = os.path.dirname(target_file)
     file_name = os.path.basename(target_file)
-    Logger.logger(f'dir: {target_dir}, name: {file_name}, exists: {os.path.exists(target_file)}')
+    Logger.local_log(f'dir: {target_dir}, name: {file_name}, exists: {os.path.exists(target_file)}')
     return send_from_directory(target_dir, file_name, as_attachment=False)
 
 
@@ -979,7 +979,7 @@ def param_adjust():
 
     exp_data_encoded = [base64.urlsafe_b64encode(item.encode()).decode() for item in exp_data]
     exp_data_ignores_encoded = [base64.urlsafe_b64encode(item.encode()).decode() for item in exp_data_ignores]
-    Logger.logger(f'selected_choices keys: {[k for k in selected_choices]}')
+    Logger.local_log(f'selected_choices keys: {[k for k in selected_choices]}')
     merge_choices = [] if 'DATA_MERGER' not in config else config['DATA_MERGER']
     merge_config_file = dict()
     for k in possible_config:
@@ -1006,7 +1006,7 @@ def param_adjust():
     selected_config_list = list(
         sorted(sorted(selected_config_list, key=lambda x: x[0]), key=lambda x: len(x[1]), reverse=True))
     # Logger.local_log('possible config', possible_config)
-    # Logger.logger(f'possible config json: {json.dumps(possible_config)}')
+    # Logger.local_log(f'possible config json: {json.dumps(possible_config)}')
     encode_possible_config_js = base64.b64encode(json.dumps(possible_config).encode()).decode()
     rename_rule = {} if 'SHORT_NAME_FROM_CONFIG' not in config else config['SHORT_NAME_FROM_CONFIG']
     rename_rule_dict = rename_rule
@@ -1023,7 +1023,7 @@ def param_adjust():
     separators = [] if 'FIGURE_SEPARATION' not in config else config['FIGURE_SEPARATION']
     separators = separators
     nick_name_set = set(nick_name_list)
-    Logger.logger(f'nick name set: {nick_name_set}')
+    Logger.local_log(f'nick name set: {nick_name_set}')
 
     exists_ordered_curves = plot_config.PLOTTING_ORDER
     remain_unordered_curves = [item for item in nick_name_set if item not in exists_ordered_curves]
@@ -1261,7 +1261,7 @@ def add_ignore():
 @require_login(source_name='del_ignore', allow_guest=True)
 def del_ignore(rule_idx, move_to_garbage):
     move_to_garbage = int(move_to_garbage) == 1
-    Logger.logger(f'try to rm {rule_idx} {type(rule_idx)}')
+    Logger.local_log(f'try to rm {rule_idx} {type(rule_idx)}')
     config_name = query_cookie('used_config')
     config = load_config(config_name)
     if move_to_garbage:
@@ -1312,7 +1312,7 @@ def del_ignore(rule_idx, move_to_garbage):
 @require_login(source_name='del_ignore', allow_guest=True)
 def del_garbage(rule_idx, move_back):
     move_back = int(move_back) == 1
-    Logger.logger(f'try to rm {rule_idx} {type(rule_idx)}')
+    Logger.local_log(f'try to rm {rule_idx} {type(rule_idx)}')
     config_name = query_cookie('used_config')
     config = load_config(config_name)
     if move_back:
@@ -1365,7 +1365,7 @@ def del_garbage(rule_idx, move_back):
 @app.route("/del_rename/<rule_idx>", methods=['GET'])
 @require_login(source_name='del_rename', allow_guest=True)
 def del_rename(rule_idx):
-    Logger.logger(f'try to rm {rule_idx} {type(rule_idx)}')
+    Logger.local_log(f'try to rm {rule_idx} {type(rule_idx)}')
     config_name = query_cookie('used_config')
     config = load_config(config_name)
     rename_rule = {} if 'SHORT_NAME_FROM_CONFIG' not in config else config['SHORT_NAME_FROM_CONFIG']
@@ -1380,7 +1380,7 @@ def del_rename(rule_idx):
 @app.route("/ignore_with_renamed/<rule_idx>", methods=['GET'])
 @require_login(source_name='ignore_with_renamed', allow_guest=True)
 def ignore_with_renamed(rule_idx):
-    Logger.logger(f'try to rm {rule_idx} {type(rule_idx)}')
+    Logger.local_log(f'try to rm {rule_idx} {type(rule_idx)}')
     config_name = query_cookie('used_config')
     config = load_config(config_name)
     rename_rule = {} if 'SHORT_NAME_FROM_CONFIG' not in config else config['SHORT_NAME_FROM_CONFIG']
@@ -1407,7 +1407,7 @@ def change_plot_order(alg_name, idx, method):
     if not str(idx) == 'None':
         alg_name = base64.urlsafe_b64decode(alg_name.encode()).decode()
         idx = int(idx)
-    Logger.logger(f'operate {alg_name} with operator {method}, idx: {idx}')
+    Logger.local_log(f'operate {alg_name} with operator {method}, idx: {idx}')
     if method == 'remove_all':
         orders = []
     elif alg_name == 'placeholder':
@@ -1471,7 +1471,7 @@ def change_legend_order(alg_name, idx, method):
     if not idx == 'None':
         alg_name = base64.urlsafe_b64decode(alg_name.encode()).decode()
         idx = int(idx)
-    Logger.logger(f'operate {alg_name} with operator {method}, idx: {idx}')
+    Logger.local_log(f'operate {alg_name} with operator {method}, idx: {idx}')
     if method == 'remove_all':
         orders = []
     else:
@@ -1617,7 +1617,7 @@ def add_data_rename():
 @app.route("/del_data_rename/<rule_idx>", methods=['GET'])
 @require_login(source_name='del_data_rename', allow_guest=True)
 def del_data_rename(rule_idx):
-    Logger.logger(f'try to rm {rule_idx} {type(rule_idx)}')
+    Logger.local_log(f'try to rm {rule_idx} {type(rule_idx)}')
     config_name = query_cookie('used_config')
     config = load_config(config_name)
     rename_rule = {} if 'DATA_KEY_RENAME_CONFIG' not in config else config['DATA_KEY_RENAME_CONFIG']
@@ -1632,7 +1632,7 @@ def del_data_rename(rule_idx):
 @app.route("/del_xy/<rule_idx>/<method>", methods=['GET'])
 @require_login(source_name='del_xy', allow_guest=True)
 def del_xy(rule_idx, method):
-    Logger.logger(f'try to rm {rule_idx} {type(rule_idx)}')
+    Logger.local_log(f'try to rm {rule_idx} {type(rule_idx)}')
     config_name = query_cookie('used_config')
     config = load_config(config_name)
     if 'PLOTTING_XY' not in config:
@@ -1704,7 +1704,7 @@ def change_table_bold_rule():
 @app.route("/del_separator/<rule_idx>", methods=['GET'])
 @require_login(source_name='del_separator', allow_guest=True)
 def del_separator(rule_idx):
-    Logger.logger(f'try to rm {rule_idx} {type(rule_idx)}')
+    Logger.local_log(f'try to rm {rule_idx} {type(rule_idx)}')
     config_name = query_cookie('used_config')
     config = load_config(config_name)
     if 'FIGURE_SEPARATION' not in config:
@@ -1736,24 +1736,10 @@ def flush_loop():
         time.sleep(1)
 
 
-def schedule_iter(config_file_mdate_dict, config_content_dict, page_config_dict):
+def _schedule_iter(auto_plotting_candidates, page_config_dict):
     for k, v in page_config_dict.items():
         if hasattr(page_config, k):
             setattr(page_config, k, v)
-    cur_timestamp = time.time()
-    auto_plotting_candidates = []
-    for config_name in list_current_configs():
-        lst_mtime = get_config_modified_timestamp(config_name)
-        if config_name not in config_content_dict or lst_mtime > config_file_mdate_dict[config_name]:
-            config_file_mdate_dict[config_name] = lst_mtime
-            config_content_dict[config_name] = load_config(config_name)
-        if 'AUTO_PLOTTING' in config_content_dict[config_name] and config_content_dict[config_name]['AUTO_PLOTTING']:
-            plotting_interval = config_content_dict[config_name]['AUTO_PLOTTING_INTERVAL']
-            local_data = load_data_cache(config_name)
-            if 'LST_PLOTTING_TIMESTAMP' not in local_data:
-                auto_plotting_candidates.append(config_name)
-            elif cur_timestamp - local_data['LST_PLOTTING_TIMESTAMP'] > plotting_interval:
-                auto_plotting_candidates.append(config_name)
     for candidate_config_name in auto_plotting_candidates:
         try:
             _plot_experiment_figure(candidate_config_name, page_config.USER_NAME)
@@ -1765,24 +1751,44 @@ def schedule_iter(config_file_mdate_dict, config_content_dict, page_config_dict)
         except Exception as e:
             import traceback
             traceback.print_exc()
+    if len(auto_plotting_candidates) > 0:
+        Logger.local_log(f'table and figure DONE!')
+
+config_file_mdate_dict = {}
+config_content_dict = {}
+def schedule_iter():
+    page_config_dict = {k: v for k, v in page_config.__dict__.items() if not k.startswith('__')}
+    cur_timestamp = time.time()
+    auto_plotting_candidates = []
+    for config_name in list_current_configs():
+        lst_mtime = get_config_modified_timestamp(config_name)
+        if config_name not in config_content_dict or lst_mtime > config_file_mdate_dict[config_name]:
+            config_file_mdate_dict[config_name] = lst_mtime
+            config_content_dict[config_name] = load_config(config_name)
+        if 'AUTO_PLOTTING' in config_content_dict[config_name] and config_content_dict[config_name][
+            'AUTO_PLOTTING']:
+            plotting_interval = config_content_dict[config_name]['AUTO_PLOTTING_INTERVAL']
+            local_data = load_data_cache(config_name)
+            if 'LST_PLOTTING_TIMESTAMP' not in local_data:
+                auto_plotting_candidates.append(config_name)
+            elif cur_timestamp - local_data['LST_PLOTTING_TIMESTAMP'] > plotting_interval:
+                auto_plotting_candidates.append(config_name)
+    proc = Process(target=_schedule_iter, args=(auto_plotting_candidates, page_config_dict))
+    proc.start()
+    proc.join(timeout=360)  # Set timeout
+    if proc.is_alive():
+        Logger.local_log("schedule_iter is running too long, terminating...")
+        proc.terminate()
+        proc.join()
 
 def schedule_loop():
-    with Manager() as manager:
-        config_file_mdate_dict = manager.dict()
-        config_content_dict = manager.dict()
-        page_config_dict = {k: v for k, v in page_config.__dict__.items() if not k.startswith('__')}
-
-        while True:
-            proc = Process(target=schedule_iter, args=(config_file_mdate_dict, config_content_dict, page_config_dict))
-            proc.start()
-            proc.join(timeout=120)  # Set timeout
-
-            if proc.is_alive():
-                Logger.local_log("schedule_iter is running too long, terminating...")
-                proc.terminate()
-                proc.join()
-
-            time.sleep(5)
+    while True:
+        try:
+            schedule_iter()
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+        time.sleep(5)
 
 
 def start_page_server(port_num=None):
@@ -1797,7 +1803,7 @@ def start_page_server(port_num=None):
     schedule_th = threading.Thread(target=schedule_loop)
     schedule_th.start()
     port_num = port_num if port_num is not None else page_config.PORT
-    Logger.logger(f'copy http://{page_config.WEB_NAME}:{port_num} to the explorer')
+    Logger.local_log(f'copy http://{page_config.WEB_NAME}:{port_num} to the explorer')
     if not page_config.REQUIRE_RELOGIN:
         page_config.COOKIE_PERIOD = 1000000
     app.run(host='0', port=port_num, debug=False)
