@@ -1736,7 +1736,10 @@ def flush_loop():
         time.sleep(1)
 
 
-def schedule_iter(config_file_mdate_dict, config_content_dict):
+def schedule_iter(config_file_mdate_dict, config_content_dict, page_config_dict):
+    for k, v in page_config_dict.items():
+        if hasattr(page_config, k):
+            setattr(page_config, k, v)
     cur_timestamp = time.time()
     auto_plotting_candidates = []
     for config_name in list_current_configs():
@@ -1767,9 +1770,10 @@ def schedule_loop():
     with Manager() as manager:
         config_file_mdate_dict = manager.dict()
         config_content_dict = manager.dict()
+        page_config_dict = {k: v for k, v in page_config.__dict__().items() if not k.startswith('__')}
 
         while True:
-            proc = Process(target=schedule_iter, args=(config_file_mdate_dict, config_content_dict))
+            proc = Process(target=schedule_iter, args=(config_file_mdate_dict, config_content_dict, page_config_dict))
             proc.start()
             proc.join(timeout=120)  # Set timeout
 
