@@ -13,6 +13,7 @@ import smart_logger.common.page_config as page_config
 import smart_logger.common.plot_config as plot_config
 from smart_logger.report.plotting import merger_to_short_name, list_embedding, standardize_string, make_merger_feature
 from smart_logger.util_logger.logger import Logger
+import pickle
 
 
 def generate_random_string(length):
@@ -25,6 +26,19 @@ def safe_dump(obj, file_name):
     try:
         with open(cache_filename, 'w') as f:
             json.dump(obj, f)
+        shutil.move(cache_filename, file_name)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+    if os.path.exists(cache_filename):
+        Logger.local_log(f'Error: {cache_filename} existing!!!!')
+        os.remove(cache_filename)
+
+def safe_pickle_dump(obj, file_name):
+    cache_filename = f'{file_name}____{generate_random_string(10)}'
+    try:
+        with open(cache_filename, 'wb') as f:
+            pickle.dump(obj, f)
         shutil.move(cache_filename, file_name)
     except Exception as e:
         import traceback
@@ -95,6 +109,21 @@ def load_config_cache(config_name):
     else:
         data = json.load(open(local_data_path, 'r'))
     return data
+
+def save_plotting_data_cache(data, config_name):
+    local_data_path = os.path.join(page_config.WEB_RAM_PATH, 'plotting_data_cache', config_name)
+    os.makedirs(os.path.dirname(local_data_path), exist_ok=True)
+    safe_pickle_dump(data, local_data_path)
+
+def load_plotting_data_cache(config_name):
+    local_data_path = os.path.join(page_config.WEB_RAM_PATH, 'plotting_data_cache', config_name)
+    data = None
+    try:
+        data = pickle.load(open(local_data_path, 'rb'))
+    except Exception as e:
+        Logger.local_log(f'load from {local_data_path} failed')
+    return data
+
 
 def save_config_cache(data, config_name):
     local_data_path = os.path.join(page_config.WEB_RAM_PATH, 'data_config_cache', config_name)

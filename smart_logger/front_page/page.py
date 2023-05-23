@@ -18,8 +18,9 @@ from smart_logger.front_page.experiment_data_loader import default_config, load_
     get_parameter, reformat_dict, reformat_str, legal_path, save_config, list_current_configs, \
     make_config_type, analyze_experiment, delete_config_file, has_config, standardize_merger_item, get_record_data_item, \
     get_config_path, record_config_for_user, get_config_modified_timestamp, load_data_cache, save_data_cache, \
-    load_config_cache, save_config_cache, load_table_cache, save_table_cache
+    load_config_cache, save_config_cache, load_table_cache, save_table_cache, load_plotting_data_cache, save_plotting_data_cache
 from smart_logger.report.plotting import _make_table
+from smart_logger.report.plotting import collect_data
 from smart_logger.report.plotting import _overwrite_config, _str_to_short_name
 from smart_logger.report.plotting import bar as local_bar
 from smart_logger.report.plotting import plot as local_plot
@@ -433,7 +434,7 @@ def plot():
                                 'MAX_AUTO_PLOTTING_NUM', 'FOCUS_IMAGE_CONFIG_GROUP',
                                 'FOCUS_IMAGE_CONFIG_SAME_CONTENT_GROUP',
                                 'FOCUS_IMAGE_CONFIG_SUB_IMAGE_TITLE', 'ADDITIONAL_PLOT_CONFIGS', 'FLEXIBLE_CONFIG',
-                                'PARAMETER_ADJUST_USE_CACHE', 'FIXED_PARAMETER']}
+                                'PARAMETER_ADJUST_USE_CACHE', 'FIXED_PARAMETER', 'PLOTTING_USE_CACHE']}
     config = config_ordered
     config_description = plot_config.DESCRIPTION
     for k in config:
@@ -544,8 +545,10 @@ def plot():
     if not config_presented_mode == 'default':
         config_list = [(k, v)for k,v in config.items() if k in additional_config_cur_setting]
         config_list = config_list + [(k, v)for k,v in config.items() if k not in additional_config_cur_setting]
+    plotting_with_cache = plot_config_dict['PLOTTING_USE_CACHE']
     if need_resaving_config:
         save_config(plot_config_dict, config_name)
+
     return render_template('t_plot.html',
                            plot_config=config_list,  # plot_config list list
                            config_type=config_type,
@@ -564,7 +567,8 @@ def plot():
                            image_inform_title_dict=image_inform_title_dict,
                            sub_image_list=sub_image_list,
                            sub_image_title_choose_idx=sub_image_title_choose_idx,
-                           additional_config_cur_setting=additional_config_cur_setting
+                           additional_config_cur_setting=additional_config_cur_setting,
+                           plotting_with_cache=plotting_with_cache
                            )
 
 
@@ -612,15 +616,30 @@ def table():
                            bold_max=config['TABLE_BOLD_MAX'],
                            title_prefix=f'{page_config.PAGE_TITLE_PREFIX}-' if page_config.PAGE_TITLE_PREFIX is not None else '',
                            table_text=table_text,
-                           fast_code=fast_code
+                           fast_code=fast_code,
+                           table_with_cache=config['PLOTTING_USE_CACHE']
                            )
 
 
-def _query_table_for_config(config_name):
+def _query_table_for_config(config_name, use_cache=None):
     config = load_config(config_name)
+
     _overwrite_config(config)
+    data_cache = None
+    use_data_cache = False
+    if use_cache is None:
+        if config['PLOTTING_USE_CACHE']:
+            data_cache = load_plotting_data_cache(config_name)
+            use_data_cache = True
+    elif use_cache:
+        data_cache = load_plotting_data_cache(config_name)
+        use_data_cache = True
+
     table_data = load_table_cache(config_name)
-    result, figure_recording_dict = _make_table()
+    result, figure_recording_dict, data = _make_table(data=data_cache)
+    if not use_data_cache and config['AUTO_PLOTTING_CACHE_UPDATE']:
+        save_plotting_data_cache(data, config_name)
+
     table_data['table'] = result
     table_data['table_update_timestamp'] = time.time()
     data = load_data_cache(config_name)
@@ -645,7 +664,12 @@ def query_table_source(use_latex):
     config = load_config(config_name)
     _overwrite_config(config)
     table_data = load_table_cache(config_name)
-    result, figure_recording_dict = _make_table(True if str(use_latex) == 'True' else False)
+    data_cache = None
+    if config['PLOTTING_USE_CACHE']:
+        data_cache = load_plotting_data_cache(config_name)
+    result, figure_recording_dict, data = _make_table(True if str(use_latex) == 'True' else False, data_cache)
+    if not config['PLOTTING_USE_CACHE'] and config['AUTO_PLOTTING_CACHE_UPDATE']:
+        save_plotting_data_cache(data, config_name)
     result = f'<br/><pre><code>\n{result}</code></pre>\n<br/>'
     if str(use_latex) == 'True':
         table_data['latex'] = result
@@ -866,7 +890,7 @@ def plot_config_sub_image_update():
     save_config(config, config_name)
     return redirect('/plot')
 
-def _plot_experiment_figure(config_name, user_name):
+def _plot_experiment_figure(config_name, user_name, use_cache=None):
     if config_name.endswith('.json'):
         output_path = os.path.join(page_config.FIGURE_PATH, user_name, config_name[:-5])
     else:
@@ -880,10 +904,22 @@ def _plot_experiment_figure(config_name, user_name):
     Logger.local_log(f'plot figure according to {config_path}, figure save to {output_path}')
     plot_mode = config['PLOT_MODE'].lower()
     plot_curve = plot_mode == 'curve'
+    data_cache = None
+    use_data_cache = False
+    if use_cache is None:
+        if config['PLOTTING_USE_CACHE']:
+            data_cache = load_plotting_data_cache(config_name)
+            use_data_cache = True
+    elif use_cache:
+        data_cache = load_plotting_data_cache(config_name)
+        use_data_cache = True
+
     if plot_curve:
-        figure_recording_dict = local_plot(config_path)
+        figure_recording_dict, data = local_plot(config_path, data_cache)
     else:
-        figure_recording_dict = local_bar(config_path)
+        figure_recording_dict, data = local_bar(config_path, data_cache)
+    if not use_data_cache and config['AUTO_PLOTTING_CACHE_UPDATE']:
+        save_plotting_data_cache(data, config_name)
     final_output_name = plot_config.FINAL_OUTPUT_NAME
     target_file_name = f'{config_name}.png'
 
@@ -1565,6 +1601,57 @@ def change_use_cache():
     save_config(config, config_name)
     return redirect('/param_adjust')
 
+
+@app.route("/change_plotting_use_cache", methods=['POST'])
+@require_login(source_name='change_plotting_use_cache', allow_guest=True)
+def change_plotting_use_cache():
+    config_name = query_cookie('used_config')
+    config = load_config(config_name)
+    use_cache = False
+    for k, v in request.form.items():
+        if k == 'plotting_use_cache':
+            use_cache = True
+    config['PLOTTING_USE_CACHE'] = use_cache
+    save_config(config, config_name)
+    return redirect('/plot', code=204)
+
+@app.route("/update_plotting_cache", methods=['GET'])
+@require_login(source_name='update_plotting_cache', allow_guest=True)
+def update_plotting_cache():
+    Logger.local_log(f'update cache!!!')
+    config_name = query_cookie('used_config')
+    config = load_config(config_name)
+    _overwrite_config(config)
+    data = collect_data()
+    save_plotting_data_cache(data, config_name)
+    return redirect('/plot')
+
+
+
+@app.route("/change_table_use_cache", methods=['POST'])
+@require_login(source_name='change_table_use_cache', allow_guest=True)
+def change_table_use_cache():
+    config_name = query_cookie('used_config')
+    config = load_config(config_name)
+    use_cache = False
+    for k, v in request.form.items():
+        if k == 'table_use_cache':
+            use_cache = True
+    config['PLOTTING_USE_CACHE'] = use_cache
+    save_config(config, config_name)
+    return redirect('/table', code=204)
+
+@app.route("/update_table_cache", methods=['GET'])
+@require_login(source_name='update_table_cache', allow_guest=True)
+def update_table_cache():
+    Logger.local_log(f'update cache!!!')
+    config_name = query_cookie('used_config')
+    config = load_config(config_name)
+    _overwrite_config(config)
+    data = collect_data()
+    save_plotting_data_cache(data, config_name)
+    return redirect('/table')
+
 @app.route("/update_cache", methods=['GET'])
 @require_login(source_name='update_cache', allow_guest=True)
 def update_cache():
@@ -1742,12 +1829,12 @@ def _schedule_iter(auto_plotting_candidates, page_config_dict):
             setattr(page_config, k, v)
     for candidate_config_name in auto_plotting_candidates:
         try:
-            _plot_experiment_figure(candidate_config_name, page_config.USER_NAME)
+            _plot_experiment_figure(candidate_config_name, page_config.USER_NAME, use_cache=False)
         except Exception as e:
             import traceback
             traceback.print_exc()
         try:
-            _query_table_for_config(candidate_config_name)
+            _query_table_for_config(candidate_config_name, use_cache=False)
         except Exception as e:
             import traceback
             traceback.print_exc()

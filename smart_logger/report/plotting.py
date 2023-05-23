@@ -2060,15 +2060,17 @@ def overwrite_config(config_json_path):
             Logger.local_log(f'{config_json_path} not exists! load failed!')
 
 
-def plot(config_json_path=None):
+def plot(config_json_path=None, data=None):
     overwrite_config(config_json_path)
-    data = collect_data()
+    if data is None:
+        data = collect_data()
     figure_recording_dict = _plotting(data)
-    return figure_recording_dict
+    return figure_recording_dict, data
 
 
-def _make_table(latex=None):
-    data = collect_data()
+def _make_table(latex=None, data=None):
+    if data is None:
+        data = collect_data()
     privileged_col_idx = dict(
     )
     placeholder = dict(
@@ -2076,22 +2078,23 @@ def _make_table(latex=None):
     result, result_source, figure_recording_dict = _to_table(data, None, None, privileged_col_idx, placeholder=placeholder,
                                       md=False if latex else True)
     if latex is None:
-        return result, figure_recording_dict
+        return result, figure_recording_dict, data
     else:
-        return result_source, figure_recording_dict
+        return result_source, figure_recording_dict, data
 
 
 def make_table(config_json_path=None):
     overwrite_config(config_json_path)
-    result, figure_recording_dict = _make_table()
+    result, figure_recording_dict, data = _make_table()
     return result
 
 
-def bar(config_json_path=None):
+def bar(config_json_path=None, data=None):
     overwrite_config(config_json_path)
-    data = collect_data()
+    if data is None:
+        data = collect_data()
     figure_recording_dict = _bar_plotting(data)
-    return figure_recording_dict
+    return figure_recording_dict, data
 
 
 if __name__ == '__main__':

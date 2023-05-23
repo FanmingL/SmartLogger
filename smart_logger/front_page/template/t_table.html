@@ -76,6 +76,20 @@
             button.innerHTML = "加载中"
             query_source_latex();
         }
+        function update_table_cache_now(){
+            let button = document.getElementById('update_table_cache_button_id');
+            button.innerHTML = "请稍等";
+            button.disabled = true;
+        let httpRequest = new XMLHttpRequest();
+                httpRequest.onreadystatechange = function () {
+              if (httpRequest.readyState === 4 && httpRequest.status === 200) {
+                  button.innerHTML = "更新缓存";
+                    button.disabled = false;
+              }
+              };
+            httpRequest.open('GET', "{{url_for('update_plotting_cache')}}", true);
+            httpRequest.send();
+        }
          function load_source_md(){
             var table = document.getElementById('source_div_id');
             var button = document.getElementById('source_loading_button_md')
@@ -265,7 +279,12 @@
             top: 170%;
             height: 10%;
         }
-
+        .use_cache {
+                        font-family:monospace;
+            position: absolute;
+            left: 40%;
+            top: 10%;
+        }
 
 
         li a {
@@ -298,6 +317,13 @@
     <ul>
         <li><a href="{{url_for('logout')}}" style="width: 80px">下线</a></li>
     </ul>
+</div>
+<div class="use_cache">
+    <form name="plotting_use_cache_form" id="plotting_use_cache_form_id" action="{{url_for('change_table_use_cache')}}" method="POST" style="margin: 15px">
+    <input type="checkbox" name="table_use_cache" id="table_use_cache_id" value="use_cache" {% if table_with_cache %} checked="checked" {% endif %} onchange="document.plotting_use_cache_form.submit()">
+        <label for="table_use_cache_id" style="font-family: monospace">使用绘图缓存数据</label>
+        <button type="button" id="update_table_cache_button_id" style="width:80px;height:30px" onclick="update_table_cache_now()" >更新缓存</button>
+    </form>
 </div>
 <div class="checkbox_container" id="checkbox_container_id">
 <form name="change_table_bold_rule_mode" id="change_table_bold_rule_mode_id" action="{{url_for('change_table_bold_rule')}}" method="POST" style="margin: 15px">
@@ -338,6 +364,7 @@
 <div id="message" style="display: none; position: fixed; bottom: 20px; right: 20px; padding: 10px; background-color: #4CAF50; color: white;">
     已经成功复制到剪贴板
 </div>
+
 <div class="choose_config">
     <form name="frm_rename_config_choose_select" id="frm_rename_config_choose_select" action="{{url_for('choose_config', source='table')}}" method="POST">
         <div align="left" style="margin: 20px">

@@ -83,6 +83,21 @@
           largeImage.src = "{{initial_figure_url}}" ; // 设置图片url开始加载图片
         });
 
+        function update_plotting_cache_now(){
+            let button = document.getElementById('update_plotting_cache_button_id');
+            button.innerHTML = "请稍等";
+            button.disabled = true;
+        let httpRequest = new XMLHttpRequest();
+                httpRequest.onreadystatechange = function () {
+              if (httpRequest.readyState === 4 && httpRequest.status === 200) {
+                  button.innerHTML = "更新缓存";
+                    button.disabled = false;
+              }
+              };
+            httpRequest.open('GET', "{{url_for('update_plotting_cache')}}", true);
+            httpRequest.send();
+        }
+
         function change_config_cb(){
             let form_rename = document.getElementById('frm_rename_config_choose_select');
             let config_selection = document.getElementById("choose_config_cb");
@@ -192,6 +207,12 @@
                         font-family:monospace;
             position: absolute;
             left: 10%;
+            top: 10%;
+        }
+        .use_cache {
+                        font-family:monospace;
+            position: absolute;
+            left: 40%;
             top: 10%;
         }
         .main_images p input{
@@ -411,6 +432,13 @@
             <button type="button" style="width:80px;height:30px" id="figure_button" onclick="load_figure()" >显示图片</button>
         </p>
         </div>
+    </form>
+</div>
+<div class="use_cache">
+    <form name="plotting_use_cache_form" id="plotting_use_cache_form_id" action="{{url_for('change_plotting_use_cache')}}" method="POST" style="margin: 15px">
+    <input type="checkbox" name="plotting_use_cache" id="plotting_use_cache_id" value="use_cache" {% if plotting_with_cache %} checked="checked" {% endif %} onchange="document.plotting_use_cache_form.submit()">
+        <label for="plotting_use_cache_id" style="font-family: monospace">使用绘图缓存数据</label>
+        <button type="button" id="update_plotting_cache_button_id" style="width:80px;height:30px" onclick="update_plotting_cache_now()" >更新缓存</button>
     </form>
 </div>
 <div class="right_image">
