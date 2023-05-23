@@ -423,8 +423,8 @@
     <form name="frm_rename_config_choose_select" id="frm_rename_config_choose_select" action="{{url_for('choose_config', source='plot')}}" method="POST">
         <div align="left" style="margin: 20px">
         <p>
-            <label for="choose_config_cb" style="font-family: monospace">选择设定:</label>
-            <select id="choose_config_cb" name="chosen_config" onchange="change_config_cb()">
+            <label for="choose_config_cb" style="font-family: monospace;">选择设定:</label>
+            <select id="choose_config_cb" name="chosen_config" onchange="change_config_cb()" style="width: 180px; overflow: hidden; text-overflow: ellipsis;">
                 {% for item in config_file_list %}
                   <option value ="{{item}}" {% if item == config_name %} selected {% endif %}>{{item}}</option>
                 {% endfor %}

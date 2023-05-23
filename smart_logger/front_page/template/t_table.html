@@ -325,6 +325,21 @@
         <button type="button" id="update_table_cache_button_id" style="width:80px;height:30px" onclick="update_table_cache_now()" >更新缓存</button>
     </form>
 </div>
+<div class="choose_config">
+    <form name="frm_rename_config_choose_select" id="frm_rename_config_choose_select" action="{{url_for('choose_config', source='table')}}" method="POST">
+        <div align="left" style="margin: 20px">
+        <p>
+            <label for="choose_config_cb" style="font-family: monospace;">选择设定:</label>
+            <select id="choose_config_cb" name="chosen_config" onchange="change_config_cb()" style="width: 180px; overflow: hidden; text-overflow: ellipsis;">
+                {% for item in config_file_list %}
+                  <option value ="{{item}}" {% if item == config_name %} selected {% endif %}>{{item}}</option>
+                {% endfor %}
+            </select>
+                        <button type="button" style="width:80px;height:30px" id="table_loading_button_id" onclick="load_table()" >构建表格</button>
+        </p>
+        </div>
+    </form>
+</div>
 <div class="checkbox_container" id="checkbox_container_id">
 <form name="change_table_bold_rule_mode" id="change_table_bold_rule_mode_id" action="{{url_for('change_table_bold_rule')}}" method="POST" style="margin: 15px">
         <input type="checkbox" name="table_bold_rule" id="table_bold_rule_id" value="table_bold_rule_value" {% if bold_max %}checked="checked" {%endif%} onchange="submit_change_table_bold()">
@@ -365,21 +380,7 @@
     已经成功复制到剪贴板
 </div>
 
-<div class="choose_config">
-    <form name="frm_rename_config_choose_select" id="frm_rename_config_choose_select" action="{{url_for('choose_config', source='table')}}" method="POST">
-        <div align="left" style="margin: 20px">
-        <p>
-            <label for="choose_config_cb" style="font-family: monospace">选择设定:</label>
-            <select id="choose_config_cb" name="chosen_config" onchange="change_config_cb()">
-                {% for item in config_file_list %}
-                  <option value ="{{item}}" {% if item == config_name %} selected {% endif %}>{{item}}</option>
-                {% endfor %}
-            </select>
-                        <button type="button" style="width:80px;height:30px" id="table_loading_button_id" onclick="load_table()" >构建表格</button>
-        </p>
-        </div>
-    </form>
-</div>
+
 <div class="bottom">
 </div>
 
