@@ -40,11 +40,11 @@ class ParameterTemplate:
         else:
             self.info('use default config path')
             self.config_path = osp.join(common_config.get_base_path(), 'logfile', 'config')
-        parser = self.parser_init()
+        self.parser = self.parser_init()
         if config_path:
             self.load_config()
         else:
-            self.args = parser.parse_args()
+            self.args = self.parser.parse_args()
             self.arg_names = [item for item in vars(self.args)]
             self.apply_vars(self.args)
 

@@ -7,6 +7,7 @@ from smart_logger.common.serialize_config import init_config, save_all, \
 from smart_logger.common.set_config import set_common_config, set_experiment_config, \
     set_experiment_customized_config, set_plot_config, set_page_config
 from smart_logger.parameter.ParameterTemplate import ParameterTemplate
+from smart_logger.parameter.ParameterTemplate2 import ParameterTemplate as ParameterTemplate2
 from smart_logger.scripts.logger_from_param import logger_from_param
 from smart_logger.util_logger.logger import Logger
 from smart_logger.version import __version__
