@@ -159,8 +159,7 @@ class ParameterTemplate:
             things = self.get_version_dict()
             ser = json.dumps(things)
             f.write(ser)
-        with open(os.path.join(self.config_path, self.cmd_name), 'w') as f:
-            f.write(f'python {" ".join(sys.argv)}')
+
         self.info(f'save readable config to {os.path.join(self.config_path, self.txt_name)}')
         with open(os.path.join(self.config_path, self.txt_name), 'w') as f:
             print(self, file=f)

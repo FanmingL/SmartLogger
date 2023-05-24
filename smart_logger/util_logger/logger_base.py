@@ -10,7 +10,7 @@ import time
 
 from smart_logger.common import common_config
 from smart_logger.common.common_config import system
-
+import sys
 color2num = dict(
     gray=30,
     red=31,
@@ -77,11 +77,14 @@ class LoggerBase:
         import json
         env_param_file_name = 'env_params.json'
         python_pkg_file_name = 'pyenv.txt'
+        execute_cmd_file_name = 'execute_cmd.txt'
         env_param_dict = dict()
         for k, v in os.environ.items():
             env_param_dict[k] = v
         with open(os.path.join(self.output_dir, env_param_file_name), 'w') as f:
             json.dump(env_param_dict, f)
+        with open(os.path.join(self.output_dir, execute_cmd_file_name), 'w') as f:
+            f.write(f'python {" ".join(sys.argv)}')
         import pkg_resources
         installed_packages = pkg_resources.working_set
         with open(os.path.join(self.output_dir, python_pkg_file_name), 'w') as f:
