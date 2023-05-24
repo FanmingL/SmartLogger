@@ -110,7 +110,8 @@ def make_cmd_array(directory, session_name, start_up_header,
     final_tasks_list = []
     for exclusive_task in possible_assemble_dicts:
         for ind in range(aligned_task_num):
-            task = copy.deepcopy(exclusive_task)
+            task = copy.deepcopy(parameters_base)
+            task.update(exclusive_task)
             for k, v in aligned_candidates.items():
                 if isinstance(v, list):
                     task[k] = v[ind]
