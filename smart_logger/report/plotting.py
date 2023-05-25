@@ -835,7 +835,7 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
             sup_title_name += f' EVAL: {fig_pca_eval}'
     if _get_plot_config_xy('NEED_SUP_TITLE'):
         plt.suptitle(sup_title_name, fontsize=_get_plot_config_xy('FONTSIZE_SUPTITLE'), y=_get_plot_config_xy('SUPTITLE_Y'))
-    saving_name = y_name
+    saving_name = f'{x_name}_{y_name}'
     if not _get_plot_config_xy('OUTPUT_FILE_PREFIX') == 'None':
         _saving_dir = os.path.dirname(saving_name)
         _saving_file = os.path.basename(saving_name)
