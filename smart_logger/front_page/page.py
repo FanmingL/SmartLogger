@@ -915,7 +915,6 @@ def _plot_experiment_figure(config_name, user_name, use_cache=None):
     elif use_cache:
         data_cache = load_plotting_data_cache(config_name)
         use_data_cache = True
-    print('data cache', data_cache)
     if plot_curve:
         figure_recording_dict, data = local_plot(config_path, data_cache)
     else:
