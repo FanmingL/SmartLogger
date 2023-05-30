@@ -64,8 +64,24 @@
             // console.log(totop)
         }
         function www_onload() {
+            {% if auto_refresh_image %}
+            var img = document.getElementById('ret_image');
 
-
+            // 每30秒运行一次函数
+            setInterval(function() {
+                // 发送GET请求
+                fetch("{{url_for('check_new_image')}}")
+                .then(response => response.json())
+                .then(data => {
+                    // 如果返回结果是'ok'
+                    if (data.status === 'ok') {  // 假设你要检查的是key1的值
+                        // 刷新图片
+                        img.src = data.url;
+                    }
+                })
+                .catch(error => console.error(error));
+            }, 30000);
+            {% endif %}
         }
 
         window.addEventListener('DOMContentLoaded', (event) => {
@@ -213,6 +229,12 @@
                         font-family:monospace;
             position: absolute;
             left: 40%;
+            top: 10%;
+        }
+        .auto_refresh{
+                        font-family:monospace;
+            position: absolute;
+            left: 60%;
             top: 10%;
         }
         .main_images p input{
@@ -439,6 +461,13 @@
     <input type="checkbox" name="plotting_use_cache" id="plotting_use_cache_id" value="use_cache" {% if plotting_with_cache %} checked="checked" {% endif %} onchange="document.plotting_use_cache_form.submit()">
         <label for="plotting_use_cache_id" style="font-family: monospace">使用绘图缓存数据</label>
         <button type="button" id="update_plotting_cache_button_id" style="width:80px;height:30px" onclick="update_plotting_cache_now()" >更新缓存</button>
+    </form>
+</div>
+
+<div class="auto_refresh">
+    <form name="auto_refresh_form" id="auto_refresh_form_id" action="{{url_for('change_auto_refresh')}}" method="POST" style="margin: 15px">
+    <input type="checkbox" name="auto_refresh" id="auto_refresh_checkbox_id" value="auto_refresh" {% if auto_refresh_image %} checked="checked" {% endif %} onchange="document.auto_refresh_form.submit()">
+        <label for="auto_refresh_checkbox_id" style="font-family: monospace">自动刷新图片</label>
     </form>
 </div>
 <div class="right_image">

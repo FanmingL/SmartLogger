@@ -9,7 +9,7 @@ import time
 from datetime import datetime, timedelta
 from functools import wraps
 
-from flask import Flask, redirect, url_for, request, send_from_directory, render_template, make_response
+from flask import Flask, redirect, url_for, request, send_from_directory, render_template, make_response, jsonify
 from flask_cors import CORS
 
 import smart_logger.common.page_config as page_config
@@ -434,7 +434,7 @@ def plot():
                                 'MAX_AUTO_PLOTTING_NUM', 'FOCUS_IMAGE_CONFIG_GROUP',
                                 'FOCUS_IMAGE_CONFIG_SAME_CONTENT_GROUP',
                                 'FOCUS_IMAGE_CONFIG_SUB_IMAGE_TITLE', 'ADDITIONAL_PLOT_CONFIGS', 'FLEXIBLE_CONFIG',
-                                'PARAMETER_ADJUST_USE_CACHE', 'FIXED_PARAMETER', 'PLOTTING_USE_CACHE']}
+                                'PARAMETER_ADJUST_USE_CACHE', 'FIXED_PARAMETER', 'PLOTTING_USE_CACHE', 'PLOTTING_AUTO_REFRESH_PAGE']}
     config = config_ordered
     config_description = plot_config.DESCRIPTION
     for k in config:
@@ -523,6 +523,7 @@ def plot():
     title_choose = plot_config_dict['FOCUS_IMAGE_CONFIG_SUB_IMAGE_TITLE']
     additional_configs = plot_config_dict['ADDITIONAL_PLOT_CONFIGS']
     config_presented_mode = plot_config_dict['FOCUS_IMAGE_CONFIG_GROUP']
+    auto_refresh_image = plot_config_dict['PLOTTING_AUTO_REFRESH_PAGE']
     additional_config_cur_setting = dict()
     if config_presented_mode == 'pair_image':
         config = {k: v for k, v in config.items() if k in plot_config.FLEXIBLE_CONFIG and 'SAME_XY' in plot_config.FLEXIBLE_CONFIG[k]}
@@ -568,7 +569,8 @@ def plot():
                            sub_image_list=sub_image_list,
                            sub_image_title_choose_idx=sub_image_title_choose_idx,
                            additional_config_cur_setting=additional_config_cur_setting,
-                           plotting_with_cache=plotting_with_cache
+                           plotting_with_cache=plotting_with_cache,
+                           auto_refresh_image=auto_refresh_image
                            )
 
 
@@ -935,11 +937,16 @@ def _plot_experiment_figure(config_name, user_name, use_cache=None):
     os.makedirs(os.path.dirname(target_folder), exist_ok=True)
     os.makedirs(os.path.dirname(target_folder_tmp), exist_ok=True)
     os.system(f'cp \"{saving_png}\" \"{target_folder}\"')
-    os.system(f'cp \"{saving_png}\" \"{target_folder_tmp}\"')
+    target_tmp_name_temp = f'{target_folder_tmp}____temp'
+    target_tmp_name = target_folder_tmp
+    os.system(f'cp \"{saving_png}\" \"{target_tmp_name_temp}\"')
+    shutil.move(target_tmp_name_temp, target_tmp_name)
     data = load_data_cache(config_name)
     data['LST_PLOTTING_TIMESTAMP'] = time.time()
     data['FIGURE_RECORDING'] = figure_recording_dict
     save_data_cache(data, config_name)
+    output_path = os.path.dirname(target_tmp_name)
+    final_output_name = os.path.basename(target_tmp_name)
     return output_path, final_output_name
 
 @app.route("/exp_figure", methods=['GET'])
@@ -950,6 +957,9 @@ def exp_figure():
     user_name = query_cookie('user_name')
     output_path, final_output_name = _plot_experiment_figure(config_name, user_name)
     Logger.local_log(f'return figure {final_output_name}.png, drawing cost {time.time() - start_time}')
+    data_cache = load_data_cache(config_name)
+    data_cache['LST_FIGURE_MTIME'] = os.path.getmtime(os.path.join(output_path, final_output_name))
+    save_plotting_data_cache(data_cache, config_name)
     return send_from_directory(output_path, f'{final_output_name}.png', as_attachment=False)
 
 
@@ -970,6 +980,9 @@ def lst_output_figure():
     target_dir = os.path.dirname(target_file)
     file_name = os.path.basename(target_file)
     Logger.local_log(f'dir: {target_dir}, name: {file_name}, exists: {os.path.exists(target_file)}')
+    data_cache = load_data_cache(config_name)
+    data_cache['LST_FIGURE_MTIME'] = os.path.getmtime(target_file)
+    save_plotting_data_cache(data_cache, config_name)
     return send_from_directory(target_dir, file_name, as_attachment=False)
 
 
@@ -1614,6 +1627,44 @@ def change_plotting_use_cache():
     config['PLOTTING_USE_CACHE'] = use_cache
     save_config(config, config_name)
     return redirect('/plot', code=204)
+
+@app.route("/change_auto_refresh", methods=['POST'])
+@require_login(source_name='change_auto_refresh', allow_guest=True)
+def change_auto_refresh():
+    config_name = query_cookie('used_config')
+    config = load_config(config_name)
+    auto_refresh = False
+    for k, v in request.form.items():
+        if k == 'auto_refresh':
+            auto_refresh = True
+    config['PLOTTING_AUTO_REFRESH_PAGE'] = auto_refresh
+    save_config(config, config_name)
+    return redirect('/plot')
+
+@app.route("/check_new_image", methods=['GET'])
+@require_login(source_name='check_new_image', allow_guest=True)
+def check_new_image():
+    config_name = query_cookie('used_config')
+    config = load_config(config_name)
+    if config['PLOT_MODE'].lower() == 'curve':
+        target_file = os.path.join(page_config.WEB_RAM_PATH, page_config.TOTAL_FIGURE_FOLDER + "_tmp",
+                                   f'{config_name}.png')
+    else:
+        target_file = os.path.join(page_config.WEB_RAM_PATH, page_config.TOTAL_FIGURE_FOLDER + "_tmp",
+                                   f'bar_{config_name}.png')
+    if os.path.exists(target_file):
+        data_cache = load_data_cache(config_name)
+        mtime = os.path.getmtime(target_file)
+        if 'LST_FIGURE_MTIME' in data_cache and mtime == data_cache['LST_FIGURE_MTIME']:
+            result = {'status': 'no'}
+        else:
+            file_name = os.path.basename(target_file)
+            initial_figure_url = url_for('lst_output_figure')
+            initial_figure_url = initial_figure_url + f'?rand={random.random()}&file_name={file_name}'
+            result = {'status': 'ok', 'url': initial_figure_url}
+    else:
+        result = {'status': 'no'}
+    return jsonify(result)
 
 @app.route("/update_plotting_cache", methods=['GET'])
 @require_login(source_name='update_plotting_cache', allow_guest=True)
