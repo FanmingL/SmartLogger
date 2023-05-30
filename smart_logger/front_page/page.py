@@ -956,11 +956,11 @@ def exp_figure():
     config_name = query_cookie('used_config')
     user_name = query_cookie('user_name')
     output_path, final_output_name = _plot_experiment_figure(config_name, user_name)
-    Logger.local_log(f'return figure {final_output_name}.png, drawing cost {time.time() - start_time}')
+    Logger.local_log(f'return figure {final_output_name}, drawing cost {time.time() - start_time}')
     data_cache = load_data_cache(config_name)
     data_cache['LST_FIGURE_MTIME'] = os.path.getmtime(os.path.join(output_path, final_output_name))
     save_plotting_data_cache(data_cache, config_name)
-    return send_from_directory(output_path, f'{final_output_name}.png', as_attachment=False)
+    return send_from_directory(output_path, f'{final_output_name}', as_attachment=False)
 
 
 @app.route("/lst_output_figure", methods=['GET'])
