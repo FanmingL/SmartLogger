@@ -1453,6 +1453,7 @@ def _plotting(data):
     color_ind = 0
     for x_name, y_name in plot_config.PLOTTING_XY:
         for sub_figure in sub_figure_content:
+            print(f'{sub_figure}: {data[sub_figure]}')
             algs, color_ind, alg_to_color_idx = sort_algs(data[sub_figure], color_ind, alg_to_color_idx)
         for sub_figure in sub_figure_content:
             algs, color_ind, alg_to_color_idx = sort_algs(data[sub_figure], color_ind, alg_to_color_idx)

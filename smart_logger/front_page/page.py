@@ -915,7 +915,7 @@ def _plot_experiment_figure(config_name, user_name, use_cache=None):
     elif use_cache:
         data_cache = load_plotting_data_cache(config_name)
         use_data_cache = True
-
+    print('data cache', data_cache)
     if plot_curve:
         figure_recording_dict, data = local_plot(config_path, data_cache)
     else:
@@ -959,7 +959,7 @@ def exp_figure():
     Logger.local_log(f'return figure {final_output_name}, drawing cost {time.time() - start_time}')
     data_cache = load_data_cache(config_name)
     data_cache['LST_FIGURE_MTIME'] = os.path.getmtime(os.path.join(output_path, final_output_name))
-    save_plotting_data_cache(data_cache, config_name)
+    save_data_cache(data_cache, config_name)
     return send_from_directory(output_path, f'{final_output_name}', as_attachment=False)
 
 
@@ -982,7 +982,7 @@ def lst_output_figure():
     Logger.local_log(f'dir: {target_dir}, name: {file_name}, exists: {os.path.exists(target_file)}')
     data_cache = load_data_cache(config_name)
     data_cache['LST_FIGURE_MTIME'] = os.path.getmtime(target_file)
-    save_plotting_data_cache(data_cache, config_name)
+    save_data_cache(data_cache, config_name)
     return send_from_directory(target_dir, file_name, as_attachment=False)
 
 
