@@ -731,7 +731,6 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
                     need_clip = True
                 y_min = float(ymin_config)
 
-
             ymax_config = _get_plot_config_all('YMAX')
             if ymax_config is not None and not str(ymax_config) == 'None':
                 if float(ymax_config) < y_max:
@@ -852,7 +851,21 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
                 fig_pca_eval = format(fig_pca_eval, '.3e')
             sup_title_name += f' EVAL: {fig_pca_eval}'
     if _get_plot_config_xy('NEED_SUP_TITLE'):
-        plt.suptitle(sup_title_name, fontsize=_get_plot_config_xy('FONTSIZE_SUPTITLE'), y=_get_plot_config_xy('SUPTITLE_Y'))
+        # 计算suptitle的y坐标
+        dpi = f.get_dpi()  # 获取DPI
+        fig_height_in = f.get_figheight()  # 获取图形高度，单位为英寸
+        fig_height_px = dpi * fig_height_in  # 计算图形高度，单位为像素
+
+        # 计算顶部子图的顶部位置（以像素为单位）
+        top_subplot_top_in = f.subplotpars.top * fig_height_in
+        top_subplot_top_px = top_subplot_top_in * dpi
+
+        # 设置一个偏移量，单位为英寸
+        offset_px = _get_plot_config_xy('SUPTITLE_Y') * dpi
+
+        # 计算新的y坐标
+        supty = (top_subplot_top_px + offset_px) / fig_height_px
+        plt.suptitle(sup_title_name, fontsize=_get_plot_config_xy('FONTSIZE_SUPTITLE'), y=supty)
     saving_name = f'{x_name}_{y_name}'
     if not _get_plot_config_xy('OUTPUT_FILE_PREFIX') == 'None':
         _saving_dir = os.path.dirname(saving_name)

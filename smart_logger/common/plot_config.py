@@ -178,8 +178,8 @@ DESCRIPTION['LEGEND_WHICH_POSITION'] = '图例锚点位置 (upper left, lower ri
 FLEXIBLE_CONFIG['LEGEND_WHICH_POSITION'] = dict(SAME_XY=True)
 
 # 大标题位置
-SUPTITLE_Y = 0.99
-DESCRIPTION['SUPTITLE_Y'] = '大标题纵向位置 (0.99, 0.999, ...)'
+SUPTITLE_Y = 0.6
+DESCRIPTION['SUPTITLE_Y'] = '大标题纵向位置 (-0.5, 0, 1.0, ...)'
 FLEXIBLE_CONFIG['SUPTITLE_Y'] = dict(SAME_XY=True)
 
 # 标签字体大小
