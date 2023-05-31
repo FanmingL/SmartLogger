@@ -722,7 +722,25 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
             line_color = line_style[color_idx][0]
             line_type = line_style[type_idx][1]
             marker = line_style[marker_idx][2]
+            y_min = np.min(y_data)
+            y_max = np.max(y_data)
+            need_clip = False
+            ymin_config = _get_plot_config_all('YMIN')
+            if ymin_config is not None and not str(ymin_config) == 'None':
+                if float(ymin_config) > y_min:
+                    need_clip = True
+                y_min = float(ymin_config)
 
+
+            ymax_config = _get_plot_config_all('YMAX')
+            if ymax_config is not None and not str(ymax_config) == 'None':
+                if float(ymax_config) < y_max:
+                    need_clip = True
+                y_max = float(ymax_config)
+            if need_clip:
+                clip_min = y_min - (y_max - y_min) * 0.01
+                clip_max = y_max - (y_max - y_min) * 0.01
+                y_data = np.clip(y_data, clip_min, clip_max)
             curve, = ax.plot(x_data, y_data, color=line_color,
                              linestyle=line_type, marker=marker, label=alg_name,
                              linewidth=_get_plot_config_all('LINE_WIDTH'), markersize=_get_plot_config_all('MARKER_SIZE'),
