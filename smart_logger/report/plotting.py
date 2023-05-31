@@ -739,7 +739,7 @@ def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_nam
                 y_max = float(ymax_config)
             if need_clip:
                 clip_min = y_min - (y_max - y_min) * 0.1
-                clip_max = y_max - (y_max - y_min) * 0.1
+                clip_max = y_max + (y_max - y_min) * 0.1
                 y_data = np.clip(y_data, clip_min, clip_max)
             curve, = ax.plot(x_data, y_data, color=line_color,
                              linestyle=line_type, marker=marker, label=alg_name,
