@@ -1790,20 +1790,23 @@ def _to_table(data, atx, iter, privileged_col_idx=None, placeholder=None, md=Tru
 
 
 def standardize_row_and_col(item_name, row_header, alg_as_row_header):
+    if isinstance(item_name, tuple):
+        item_name = str(title_tuple_to_str(item_name))
     # row_header：是否是行首
-    if row_header:
-        if alg_as_row_header:
-            # alg_name, str
-            return item_name.replace('_', '-')
-        else:
-            return str(title_tuple_to_str(item_name)).replace('_', '-')
-    else:
-        if alg_as_row_header:
-            # env_name, tuple
-            return str(title_tuple_to_str(item_name)).replace('_', '-')
-        else:
-            # alg_name, str
-            return item_name.replace('_', '-')
+    return item_name.replace('_', '-')
+    # if row_header:
+    #     if alg_as_row_header:
+    #         # alg_name, str
+    #
+    #     else:
+    #         return str(item_name.replace('_', '-')
+    # else:
+    #     if alg_as_row_header:
+    #         # env_name, tuple
+    #         return item_name.replace('_', '-')
+    #     else:
+    #         # alg_name, str
+    #         return item_name.replace('_', '-')
 
 
 def format_float_to_str(num, valid_bit):
