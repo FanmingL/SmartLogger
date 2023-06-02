@@ -81,31 +81,7 @@
                 })
                 .catch(error => console.error(error));
             }, 30000);
-
-            var userAgent = navigator.userAgent;
-
-            // 创建正则表达式匹配Safari浏览器的字符串
-            var regex = /^.*\bAppleWebKit\b.*\bSafari\b.*$/;
-
-            // 使用正则表达式检查用户代理字符串
-            if (regex.test(userAgent)) {
-              // 当前浏览器是Safari，执行某些操作
-              // console.log("当前浏览器是Safari");
-              window.addEventListener("focus", function() {
-                  // 页面已聚焦，执行某些操作
-                  fetch("{{url_for('check_new_image')}}")
-                    .then(response => response.json())
-                    .then(data => {
-                        // 如果返回结果是'ok'
-                        if (data.status === 'ok') {  // 假设你要检查的是key1的值
-                            // 刷新图片
-                            img.src = data.url;
-                        }
-                    })
-                    .catch(error => console.error(error));
-                });
-            } else {
-              // 当前浏览器不是Safari，执行其他操作
+            // 当前浏览器不是Safari，执行其他操作
               document.addEventListener("visibilitychange", function() {
                   if (document.visibilityState === 'visible') {
                     // 用户已返回当前页面，执行某些操作
@@ -121,8 +97,6 @@
                     .catch(error => console.error(error));
                   }
                 });
-            }
-
             {% endif %}
         }
 
