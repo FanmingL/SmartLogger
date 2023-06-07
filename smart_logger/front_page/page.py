@@ -478,7 +478,7 @@ def plot():
     total_same_paired_images_y = [item[1] for item in plotting_xy]
     total_same_paired_images = [f'{item[0]}-{item[1]}' for item in plotting_xy]
     need_resaving_config = False
-    if len(total_same_paired_images[0]) > 0:
+    if len(total_same_paired_images) > 0:
         image_content_choose = total_same_paired_images[0]
         image_content_choose_idx = 0
         if 'FOCUS_IMAGE_CONFIG_SAME_CONTENT_GROUP' in plot_config_dict:
