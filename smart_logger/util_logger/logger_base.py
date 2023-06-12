@@ -1,3 +1,5 @@
+import shutil
+
 try:
     from torch.utils.tensorboard import SummaryWriter
 except Exception as e:
@@ -201,7 +203,8 @@ class LoggerBase:
                 for line in f:
                     vals = line[:-1].split(self.spliter) + ['0'] * additional_num
                     f_out.write(self.spliter.join(map(str, vals)) + "\n")
-        system(f"mv {bk_output_file} {old_output_file}", lambda x: self.log(x))
+        self.log(f"mv {bk_output_file} {old_output_file}")
+        shutil.move(bk_output_file, old_output_file)
         self.output_file = open(old_output_file, 'a')
         atexit.register(self.output_file.close)
         self.log(f"re-writen the csv file because of the additional header keys: {additional_header}")

@@ -40,6 +40,22 @@
             }
             return scrollTop;
         }
+
+        function manually_refresh(){
+            var img = document.getElementById('ret_image');
+
+            // 用户已返回当前页面，执行某些操作
+            fetch("{{url_for('check_new_image')}}")
+            .then(response => response.json())
+            .then(data => {
+                // 如果返回结果是'ok'
+                if (data.status === 'ok') {  // 假设你要检查的是key1的值
+                    // 刷新图片
+                    img.src = data.url;
+                }
+            })
+            .catch(error => console.error(error));
+        }
         function getScrollTop(){
             var scrollTop=0;
             if(document.documentElement&&document.documentElement.scrollTop){
@@ -487,7 +503,7 @@
     </form>
 </div>
 <div class="right_image">
-		<img id="ret_image" alt="plotting" {% if initial_figure_url == "#" %} style="display:none;" {% endif %} onload="finish_figure()"  onerror="error_figure()"><br/>
+		<img id="ret_image" alt="plotting" {% if initial_figure_url == "#" %} style="display:none;" {% endif %} onload="finish_figure()" onclick="manually_refresh()" onerror="error_figure()"><br/>
 	</div>
 <div class="file_list" id="file_list_div_id">
     <b>
