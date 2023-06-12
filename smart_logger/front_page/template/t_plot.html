@@ -16,11 +16,15 @@
         function finish_figure(){
              var button = document.getElementById('figure_button')
             button.innerHTML = "更新图片";
+             let message = document.getElementById("message");
+             message.style.display = "none";
         }
 
         function error_figure(){
              var button = document.getElementById('figure_button')
             button.innerHTML = "重新加载";
+             let message = document.getElementById("message");
+             message.style.display = "none";
         }
 
         function scroll_to_history_element(element, name){
@@ -55,9 +59,9 @@
                     let message = document.getElementById("message");
                     message.style.display = "block";
                     /* 2秒后隐藏提示框 */
-                    setTimeout(() => {
-                        message.style.display = "none";
-                    }, 2000);
+                    // setTimeout(() => {
+                    //     message.style.display = "none";
+                    // }, 2000);
                 }
             })
             .catch(error => console.error(error));
