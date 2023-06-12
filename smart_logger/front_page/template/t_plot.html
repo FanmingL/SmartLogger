@@ -52,6 +52,12 @@
                 if (data.status === 'ok') {  // 假设你要检查的是key1的值
                     // 刷新图片
                     img.src = data.url;
+                    let message = document.getElementById("message");
+                    message.style.display = "block";
+                    /* 2秒后隐藏提示框 */
+                    setTimeout(() => {
+                        message.style.display = "none";
+                    }, 2000);
                 }
             })
             .catch(error => console.error(error));
@@ -86,31 +92,14 @@
             // 每30秒运行一次函数
             setInterval(function() {
                 // 发送GET请求
-                fetch("{{url_for('check_new_image')}}")
-                .then(response => response.json())
-                .then(data => {
-                    // 如果返回结果是'ok'
-                    if (data.status === 'ok') {  // 假设你要检查的是key1的值
-                        // 刷新图片
-                        img.src = data.url;
-                    }
-                })
-                .catch(error => console.error(error));
+                manually_refresh();
             }, 30000);
             // 当前浏览器不是Safari，执行其他操作
               document.addEventListener("visibilitychange", function() {
                   if (document.visibilityState === 'visible') {
                     // 用户已返回当前页面，执行某些操作
-                    fetch("{{url_for('check_new_image')}}")
-                    .then(response => response.json())
-                    .then(data => {
-                        // 如果返回结果是'ok'
-                        if (data.status === 'ok') {  // 假设你要检查的是key1的值
-                            // 刷新图片
-                            img.src = data.url;
-                        }
-                    })
-                    .catch(error => console.error(error));
+
+                    manually_refresh();
                   }
                 });
             {% endif %}
@@ -515,6 +504,9 @@
         {% endfor %}
     </p>
 
+</div>
+<div id="message" style="display: none; position: fixed; bottom: 20px; right: 20px; padding: 10px; background-color: #4CAF50; color: white;">
+    刷新图片中...
 </div>
 <div class="bottom_box">
 </div>
