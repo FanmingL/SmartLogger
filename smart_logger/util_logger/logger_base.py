@@ -181,7 +181,7 @@ class LoggerBase:
                 self.output_file.write(self.spliter.join(self.log_headers) + "\n")
             if self.first_row_changed:
                 self.first_row_changed = False
-                self.rewrite_file()
+                self.rewrite_file(vals)
 
             self.output_file.write(self.spliter.join(map(str, vals)) + "\n")
             self.output_file.flush()
@@ -190,7 +190,7 @@ class LoggerBase:
         self.first_row = False
         self.step += 1
 
-    def rewrite_file(self):
+    def rewrite_file(self, new_vals):
         self.output_file.close()
         old_output_file = os.path.join(self.output_dir, self.output_fname)
         bk_output_file = os.path.join(self.output_dir, self.output_fname + 'back')
@@ -201,7 +201,7 @@ class LoggerBase:
                 additional_num = len(self.log_headers) - len(first_line.split(self.spliter))
                 additional_header = self.log_headers[-additional_num:]
                 for line in f:
-                    vals = line[:-1].split(self.spliter) + ['0'] * additional_num
+                    vals = line[:-1].split(self.spliter) + list(map(str, new_vals[-additional_num:]))
                     f_out.write(self.spliter.join(map(str, vals)) + "\n")
         self.log(f"mv {bk_output_file} {old_output_file}")
         shutil.move(bk_output_file, old_output_file)

@@ -28,3 +28,5 @@ COOKIE_PERIOD = 24
 REQUIRE_RELOGIN = True
 # 网页title前缀
 PAGE_TITLE_PREFIX = None
+# 是否保存日志到文件
+PAGE_LOG_TO_FILE = True

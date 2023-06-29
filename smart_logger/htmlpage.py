@@ -23,6 +23,8 @@ def main():
                         help="Server port")
     parser.add_argument('--login_free', '-lf', action='store_true',
                         help='Do not require login.')
+    parser.add_argument('--log_to_file', '-ltf', action='store_true',
+                        help='whether to log to file.', default=False)
     args = parser.parse_args()
     # 关键配置项1：数据目录，该目录下存有日志文件
     plot_config.DATA_PATH = os.path.abspath(args.data_path)
@@ -55,6 +57,8 @@ def main():
     page_config.REQUIRE_RELOGIN = not args.login_free
     # 标题
     page_config.PAGE_TITLE_PREFIX = args.title if not str(args.title) == 'None' else None
+    # 是否保存日志入文件
+    page_config.PAGE_LOG_TO_FILE = args.log_to_file
     start_page_server()
 
 

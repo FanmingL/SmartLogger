@@ -19,6 +19,8 @@ def main():
         logger.log_tabular('performance', random.random(), tb_prefix='performance')
         logger.add_tabular_data(tb_prefix='test', k1=100, k2=[1, 2, 3, 4, 5], k3=1.23)
         logger.add_tabular_data(tb_prefix='test', k1=1880, k2=2, k3=1.73)
+        if t > 5:
+            logger.add_tabular_data(tb_prefix='test2', k5=11, k6=31.2)
         logger.dump_tabular()
 
 

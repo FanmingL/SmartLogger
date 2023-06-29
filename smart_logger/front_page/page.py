@@ -1929,7 +1929,7 @@ def schedule_loop():
 
 
 def start_page_server(port_num=None):
-    Logger.init_global_logger(base_path=page_config.WEB_RAM_PATH, log_name="web_logs")
+    Logger.init_global_logger(log_to_file=page_config.PAGE_LOG_TO_FILE, base_path=page_config.WEB_RAM_PATH, log_name="web_logs")
     _default_config = default_config()
     for k in _default_config:
         if hasattr(plot_config, k):
