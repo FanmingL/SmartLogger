@@ -30,5 +30,6 @@ setup(
         'Pillow',
         'pandas',
         'tensorboard',
+        'psutil'
     ]
 )

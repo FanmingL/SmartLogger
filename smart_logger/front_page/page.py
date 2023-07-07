@@ -26,6 +26,9 @@ from smart_logger.report.plotting import bar as local_bar
 from smart_logger.report.plotting import plot as local_plot
 from smart_logger.util_logger.logger import Logger
 from multiprocessing import Process, Manager
+import socket
+import psutil
+
 
 def get_project_path():
     return os.path.dirname(os.path.abspath(__file__))
@@ -1927,8 +1930,33 @@ def schedule_loop():
             traceback.print_exc()
         time.sleep(5)
 
+def prechecking(port):
+    def check_port_in_use(_port):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind(("localhost", _port))
+            except socket.error as e:
+                return True
+            return False
+
+    def print_pid_of_port(_port):
+        for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+            try:
+                for conns in proc.connections():
+                    if conns.laddr.port == _port:
+                        print(f"Port {_port} is being used by PID {proc.info['pid']} ({proc.info['name']}) {' '.join(proc.info['cmdline'])} ")
+
+            except (psutil.AccessDenied, psutil.ZombieProcess):
+                pass
+    if check_port_in_use(port):
+        print(f"Port {port} is being used!!!! Now start checking which program is using this port")
+        print_pid_of_port(port)
+        exit(1)
 
 def start_page_server(port_num=None):
+    port_num = port_num if port_num is not None else page_config.PORT
+    prechecking(port_num)
+
     Logger.init_global_logger(log_to_file=page_config.PAGE_LOG_TO_FILE, base_path=page_config.WEB_RAM_PATH, log_name="web_logs")
     _default_config = default_config()
     for k in _default_config:
@@ -1939,7 +1967,6 @@ def start_page_server(port_num=None):
     flush_th.start()
     schedule_th = threading.Thread(target=schedule_loop)
     schedule_th.start()
-    port_num = port_num if port_num is not None else page_config.PORT
     Logger.local_log(f'copy http://{page_config.WEB_NAME}:{port_num} to the explorer')
     if not page_config.REQUIRE_RELOGIN:
         page_config.COOKIE_PERIOD = 1000000

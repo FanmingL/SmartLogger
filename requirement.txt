@@ -10,3 +10,4 @@ simplejson
 Pillow
 pandas
 tensorboard
+psutil
