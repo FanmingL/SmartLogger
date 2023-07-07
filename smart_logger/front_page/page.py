@@ -1940,16 +1940,21 @@ def prechecking(port):
             return False
 
     def print_pid_of_port(_port):
+        pids = []
         for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
             try:
                 for conns in proc.connections():
                     try:
                         if conns.laddr.port == _port:
                             print(f"Port {_port} is being used by PID {proc.info['pid']} ({proc.info['name']}) {' '.join(proc.info['cmdline'])} ")
+                            pids.append(proc.info['pid'])
                     except (psutil.AccessDenied, psutil.ZombieProcess):
                         pass
             except (psutil.AccessDenied, psutil.ZombieProcess):
                 pass
+        if len(pids) > 0:
+            print(f'use the following command:')
+            print('kill -9', ' '.join(pids))
     if check_port_in_use(port):
         print(f"Port {port} is being used!!!! Now start checking which program is using this port")
         print_pid_of_port(port)
