@@ -1954,7 +1954,7 @@ def prechecking(port):
                 pass
         if len(pids) > 0:
             print(f'use the following command:')
-            print('kill -9', ' '.join(pids))
+            print('kill -9', ' '.join([str(item) for item in pids]))
     if check_port_in_use(port):
         print(f"Port {port} is being used!!!! Now start checking which program is using this port")
         print_pid_of_port(port)
