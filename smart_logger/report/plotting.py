@@ -1365,12 +1365,16 @@ def _make_subtable(data, x_name, y_name, at_x, plot_config_dict, iter, alg_as_ro
             elif str(require_resample_config) == 'None':
                 if inteval_range > 0.05:
                     require_resample = True
+            if _get_plot_config_all('TABLE_SHOW_AVERAGE'):
+                require_resample = False
 
             data_len = [len(item) for item in x_data]
             min_data_len = min(data_len)
             seed_num = len(data_len)
             figure_plotting_record[sub_figure_str].add(alg_name)
             plot_for_every_config = _get_plot_config_all('PLOT_FOR_EVERY')
+            if _get_plot_config_all('TABLE_SHOW_AVERAGE'):
+                plot_for_every_config = 1
             if not require_resample:
                 x_data = [np.array(data[:min_data_len:plot_for_every_config]) for data in x_data]
                 y_data = [np.array(data[:min_data_len:plot_for_every_config]) for data in y_data]
@@ -1396,26 +1400,36 @@ def _make_subtable(data, x_name, y_name, at_x, plot_config_dict, iter, alg_as_ro
                 final_ind = np.argmin(np.square(np.array(x_data) - float(xmax))) + 1
                 x_data = x_data[:final_ind]
                 y_data = [data[:final_ind] for data in y_data]
-
-            y_data, y_data_error, y_data_std = stat_data(y_data)
-            y_data_error = np.array(y_data_error)
-            if _get_plot_config_all('USE_SMOOTH'):
-                y_data = smooth(y_data, radius=_get_plot_config_all('SMOOTH_RADIUS'))
-            if at_x is None:
-                if not str(xmax_config) == 'None':
-                    at_x = float(xmax_config)
-            if at_x is not None:
-                idx = np.argmin(np.square(x_data.astype(np.float) - at_x))
-                selected_mean = y_data[idx]
-                selected_error = y_data_error[idx]
-            elif iter is not None:
-                selected_mean = y_data[iter]
-                selected_error = y_data_error[iter]
+            if _get_plot_config_all('TABLE_SHOW_AVERAGE'):
+                means = [np.mean(item) for item in y_data if len(item) > 0]
+                if len(means) == 0:
+                    selected_mean, selected_error = 0, 0
+                else:
+                    selected_mean = np.mean(means)
+                    if len(means) > 1:
+                        selected_error = np.std(means) / np.sqrt(len(means))
+                    else:
+                        selected_error = 0
             else:
-                selected_mean = y_data[-1]
-                selected_error = y_data_error[-1]
-            if len(data_len) <= 1:
-                selected_error = 0
+                y_data, y_data_error, y_data_std = stat_data(y_data)
+                y_data_error = np.array(y_data_error)
+                if _get_plot_config_all('USE_SMOOTH'):
+                    y_data = smooth(y_data, radius=_get_plot_config_all('SMOOTH_RADIUS'))
+                if at_x is None:
+                    if not str(xmax_config) == 'None':
+                        at_x = float(xmax_config)
+                if at_x is not None:
+                    idx = np.argmin(np.square(x_data.astype(np.float) - at_x))
+                    selected_mean = y_data[idx]
+                    selected_error = y_data_error[idx]
+                elif iter is not None:
+                    selected_mean = y_data[iter]
+                    selected_error = y_data_error[iter]
+                else:
+                    selected_mean = y_data[-1]
+                    selected_error = y_data_error[-1]
+                if len(data_len) <= 1:
+                    selected_error = 0
             valid_bit = _get_plot_config_all('TABLE_VALID_BITS')
             if sub_figure not in summary_dict:
                 summary_dict[sub_figure] = dict()
@@ -1840,11 +1854,14 @@ def standardize_row_and_col(item_name, row_header, alg_as_row_header):
     #         return item_name.replace('_', '-')
 
 
-def format_float_to_str(num, valid_bit):
-    if valid_bit > 0:
+def format_float_to_str(num, valid_bit, max_value=1e8):
+    if abs(num) > max_value:
+        return "{:.{valid_bit}e}".format(num, valid_bit=valid_bit)
+    elif valid_bit > 0:
         format_code = f'%.{valid_bit}f'
         return format_code % num
-    return f'{int(num)}'
+    else:
+        return f'{int(num)}'
 
 
 def summary_buffer_to_output(summary_dict_buffer, privileged_col_idx=None, placeholder=None, summary_dict_config=None):
