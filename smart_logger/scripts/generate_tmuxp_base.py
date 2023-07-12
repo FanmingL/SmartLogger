@@ -60,14 +60,14 @@ def _cmd_post_process(cmd):
 
 
 def check_aligned_valid(_aligned_candidates):
-    parallel_task = None
+    parallel_task = 1
     for k, v in _aligned_candidates.items():
         if isinstance(v, list):
-            if parallel_task is None:
+            if parallel_task is None or parallel_task == 1:
                 parallel_task = len(v)
             else:
-                assert len(v) == parallel_task, f"length of key {k} violates the given length"
-    assert parallel_task is not None
+                if not len(v) == 1:
+                    assert len(v) == parallel_task, f"length of key {k} violates the given length"
     return parallel_task
 
 
@@ -114,7 +114,10 @@ def make_cmd_array(directory, session_name, start_up_header,
             task.update(exclusive_task)
             for k, v in aligned_candidates.items():
                 if isinstance(v, list):
-                    task[k] = v[ind]
+                    if len(v) == 1:
+                        task[k] = v[0]
+                    else:
+                        task[k] = v[ind]
                 else:
                     task[k] = v
             final_tasks_list.append(task)
@@ -199,10 +202,13 @@ def make_cmd_array(directory, session_name, start_up_header,
             cmd_list = []
     if len(cmd_list) > 0:
         cmd_array.append(cmd_list)
-    if isinstance(aligned_candidates['information'], list):
-        session_name += '_'.join(aligned_candidates['information'])
+    if 'information' in aligned_candidates:
+        if isinstance(aligned_candidates['information'], list):
+            session_name += '_'.join(aligned_candidates['information'])
+        else:
+            session_name += aligned_candidates['information']
     else:
-        session_name += aligned_candidates['information']
+        pass
     session_name = session_name.replace('.', '_')
     print('*' * 70)
     print(f'Machine num: {1 if machine_idx < 0 else machine_idx}/{1 if machine_idx < 0 else total_machine}, '
@@ -268,7 +274,7 @@ def get_cmd_array(max_subwindows, max_parallel_process, machine_idx, total_machi
     return cmd_array, session_name
 
 
-def generate_tmuxp_file(session_name, cmd_array, use_json=False, layout='tiled'):
+def generate_tmuxp_file(session_name, cmd_array, use_json=False, layout='tiled', window_names=None):
     """
     layout的选项
     even-horizontal：窗口中的面板将均匀地水平排列。
@@ -277,10 +283,14 @@ def generate_tmuxp_file(session_name, cmd_array, use_json=False, layout='tiled')
     main-vertical：一个主面板在左，其他面板在右均匀地垂直排列。
     tiled：面板在窗口中平均地排列。
     """
+    if window_names is not None:
+        assert len(cmd_array) == len(window_names), f'length of the commands and the window names' \
+                                                    f' should be the same, but got cmd len: {len(window_names)} and window len: {len(cmd_array)}'
     config = {"session_name": session_name, "windows": []}
     for window_ind, cmd_list in enumerate(cmd_array):
+        window_name = f"window-{window_ind}" if window_names is None else window_names[window_ind]
         window_cmd = {
-            "window_name": f"window-{window_ind}",
+            "window_name": window_name,
             "panes": cmd_list,
             "layout": layout
         }
