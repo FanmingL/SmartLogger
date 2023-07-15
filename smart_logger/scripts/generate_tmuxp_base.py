@@ -19,7 +19,7 @@ MACHINE_IDX = -1
 
 
 def make_cmd(environment_dict: dict, directory: str, start_up_header: str,
-             parameter_dict: dict, task_ind: int = -1, total_task_num: int = -1, equality_assign: bool = False):
+             parameter_dict: dict, task_ind: int = -1, total_task_num: int = -1, equality_assign: bool = False, task_time_interval: int = 0):
     cmd = ""
     for ind, (k, v) in enumerate(environment_dict.items()):
         if ind == 0:
@@ -29,6 +29,9 @@ def make_cmd(environment_dict: dict, directory: str, start_up_header: str,
     cmd += f" cd {directory} && "
     if total_task_num > 0 and task_ind >= 0:
         cmd += f" echo \'******************task ind: {task_ind + 1}/{total_task_num} ************************\' && "
+    if total_task_num > 0 and task_ind > 0 and task_time_interval > 0:
+        cmd += f" sleep {task_time_interval} && "
+
     cmd += f" {start_up_header} "
     for k, v in parameter_dict.items():
         if equality_assign:
@@ -92,7 +95,7 @@ def make_cmd_array(directory, session_name, start_up_header,
                    exclusive_candidates, GPUS, max_parallel_process, max_subwindow=6,
                    machine_idx=-1, total_machine=8, task_is_valid=None, split_all=False,
                    cmd_post_process=None, sleep_before=0.0, sleep_after=0.0, error_stop=False,
-                   rnd_seed=42, equality_assign=False):
+                   rnd_seed=42, equality_assign=False, task_time_interval=0):
     if rnd_seed is not None:
         random_gen = random.Random()
         random_gen.seed(rnd_seed)
@@ -151,7 +154,7 @@ def make_cmd_array(directory, session_name, start_up_header,
                 if 'CUDA_VISIBLE_DEVICES' in environment_dict and len(GPUS) > 0:
                     environment_dict['CUDA_VISIBLE_DEVICES'] = str(GPUS[task_ind % len(GPUS)])
                 cmd_once = make_cmd(environment_dict, directory, start_up_header, parameters, cmd_ind,
-                                    total_pane_task_num, equality_assign)
+                                    total_pane_task_num, equality_assign, task_time_interval)
                 if cmd_post_process is not None:
                     cmd_once = cmd_post_process(cmd_once)
                 if cmd_ind == 0:

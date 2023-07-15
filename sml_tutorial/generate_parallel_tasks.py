@@ -51,7 +51,7 @@ def get_cmd_array(total_machine=8, machine_idx=0):
     cmd_array, session_name = make_cmd_array(
         directory, session_name, start_up_header, parameters_base, environment_dict,
         aligned_candidates, exclusive_candidates, GPUS, MAX_PARALLEL, MAX_SUBWINDOW,
-        machine_idx, total_machine, task_is_valid, split_all=True, sleep_before=0.0, sleep_after=0.0
+        machine_idx, total_machine, task_is_valid, split_all=True, sleep_before=0.0, sleep_after=0.0, task_time_interval=10
     )
 
     # for win_ind, win_cmds_list in enumerate(cmd_array):
