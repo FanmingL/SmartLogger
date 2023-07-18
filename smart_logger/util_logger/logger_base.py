@@ -96,9 +96,13 @@ class LoggerBase:
     def init_tb(self):
         if osp.exists(self.output_tb_dir):
             self.log("Warning: Log dir %s already exists! Storing info there anyway." % self.output_dir, color='blue')
-            cmd = f'rm -rf {self.output_tb_dir}'
-            system(cmd, lambda x: self.log(x))
-        os.makedirs(self.output_tb_dir)
+            # cmd = f'rm -rf {self.output_tb_dir}'
+            # system(cmd, lambda x: self.log(x))
+            if os.path.isdir(self.output_tb_dir):
+                shutil.rmtree(self.output_tb_dir)
+            else:
+                os.remove(self.output_tb_dir)
+        os.makedirs(self.output_tb_dir, exist_ok=True)
         self.tb = SummaryWriter(self.output_tb_dir)
 
     def set_tb_x_label(self, label):

@@ -37,8 +37,7 @@ class Logger(LoggerBase):
         bk_log_file = False
         if log_to_file:
             if os.path.exists(os.path.join(self.output_dir, 'log.txt')):
-                system(
-                    f'mv \"{os.path.join(self.output_dir, "log.txt")}\" \"{os.path.join(self.output_dir, "log_back.txt")}\"')
+                shutil.move(os.path.join(self.output_dir, "log.txt"), os.path.join(self.output_dir, "log_back.txt"))
                 bk_log_file = True
             self.log_file = open(os.path.join(self.output_dir, 'log.txt'), 'w')
             atexit.register(self.log_file.close)
@@ -125,14 +124,15 @@ class Logger(LoggerBase):
                                               f"backup_{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}")
                     os.makedirs(backup_dir, exist_ok=True)  # 创建备份目录
                     # 复制文件到备份目录中，并记录进度日志
-                    system(f"cp -r \"{self.output_dir}\" \"{backup_dir}\"", lambda x: self.log(x))
+                    shutil.copy2(self.output_dir, os.path.join(backup_dir, os.path.basename(self.output_dir)))
                     if has_bk_logtxt:
                         # 获取日志文件路径
                         logbk_file = os.path.join(backup_dir, os.path.basename(self.output_dir), 'log_back.txt')
                         lognew_file = os.path.join(backup_dir, os.path.basename(self.output_dir), 'log.txt')
                         if os.path.exists(logbk_file):
                             # 将旧的日志文件重命名为 log.txt，并记录日志
-                            system(f'mv \"{logbk_file}\" \"{lognew_file}\"', lambda x: self.log(x))
+                            # system(f'mv \"{logbk_file}\" \"{lognew_file}\"', lambda x: self.log(x))
+                            shutil.move(logbk_file, lognew_file)
                     if log_signature is not None:
                         with open(signature_file, 'w') as f:
                             f.write(log_signature)  # 写入新的 signature.txt
@@ -173,7 +173,14 @@ class Logger(LoggerBase):
         # 遍历需要备份的文件列表进行备份，采用rsync命令备份，如果不存在则使用cp备份
         for item in things:
             if os.system('which rsync > /dev/null'):
-                system(f'cp -r \"{item}\" \"{code_path}\"', lambda x: self.log(f'code backing up: {x}'))
+                # 检查源路径是文件还是目录
+                if os.path.isfile(item):
+                    # 如果是文件，就用shutil.copy2()
+                    shutil.copy2(item, code_path)
+                elif os.path.isdir(item):
+                    # 如果是目录，就用shutil.copytree()
+                    # 注意：目标路径必须不存在，所以在目标路径下创建一个与源目录同名的新目录
+                    shutil.copytree(item, os.path.join(code_path, os.path.basename(item)))
             else:
                 ignore_str = ''
                 # 构造rsync命令中的忽略选项，逐个添加到ignore_str中
@@ -186,24 +193,31 @@ class Logger(LoggerBase):
 
                 # 执行rsync命令进行文件备份，备份失败则使用cp命令进行备份
                 if system(f'rsync -razm {ignore_str} \"{item}\" \"{code_path}\"',
-                          lambda x: self.log(f'code backing up: {x}')):
+                          lambda x: self.log(f'[Code Backingup] {x}')):
                     self.log(f'error occurs when rsync, use cp instead!')
-                    system(f'cp -r \"{item}\" \"{code_path}\"', lambda x: self.log(f'code backing up: {x}'))
+                    # 检查源路径是文件还是目录
+                    if os.path.isfile(item):
+                        # 如果是文件，就用shutil.copy2()
+                        shutil.copy2(item, code_path)
+                    elif os.path.isdir(item):
+                        # 如果是目录，就用shutil.copytree()
+                        # 注意：目标路径必须不存在，所以在目标路径下创建一个与源目录同名的新目录
+                        shutil.copytree(item, os.path.join(code_path, os.path.basename(item)))
 
         # 使用tar命令将备份的代码打包成tar文件，如果异常则使用zip进行打包
         try:
             if os.path.exists(code_path + '.tar'):
-                system(f'rm {code_path + ".tar"}', lambda x: self.log(x))
+                os.remove(code_path + ".tar")
             archive_data = shutil.make_archive(code_path, 'tar', base_dir='codes', root_dir=os.path.dirname(code_path))
             self.log(f'archive codes done! file is saved to {archive_data}')
         except Exception as e:
             self.log(f'fail to make archive file with tar command because of {e}, try to use zip instead.')
             if os.path.exists(os.path.join(self.output_dir, "codes.zip")):
-                system(f'rm {os.path.join(self.output_dir, "codes.zip")}', lambda x: self.log(x))
+                os.remove(os.path.join(self.output_dir, "codes.zip"))
             system(f'cd {self.output_dir} &&  zip -r codes.zip codes', lambda x: self.log(x))
         finally:
             # 删除备份的代码目录
-            system(f'rm -rf {code_path}', lambda x: self.log(f'post-backing up: {x}'))
+            shutil.rmtree(code_path)
 
     def sync_log_to_remote(self, replace=False, trial_num=1):
         import paramiko
