@@ -28,6 +28,7 @@ from smart_logger.util_logger.logger import Logger
 from multiprocessing import Process, Manager
 import socket
 import psutil
+import signal
 
 
 def get_project_path():
@@ -1919,7 +1920,18 @@ def schedule_iter():
     if proc.is_alive():
         Logger.local_log("schedule_iter is running too long, terminating...")
         proc.terminate()
-        proc.join()
+        # 添加这部分代码，以确保进程已经被杀死
+        start_time = time.time()
+        while proc.is_alive():
+            # 每隔一段时间检查一次进程是否已经被杀死
+            if time.time() - start_time > 10:
+                Logger.local_log("Unable to kill the process...")
+                try:
+                    os.kill(proc.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    Logger.local_log(f"Process {proc.pid} does not exist. Maybe it has been killed.")
+                break
+            time.sleep(1)
 
 def schedule_loop():
     while True:
