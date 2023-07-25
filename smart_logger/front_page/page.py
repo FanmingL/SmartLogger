@@ -1877,7 +1877,18 @@ def flush_loop():
         time.sleep(1)
 
 
-def _schedule_iter(auto_plotting_candidates, page_config_dict):
+def _schedule_iter(auto_plotting_candidates, page_config_dict, max_processing_time):
+    running = True
+    def timeout_kill(_max_processing_time):
+        for _ in range(_max_processing_time + 10):
+            time.sleep(1)
+            if not running:
+                break
+        else:
+            Logger.local_log(f'I think I am out of control now. To avoid memory leak, I will exit now.')
+            os._exit(0)
+    th = threading.Thread(target=timeout_kill, args=(max_processing_time,))
+    th.start()
     for k, v in page_config_dict.items():
         if hasattr(page_config, k):
             setattr(page_config, k, v)
@@ -1894,6 +1905,7 @@ def _schedule_iter(auto_plotting_candidates, page_config_dict):
             traceback.print_exc()
     if len(auto_plotting_candidates) > 0:
         Logger.local_log(f'table and figure DONE!')
+    running = False
 
 config_file_mdate_dict = {}
 config_content_dict = {}
@@ -1914,9 +1926,10 @@ def schedule_iter():
                 auto_plotting_candidates.append(config_name)
             elif cur_timestamp - local_data['LST_PLOTTING_TIMESTAMP'] > plotting_interval:
                 auto_plotting_candidates.append(config_name)
-    proc = Process(target=_schedule_iter, args=(auto_plotting_candidates, page_config_dict))
+    max_processing_time = 400
+    proc = Process(target=_schedule_iter, args=(auto_plotting_candidates, page_config_dict, max_processing_time))
     proc.start()
-    proc.join(timeout=360)  # Set timeout
+    proc.join(timeout=max_processing_time)  # Set timeout
     if proc.is_alive():
         Logger.local_log("schedule_iter is running too long, terminating...")
         proc.terminate()
@@ -1932,7 +1945,6 @@ def schedule_iter():
                     Logger.local_log(f"Process {proc.pid} does not exist. Maybe it has been killed.")
                 break
             time.sleep(1)
-
 def schedule_loop():
     while True:
         try:
