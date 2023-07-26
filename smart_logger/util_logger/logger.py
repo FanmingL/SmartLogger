@@ -124,7 +124,7 @@ class Logger(LoggerBase):
                                               f"backup_{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}")
                     os.makedirs(backup_dir, exist_ok=True)  # 创建备份目录
                     # 复制文件到备份目录中，并记录进度日志
-                    shutil.copy2(self.output_dir, os.path.join(backup_dir, os.path.basename(self.output_dir)))
+                    shutil.copytree(self.output_dir, os.path.join(backup_dir, os.path.basename(self.output_dir)))
                     if has_bk_logtxt:
                         # 获取日志文件路径
                         logbk_file = os.path.join(backup_dir, os.path.basename(self.output_dir), 'log_back.txt')
