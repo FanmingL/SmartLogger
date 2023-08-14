@@ -12,7 +12,7 @@ from smart_logger.common import experiment_config
 
 
 class ParameterTemplate:
-    def __init__(self, config_path=None, debug=False, silence=False):
+    def __init__(self, config_path=None, debug=False, silence=False, config_data=None):
         self.base_path = self.get_base_path()
         self.debug = debug
         self.silence = silence
@@ -44,9 +44,12 @@ class ParameterTemplate:
         if config_path:
             self.load_config()
         else:
-            self.args = self.parser.parse_args()
-            self.arg_names = [item for item in vars(self.args)]
-            self.apply_vars(self.args)
+            if config_data is not None:
+                self.load_config_form_dict(config_data)
+            else:
+                self.args = self.parser.parse_args()
+                self.arg_names = [item for item in vars(self.args)]
+                self.apply_vars(self.args)
 
     def info(self, info):
         if not self.silence or not self.log_func == print:
@@ -168,6 +171,11 @@ class ParameterTemplate:
         with open(os.path.join(self.config_path, self.json_name), 'r') as f:
             ser = json.load(f)
         for k, v in ser.items():
+            setattr(self, k, v)
+            self.arg_names.append(k)
+
+    def load_config_form_dict(self, config_data):
+        for k, v in config_data.items():
             setattr(self, k, v)
             self.arg_names.append(k)
 
