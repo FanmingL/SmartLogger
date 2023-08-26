@@ -1888,6 +1888,7 @@ def _schedule_iter(auto_plotting_candidates, page_config_dict, max_processing_ti
             Logger.local_log(f'I think I am out of control now. To avoid memory leak, I will exit now.')
             os._exit(0)
     th = threading.Thread(target=timeout_kill, args=(max_processing_time,))
+    th.daemon = True
     th.start()
     for k, v in page_config_dict.items():
         if hasattr(page_config, k):

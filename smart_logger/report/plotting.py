@@ -221,6 +221,20 @@ def _str_to_short_name(auto_named, short_name_from_config, short_name_property):
                     pass
     return _res, rename_it
 
+def _check_parent_alive(parent_pid):
+    while True:
+        try:
+            # 尝试向父进程发送0信号，检查进程是否存在
+            os.kill(parent_pid, 0)
+        except ProcessLookupError:
+            # 父进程不存在，退出
+            Logger.local_log(f"Parent process {parent_pid} is dead. Exiting.")
+            os._exit(0)
+        except Exception as e:
+            Logger.local_log(f"Parent process {parent_pid} is dead. Exiting.")
+            os._exit(0)
+        time.sleep(1)
+
 def version_tuple(version):
     return tuple(map(int, (version.split("."))))
 
@@ -389,6 +403,9 @@ def _load_data_one_thread(folder_name, task_ind):
 
 
 def _load_data_multi_thread(thread_num, path_list, task_ind_list, plot_config_dict):
+    daemon_th = threading.Thread(target=_check_parent_alive, args=(os.getppid(),))
+    daemon_th.daemon = True  # 设置为守护线程，确保主进程结束时该线程也会结束
+    daemon_th.start()
     for k in plot_config_dict:
         setattr(plot_config, k, plot_config_dict[k])
     thread_num = min(thread_num, len(path_list))
@@ -591,6 +608,10 @@ def alg_discriminative_evaluation(alg_corresponding_mean_std):
 
 
 def _plot_sub_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_name, y_name, plot_config_dict):
+    daemon_th = threading.Thread(target=_check_parent_alive, args=(os.getppid(),))
+    daemon_th.daemon = True  # 设置为守护线程，确保主进程结束时该线程也会结束
+    daemon_th.start()
+
     Logger.local_log(f'PID: {os.getpid()} started!!')
     for k in plot_config_dict:
         setattr(plot_config, k, plot_config_dict[k])
@@ -974,6 +995,9 @@ def _bar_data_process(x_name, y_name, sub_figure, alg_name, data_alg_list):
 
 def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x_name, y_name, plot_config_dict):
     Logger.local_log(f'PID: {os.getpid()} started!!')
+    daemon_th = threading.Thread(target=_check_parent_alive, args=(os.getppid(),))
+    daemon_th.daemon = True  # 设置为守护线程，确保主进程结束时该线程也会结束
+    daemon_th.start()
     for k in plot_config_dict:
         setattr(plot_config, k, plot_config_dict[k])
     def _get_plot_config_xy(attri):
@@ -1309,7 +1333,9 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
 
 
 def _make_subtable(data, x_name, y_name, at_x, plot_config_dict, iter, alg_as_row_header, bold_max):
-
+    daemon_th = threading.Thread(target=_check_parent_alive, args=(os.getppid(),))
+    daemon_th.daemon = True  # 设置为守护线程，确保主进程结束时该线程也会结束
+    daemon_th.start()
     for k in plot_config_dict:
         setattr(plot_config, k, plot_config_dict[k])
     def _get_plot_config_xy(attri):
@@ -1466,6 +1492,9 @@ def _make_subtable(data, x_name, y_name, at_x, plot_config_dict, iter, alg_as_ro
     return summary_dict, x_name, y_name, figure_plotting_record
 
 def _load_image_PIL(file_name):
+    daemon_th = threading.Thread(target=_check_parent_alive, args=(os.getppid(),))
+    daemon_th.daemon = True  # 设置为守护线程，确保主进程结束时该线程也会结束
+    daemon_th.start()
     return dict(file_name=file_name, img=Image.open(file_name))
 
 def _plotting(data):
