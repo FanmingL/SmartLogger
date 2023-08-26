@@ -1907,6 +1907,23 @@ def _schedule_iter(auto_plotting_candidates, page_config_dict, max_processing_ti
     if len(auto_plotting_candidates) > 0:
         Logger.local_log(f'table and figure DONE!')
     running = False
+def kill_child_processes(parent_pid, sig=0):
+    child_pids = []
+    try:
+        parent = psutil.Process(parent_pid)
+    except psutil.NoSuchProcess:
+        print(f"No such process: {parent_pid}")
+        return child_pids
+
+    for child in parent.children(recursive=True):
+        child_pids.append(child.pid)
+        if sig != 0:
+            print(f"Sending signal {sig} to child process {child.pid}")
+            child.send_signal(sig)
+        else:
+            print(f"Marking child process {child.pid} (not sending any signal)")
+
+    return child_pids
 
 config_file_mdate_dict = {}
 config_content_dict = {}
@@ -1931,8 +1948,11 @@ def schedule_iter():
     proc = Process(target=_schedule_iter, args=(auto_plotting_candidates, page_config_dict, max_processing_time))
     proc.start()
     proc.join(timeout=max_processing_time)  # Set timeout
+
+
     if proc.is_alive():
         Logger.local_log("schedule_iter is running too long, terminating...")
+        child_pids_to_terminate = kill_child_processes(proc.pid, 0)
         proc.terminate()
         # 添加这部分代码，以确保进程已经被杀死
         start_time = time.time()
@@ -1946,6 +1966,15 @@ def schedule_iter():
                     Logger.local_log(f"Process {proc.pid} does not exist. Maybe it has been killed.")
                 break
             time.sleep(1)
+        for child_pid in child_pids_to_terminate:
+            try:
+                child = psutil.Process(child_pid)
+                print(f"Forcefully killing child process {child.pid}")
+                child.kill()
+            except psutil.NoSuchProcess:
+                print(f"Child process {child_pid} no longer exists")
+
+
 def schedule_loop():
     while True:
         try:

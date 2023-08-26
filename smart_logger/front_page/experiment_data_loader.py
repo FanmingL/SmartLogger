@@ -11,10 +11,10 @@ import pandas as pd
 import shutil
 import smart_logger.common.page_config as page_config
 import smart_logger.common.plot_config as plot_config
-from smart_logger.report.plotting import merger_to_short_name, list_embedding, standardize_string, make_merger_feature
+from smart_logger.report.plotting import merger_to_short_name, list_embedding, standardize_string, make_merger_feature, _check_parent_alive
 from smart_logger.util_logger.logger import Logger
 import pickle
-
+import threading
 
 def generate_random_string(length):
     ascii_letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -287,6 +287,9 @@ def _load_data_one_thread(folder_name, task_ind):
 
 
 def _load_data_multi_thread(thread_num, path_list, task_ind_list, plot_config_dict):
+    daemon_th = threading.Thread(target=_check_parent_alive, args=(os.getppid(),))
+    daemon_th.daemon = True  # 设置为守护线程，确保主进程结束时该线程也会结束
+    daemon_th.start()
     for k in plot_config_dict:
         setattr(plot_config, k, plot_config_dict[k])
     thread_num = min(thread_num, len(path_list))
