@@ -1024,6 +1024,7 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
     sub_figure_min_value, sub_figure_max_value = {}, {}
     sub_figure_list_value = {}
     sub_figure_max_alg_name = {}
+    sub_figure_max_alg_name_with_stat = {}
     bar_maximum_exclude_config = _get_plot_config_xy('BAR_MAXIMUM_EXCLUDE')
     if not str(bar_maximum_exclude_config) == 'None':
         exclude_str = str(bar_maximum_exclude_config)
@@ -1064,6 +1065,7 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
                     sub_figure_max_value[sub_figure] = y_data[-1]
                     if alg_name not in exclude_str:
                         sub_figure_max_alg_name[sub_figure] = (alg_name, y_data[-1])
+                        sub_figure_max_alg_name_with_stat[sub_figure] = [(alg_name, y_data[-1], y_data_error[-1])]
                     sub_figure_list_value[sub_figure] = [(alg_name, y_data[-1])]
                 else:
                     ymin_config = _get_plot_config_all('YMIN')
@@ -1076,6 +1078,16 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
                     if sub_figure not in sub_figure_max_value or y_data[-1] > sub_figure_max_alg_name[sub_figure][1]:
                         if alg_name not in exclude_str:
                             sub_figure_max_alg_name[sub_figure] = (alg_name, y_data[-1])
+                    if alg_name not in exclude_str:
+                        if sub_figure not in sub_figure_max_alg_name_with_stat:
+                            sub_figure_max_alg_name_with_stat[sub_figure] = [(alg_name, y_data[-1], y_data_error[-1])]
+                        elif y_data[-1] >= sub_figure_max_alg_name_with_stat[sub_figure][0][1] - y_data_error[-1]:
+                            sub_figure_max_alg_name_with_stat[sub_figure].append((alg_name, y_data[-1], y_data_error[-1]))
+                            tmp_ = sorted(sub_figure_max_alg_name_with_stat[sub_figure],
+                                                                                   key=lambda x: x[1], reverse=True)
+                            # minimal_value_ = sub_figure_max_alg_name_with_stat[sub_figure][0][1] - sub_figure_max_alg_name_with_stat[sub_figure][0][2]
+                            sub_figure_max_alg_name_with_stat[sub_figure] = [item for item in tmp_ if
+                                                                             item[1] >= sub_figure_max_alg_name_with_stat[sub_figure][0][1] - item[2]]
                     sub_figure_list_value[sub_figure].append((alg_name, y_data[-1]))
 
     for k in sub_figure_list_value:
@@ -1196,24 +1208,36 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
                                 edgecolor='black', linewidth=1.0, zorder=2.5, fill=bar_fill, alpha=alpha
                                 )
             if str(_get_plot_config_all('BAR_MARK_MAXIMUM')) == 'True':
-                if sub_figure in sub_figure_max_alg_name and alg_name == sub_figure_max_alg_name[sub_figure][0]:
+                max_alg_match = alg_name == sub_figure_max_alg_name[sub_figure][0]
+                if str(_get_plot_config_all('BAR_MARK_MAXIMUM_WITH_STAT')) == 'True':
+                    marking_algs = [item[0] for item in sub_figure_max_alg_name_with_stat[sub_figure]]
+                    alg_match = alg_name in marking_algs
+                else:
+                    alg_match = max_alg_match
+                if sub_figure in sub_figure_max_alg_name and alg_match:
                     y_bottom, y_top = ax.get_ylim()
                     sign = np.sign(y_data_item)
-                    ax.plot(x_cord, sign * min((np.abs(y_data_item) + y_error_item) * 1.06, np.abs(y_data_item) * 1.3),
+                    # if max_alg_match:
+                    #
+                    # else:
+                    ax.plot(x_cord,
+                            sign * min((np.abs(y_data_item) + y_error_item) * 1.06, np.abs(y_data_item) * 1.3),
                             color=line_color, marker='*',
                             markersize=_get_plot_config_all('MARKER_SIZE') * 2.0)
-                    ax.plot(np.linspace(_col - 0.5 + 0.25 * bar_interval_config,
-                                        _col + (1 - bar_interval_config) - 0.5 + 0.75 * bar_interval_config,
-                                        100),
-                            y_data_item * np.ones(100, ), color='black', alpha=0.8, linestyle='-.', linewidth=1.0,
-                            zorder=2.6)
-                    ax.plot(_col - 0.5 + 0.25 * bar_interval_config, y_data_item, color='black', alpha=1.0,
-                            marker='4',
-                            markersize=_get_plot_config_all('MARKER_SIZE') * 2.0)
-                    ax.plot(_col + (1 - bar_interval_config) - 0.5 + 0.75 * bar_interval_config, y_data_item,
-                            color='black', alpha=1.0,
-                            marker='3',
-                            markersize=_get_plot_config_all('MARKER_SIZE') * 2.0)
+
+                    if max_alg_match:
+                        ax.plot(np.linspace(_col - 0.5 + 0.25 * bar_interval_config,
+                                            _col + (1 - bar_interval_config) - 0.5 + 0.75 * bar_interval_config,
+                                            100),
+                                y_data_item * np.ones(100, ), color='black', alpha=0.8, linestyle='-.', linewidth=1.0,
+                                zorder=2.6)
+                        ax.plot(_col - 0.5 + 0.25 * bar_interval_config, y_data_item, color='black', alpha=1.0,
+                                marker='4',
+                                markersize=_get_plot_config_all('MARKER_SIZE') * 2.0)
+                        ax.plot(_col + (1 - bar_interval_config) - 0.5 + 0.75 * bar_interval_config, y_data_item,
+                                color='black', alpha=1.0,
+                                marker='3',
+                                markersize=_get_plot_config_all('MARKER_SIZE') * 2.0)
             if str(_get_plot_config_all('SHOW_BAR_SEED_NUM')) == 'True':
                 sign = np.sign(y_data_item)
                 ax.text(x_cord, sign * min((np.abs(y_data_item) + y_error_item) * 1.12, np.abs(y_data_item) * 1.5),
