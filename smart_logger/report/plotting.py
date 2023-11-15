@@ -534,8 +534,14 @@ def _preprocess_date(data, alg_to_color_idx, x_name, y_name):
                 continue
             if len(data_alg_list) == 0:
                 continue
-            x_data = [np.array(data_alg['data'][x_name]) for data_alg in data_alg_list]
-            y_data = [np.array(data_alg['data'][y_name]) for data_alg in data_alg_list]
+            x_data = [data_alg['data'][x_name] for data_alg in data_alg_list]
+            y_data = [data_alg['data'][y_name] for data_alg in data_alg_list]
+            for i in range(len(x_data)):
+                x_data[i].fillna(method='ffill', inplace=True)
+                x_data[i] = np.array(x_data[i])
+            for i in range(len(y_data)):
+                y_data[i].fillna(method='ffill', inplace=True)
+                y_data[i] = np.array(y_data[i])
             y_list = [y_data_item[-1] for y_data_item in y_data]
             x_max = get_plot_config('XMAX', x_name=x_name, y_name=y_name, title=sub_figure)
             for x_ind, x_item in enumerate(x_data):
@@ -1087,7 +1093,7 @@ def _plot_sub_bar_figure(data, fig_row, fig_column, figsize, alg_to_color_idx, x
                                                                                    key=lambda x: x[1], reverse=True)
                             # minimal_value_ = sub_figure_max_alg_name_with_stat[sub_figure][0][1] - sub_figure_max_alg_name_with_stat[sub_figure][0][2]
                             sub_figure_max_alg_name_with_stat[sub_figure] = [item for item in tmp_ if
-                                                                             item[1] >= sub_figure_max_alg_name_with_stat[sub_figure][0][1] - item[2]]
+                                                                             item[1] >= tmp_[0][1] - item[2]]
                     sub_figure_list_value[sub_figure].append((alg_name, y_data[-1]))
 
     for k in sub_figure_list_value:
