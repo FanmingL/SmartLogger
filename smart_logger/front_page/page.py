@@ -2018,7 +2018,8 @@ def start_page_server(port_num=None):
     port_num = port_num if port_num is not None else page_config.PORT
     prechecking(port_num)
 
-    Logger.init_global_logger(log_to_file=page_config.PAGE_LOG_TO_FILE, base_path=page_config.WEB_RAM_PATH, log_name="web_logs")
+    Logger.init_global_logger(log_to_file=page_config.PAGE_LOG_TO_FILE,
+                              base_path=page_config.WEB_RAM_PATH, log_name="web_logs", backup_code=False)
     _default_config = default_config()
     for k in _default_config:
         if hasattr(plot_config, k):

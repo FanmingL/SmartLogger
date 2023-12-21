@@ -15,7 +15,7 @@ class Logger(LoggerBase):
     logger = None
 
     def __init__(self, log_to_file=True, log_name='log', force_backup=False,
-                 log_signature=None, logger_category=None, base_path=None):
+                 log_signature=None, logger_category=None, base_path=None, backup_code=True):
         # 初始化函数，可传入以下参数：
         # log_to_file: 是否将日志记录到文件中，默认为True。
         # log_name: 日志文件名，默认为'log'。
@@ -54,7 +54,8 @@ class Logger(LoggerBase):
         # 初始化tensorboard
         self.init_tb()
         # 备份代码文件
-        self.backup_code()
+        if backup_code:
+            self.backup_code()
         # 备份环境当前环境
         self.save_env()
         self.tb_header_dict = {}
@@ -64,9 +65,10 @@ class Logger(LoggerBase):
 
     @staticmethod
     def init_global_logger(log_to_file=True, log_name='log', force_backup=False,
-                           log_signature=None, logger_category=None, base_path=None):
+                           log_signature=None, logger_category=None, base_path=None, backup_code=True):
         Logger.logger = Logger(log_to_file=log_to_file, log_name=log_name, force_backup=force_backup,
-                               log_signature=log_signature, logger_category=logger_category, base_path=base_path)
+                               log_signature=log_signature, logger_category=logger_category, base_path=base_path,
+                               backup_code=backup_code)
 
     def set_as_default_logger(self):
         Logger.logger = self
