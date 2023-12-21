@@ -11,4 +11,3 @@ from smart_logger.parameter.ParameterTemplate2 import ParameterTemplate as Param
 from smart_logger.scripts.logger_from_param import logger_from_param
 from smart_logger.util_logger.logger import Logger
 from smart_logger.version import __version__
-from smart_logger import htmlpage
