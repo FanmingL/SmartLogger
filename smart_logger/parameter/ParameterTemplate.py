@@ -95,15 +95,15 @@ class ParameterTemplate:
         parser = argparse.ArgumentParser(description=experiment_config.EXPERIMENT_TARGET)
 
         self.env_name = 'Hopper-v2'
-        parser.add_argument('--env_name', type=str, default=self.env_name, metavar='N',
+        parser.add_argument('--env_name', type=str, default=self.env_name,
                             help="name of the environment to run")
 
         self.seed = 1
-        parser.add_argument('--seed', type=int, default=self.seed, metavar='N',
+        parser.add_argument('--seed', type=int, default=self.seed,
                             help="random seed")
 
         self.policy_lr = 3e-4
-        parser.add_argument('--policy_lr', type=float, default=self.policy_lr, metavar='N',
+        parser.add_argument('--policy_lr', type=float, default=self.policy_lr,
                             help="learning rate of the policy.")
 
         self.backing_log = False
@@ -111,7 +111,7 @@ class ParameterTemplate:
                             help='whether backing up the log files to a remote machine.')
 
         self.information = 'TEST'
-        parser.add_argument('--information', type=str, default=self.information, metavar='N',
+        parser.add_argument('--information', type=str, default=self.information,
                             help="log file suffix")
 
         return parser.parse_args()
