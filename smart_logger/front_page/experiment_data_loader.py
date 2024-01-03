@@ -240,7 +240,11 @@ def _get_parameter(folder_name):
         param.update(param1)
     if os.path.exists(parameter_data_possible):
         with open(parameter_data_possible, 'r') as f:
-            param_possible = json.load(f)
+            try:
+                param_possible = json.load(f)
+            except Exception as e:
+                Logger.local_log(f'load parameter: {parameter_data_possible} fail')
+                param_possible = dict()
         param.update(param_possible)
     else:
         pass
