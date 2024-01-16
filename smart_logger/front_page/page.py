@@ -12,6 +12,7 @@ from functools import wraps
 from flask import Flask, redirect, url_for, request, send_from_directory, render_template, make_response, jsonify
 from flask_cors import CORS
 
+import smart_logger
 import smart_logger.common.page_config as page_config
 import smart_logger.common.plot_config as plot_config
 from smart_logger.front_page.experiment_data_loader import default_config, load_config, list_current_experiment, \
@@ -1841,6 +1842,20 @@ def change_table_bold_rule():
     save_config(config, config_name)
     return redirect('/table')
 
+def get_system_resources():
+    # 获取内存信息
+    memory = psutil.virtual_memory()
+    total_memory_gb = memory.total / (1024 ** 3)  # 系统总内存，转换为GB
+    used_memory_gb = memory.used / (1024 ** 3)    # 已使用的内存，转换为GB
+
+    # 获取CPU信息
+    cpu_usage_percent = psutil.cpu_percent(interval=1)  # 获取CPU占用百分比
+
+    return {
+        'total_memory_gb': total_memory_gb,
+        'used_memory_gb': used_memory_gb,
+        'cpu_usage_percent': cpu_usage_percent
+    }
 
 @app.route("/del_separator/<rule_idx>", methods=['GET'])
 @require_login(source_name='del_separator', allow_guest=True)
@@ -1984,6 +1999,17 @@ def schedule_loop():
             traceback.print_exc()
         time.sleep(5)
 
+def system_monitor_loop():
+    while True:
+        try:
+            system_resources = get_system_resources()
+            smart_logger.Logger.local_log(f'MEM: {system_resources["used_memory_gb"]:.2f}/{system_resources["total_memory_gb"]:.2f}, '
+                                          f'CPU: {system_resources["cpu_usage_percent"]:.1f}%')
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+        time.sleep(60)
+
 def prechecking(port):
     def check_port_in_use(_port):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -2029,6 +2055,8 @@ def start_page_server(port_num=None):
     flush_th.start()
     schedule_th = threading.Thread(target=schedule_loop)
     schedule_th.start()
+    monitor_th = threading.Thread(target=system_monitor_loop)
+    monitor_th.start()
     Logger.local_log(f'copy http://{page_config.WEB_NAME}:{port_num} to the explorer')
     if not page_config.REQUIRE_RELOGIN:
         page_config.COOKIE_PERIOD = 1000000
