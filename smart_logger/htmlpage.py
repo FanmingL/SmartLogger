@@ -21,10 +21,17 @@ def main():
                         help="page title prefix")
     parser.add_argument('--port', '-p', type=int, default=7005,
                         help="Server port")
+    parser.add_argument('--ssl_crt', '-crt', type=str, default=None,
+                        help="CRT file for SSL")
+    parser.add_argument('--ssl_key', '-key', type=str, default=None,
+                        help="KEY file for SSL")
     parser.add_argument('--login_free', '-lf', action='store_true',
                         help='Do not require login.')
     parser.add_argument('--log_to_file', '-ltf', action='store_true',
                         help='whether to log to file.', default=False)
+    parser.add_argument('--cookie_period', '-cp', type=int, default=300,
+                        help='cookie period in hour.')
+
     args = parser.parse_args()
     # 关键配置项1：数据目录，该目录下存有日志文件
     plot_config.DATA_PATH = os.path.abspath(args.data_path)
@@ -59,7 +66,13 @@ def main():
     page_config.PAGE_TITLE_PREFIX = args.title if not str(args.title) == 'None' else None
     # 是否保存日志入文件
     page_config.PAGE_LOG_TO_FILE = args.log_to_file
-    start_page_server()
+    ssl_context = None
+    if args.ssl_crt is not None:
+        ssl_context = (
+            args.ssl_crt,
+            args.ssl_key
+        )
+    start_page_server(ssl_context=ssl_context)
 
 
 if __name__ == "__main__":

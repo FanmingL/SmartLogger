@@ -23,7 +23,7 @@ PLOTTING_SAVING_PATH_KEY = 'PLOT_FIGURE_SAVING_PATH'
 # 将汇总文件缓存到哪里
 TOTAL_FIGURE_FOLDER = f'full_path'
 # COOKIE有效时长，即登录多久之后需要重新登录
-COOKIE_PERIOD = 24
+COOKIE_PERIOD = 300
 # 是否需要重复登录，False则不需要二次登录
 REQUIRE_RELOGIN = True
 # 网页title前缀

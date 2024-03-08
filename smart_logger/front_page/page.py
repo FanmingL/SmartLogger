@@ -2040,7 +2040,7 @@ def prechecking(port):
         print_pid_of_port(port)
         exit(1)
 
-def start_page_server(port_num=None):
+def start_page_server(port_num=None, ssl_context=None):
     port_num = port_num if port_num is not None else page_config.PORT
     prechecking(port_num)
 
@@ -2060,7 +2060,12 @@ def start_page_server(port_num=None):
     Logger.local_log(f'copy http://{page_config.WEB_NAME}:{port_num} to the explorer')
     if not page_config.REQUIRE_RELOGIN:
         page_config.COOKIE_PERIOD = 1000000
-    app.run(host='0', port=port_num, debug=False)
+    if ssl_context is not None:
+        app.run(host='0', port=port_num, debug=False,
+                ssl_context=ssl_context
+                )
+    else:
+        app.run(host='0', port=port_num, debug=False)
 
 
 if __name__ == '__main__':
