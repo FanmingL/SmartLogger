@@ -99,7 +99,7 @@ class LoggerBase:
             # cmd = f'rm -rf {self.output_tb_dir}'
             # system(cmd, lambda x: self.log(x))
             if os.path.isdir(self.output_tb_dir):
-                shutil.rmtree(self.output_tb_dir)
+                shutil.rmtree(self.output_tb_dir, ignore_errors=True)
             else:
                 os.remove(self.output_tb_dir)
         os.makedirs(self.output_tb_dir, exist_ok=True)

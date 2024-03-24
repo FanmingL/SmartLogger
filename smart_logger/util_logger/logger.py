@@ -219,7 +219,7 @@ class Logger(LoggerBase):
             system(f'cd {self.output_dir} &&  zip -r codes.zip codes', lambda x: self.log(x))
         finally:
             # 删除备份的代码目录
-            shutil.rmtree(code_path)
+            shutil.rmtree(code_path, ignore_errors=True)
 
     def sync_log_to_remote(self, replace=False, trial_num=1):
         import paramiko

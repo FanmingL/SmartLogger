@@ -1475,7 +1475,7 @@ def _make_subtable(data, x_name, y_name, at_x, plot_config_dict, iter, alg_as_ro
                     if not str(xmax_config) == 'None':
                         at_x = float(xmax_config)
                 if at_x is not None:
-                    idx = np.argmin(np.square(x_data.astype(np.float) - at_x))
+                    idx = np.argmin(np.square(x_data.astype(np.float64) - at_x))
                     selected_mean = y_data[idx]
                     selected_error = y_data_error[idx]
                 elif iter is not None:
