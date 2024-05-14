@@ -1471,11 +1471,12 @@ def _make_subtable(data, x_name, y_name, at_x, plot_config_dict, iter, alg_as_ro
                 y_data_error = np.array(y_data_error)
                 if _get_plot_config_all('USE_SMOOTH'):
                     y_data = smooth(y_data, radius=_get_plot_config_all('SMOOTH_RADIUS'))
-                if at_x is None:
+                _at_x = at_x
+                if _at_x is None:
                     if not str(xmax_config) == 'None':
-                        at_x = float(xmax_config)
-                if at_x is not None:
-                    idx = np.argmin(np.square(x_data.astype(np.float64) - at_x))
+                        _at_x = float(xmax_config)
+                if _at_x is not None:
+                    idx = np.argmin(np.square(x_data.astype(np.float64) - _at_x))
                     selected_mean = y_data[idx]
                     selected_error = y_data_error[idx]
                 elif iter is not None:
